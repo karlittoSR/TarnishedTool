@@ -36,6 +36,7 @@ namespace TarnishedTool.ViewModels
         private readonly ISpEffectService _spEffectService;
         private readonly IFlaskService _flaskService;
         private readonly IParamService _paramService;
+        private readonly IHotkeyNotificationService _notificationService;
 
         public const int MaterialId01Offset = 0x0;
         /* saving those just in case I decide to add no crafting cost
@@ -76,7 +77,8 @@ namespace TarnishedTool.ViewModels
         public UtilityViewModel(IUtilityService utilityService, IStateService stateService,
             IEzStateService ezStateService, IPlayerService playerService, HotkeyManager hotkeyManager,
             PlayerViewModel playerViewModel, IDlcService dlcService,
-            ISpEffectService spEffectService, IFlaskService flaskService, IParamService paramService)
+            ISpEffectService spEffectService, IFlaskService flaskService, IParamService paramService,
+            IHotkeyNotificationService notificationService = null)
         {
             _utilityService = utilityService;
             _ezStateService = ezStateService;
@@ -87,6 +89,7 @@ namespace TarnishedTool.ViewModels
             _spEffectService = spEffectService;
             _flaskService = flaskService;
             _paramService = paramService;
+            _notificationService = notificationService;
 
             stateService.Subscribe(State.AppStart, OnAppStart);
             stateService.Subscribe(State.Loaded, OnGameLoaded);
@@ -882,7 +885,7 @@ namespace TarnishedTool.ViewModels
 
         private void RegisterHotkeys()
         {
-            _hotkeyManager.RegisterAction(HotkeyActions.Noclip, () => { IsNoClipEnabled = !IsNoClipEnabled; });
+            _hotkeyManager.RegisterAction(HotkeyActions.Noclip, () => { IsNoClipEnabled = !IsNoClipEnabled; _notificationService?.ShowNotification(HotkeyActions.Noclip, IsNoClipEnabled); });
             _hotkeyManager.RegisterAction(HotkeyActions.IncreaseNoClipSpeed, () =>
             {
                 if (IsNoClipEnabled) NoClipSpeed = Math.Min(5, NoClipSpeed + 0.50f);
@@ -893,94 +896,94 @@ namespace TarnishedTool.ViewModels
                 if (IsNoClipEnabled) NoClipSpeed = Math.Max(0.5f, NoClipSpeed - 0.50f);
             });
 
-            _hotkeyManager.RegisterAction(HotkeyActions.ForceSave, () => _utilityService.ForceSave());
-            _hotkeyManager.RegisterAction(HotkeyActions.ToggleGameSpeed, ToggleSpeed);
-            _hotkeyManager.RegisterAction(HotkeyActions.ToggleSevenSpeed, Toggle7xSpeed);
+            _hotkeyManager.RegisterAction(HotkeyActions.ForceSave, () => { _utilityService.ForceSave(); _notificationService?.ShowNotification(HotkeyActions.ForceSave); });
+            _hotkeyManager.RegisterAction(HotkeyActions.ToggleGameSpeed, () => { ToggleSpeed(); _notificationService?.ShowNotification(HotkeyActions.ToggleGameSpeed); });
+            _hotkeyManager.RegisterAction(HotkeyActions.ToggleSevenSpeed, () => { Toggle7xSpeed(); _notificationService?.ShowNotification(HotkeyActions.ToggleSevenSpeed); });
             _hotkeyManager.RegisterAction(HotkeyActions.IncreaseGameSpeed,
-                () => SetSpeed(Math.Min(10, GameSpeed + 0.50f)));
+                () => { SetSpeed(Math.Min(10, GameSpeed + 0.50f)); _notificationService?.ShowNotification(HotkeyActions.IncreaseGameSpeed); });
             _hotkeyManager.RegisterAction(HotkeyActions.DecreaseGameSpeed,
-                () => SetSpeed(Math.Max(0.5f, GameSpeed - 0.50f)));
+                () => { SetSpeed(Math.Max(0.5f, GameSpeed - 0.50f)); _notificationService?.ShowNotification(HotkeyActions.DecreaseGameSpeed); });
 
-            _hotkeyManager.RegisterAction(HotkeyActions.ToggleFreeCam, () => IsFreeCamEnabled = !IsFreeCamEnabled);
+            _hotkeyManager.RegisterAction(HotkeyActions.ToggleFreeCam, () => { IsFreeCamEnabled = !IsFreeCamEnabled; _notificationService?.ShowNotification(HotkeyActions.ToggleFreeCam, IsFreeCamEnabled); });
             _hotkeyManager.RegisterAction(HotkeyActions.ToggleFreezeWorld,
-                () => IsFreezeWorldEnabled = !IsFreezeWorldEnabled);
+                () => { IsFreezeWorldEnabled = !IsFreezeWorldEnabled; _notificationService?.ShowNotification(HotkeyActions.ToggleFreezeWorld, IsFreezeWorldEnabled); });
             _hotkeyManager.RegisterAction(HotkeyActions.MoveCamToPlayer, () =>
             {
                 if (!IsFreeCamEnabled) return;
                 MoveCamToPlayer();
+                _notificationService?.ShowNotification(HotkeyActions.MoveCamToPlayer);
             });
             _hotkeyManager.RegisterAction(HotkeyActions.MovePlayerToCam, () =>
             {
                 if (!IsFreeCamEnabled) return;
                 MovePlayerToCam();
+                _notificationService?.ShowNotification(HotkeyActions.MovePlayerToCam);
             });
-            _hotkeyManager.RegisterAction(HotkeyActions.DrawHitbox, () => IsDrawHitboxEnabled = !IsDrawHitboxEnabled);
+            _hotkeyManager.RegisterAction(HotkeyActions.DrawHitbox, () => { IsDrawHitboxEnabled = !IsDrawHitboxEnabled; _notificationService?.ShowNotification(HotkeyActions.DrawHitbox, IsDrawHitboxEnabled); });
             _hotkeyManager.RegisterAction(HotkeyActions.DrawPlayerSound,
-                () => IsDrawPlayerSoundEnabled = !IsDrawPlayerSoundEnabled);
+                () => { IsDrawPlayerSoundEnabled = !IsDrawPlayerSoundEnabled; _notificationService?.ShowNotification(HotkeyActions.DrawPlayerSound, IsDrawPlayerSoundEnabled); });
             _hotkeyManager.RegisterAction(HotkeyActions.DrawRagdolls,
-                () => IsDrawRagdollsEnabled = !IsDrawRagdollsEnabled);
-            _hotkeyManager.RegisterAction(HotkeyActions.DrawLowHit, () => IsDrawLowHitEnabled = !IsDrawLowHitEnabled);
+                () => { IsDrawRagdollsEnabled = !IsDrawRagdollsEnabled; _notificationService?.ShowNotification(HotkeyActions.DrawRagdolls, IsDrawRagdollsEnabled); });
+            _hotkeyManager.RegisterAction(HotkeyActions.DrawLowHit, () => { IsDrawLowHitEnabled = !IsDrawLowHitEnabled; _notificationService?.ShowNotification(HotkeyActions.DrawLowHit, IsDrawLowHitEnabled); });
             _hotkeyManager.RegisterAction(HotkeyActions.DrawHighHit,
-                () => IsDrawHighHitEnabled = !IsDrawHighHitEnabled);
-            _hotkeyManager.RegisterAction(HotkeyActions.LevelUp, () => SafeExecute(OpenLevelUp));
-            _hotkeyManager.RegisterAction(HotkeyActions.AllotFlasks, () => SafeExecute(OpenAllot));
-            _hotkeyManager.RegisterAction(HotkeyActions.MemorizeSpells, () => SafeExecute(OpenAttunement));
-            _hotkeyManager.RegisterAction(HotkeyActions.MixPhysick, () => SafeExecute(OpenPhysick));
-            _hotkeyManager.RegisterAction(HotkeyActions.OpenChest, () => SafeExecute(OpenChest));
-            _hotkeyManager.RegisterAction(HotkeyActions.GreatRunes, () => SafeExecute(OpenGreatRunes));
-            _hotkeyManager.RegisterAction(HotkeyActions.AshesOfWar, () => SafeExecute(OpenAow));
-            _hotkeyManager.RegisterAction(HotkeyActions.AlterGarments, () => SafeExecute(OpenAlterGarments));
-            _hotkeyManager.RegisterAction(HotkeyActions.Upgrade, () => SafeExecute(OpenUpgrade));
-            _hotkeyManager.RegisterAction(HotkeyActions.Sell, () => SafeExecute(OpenSell));
-            _hotkeyManager.RegisterAction(HotkeyActions.Rebirth, () => SafeExecute(OpenRebirth));
+                () => { IsDrawHighHitEnabled = !IsDrawHighHitEnabled; _notificationService?.ShowNotification(HotkeyActions.DrawHighHit, IsDrawHighHitEnabled); });
+            _hotkeyManager.RegisterAction(HotkeyActions.LevelUp, () => { SafeExecute(OpenLevelUp); _notificationService?.ShowNotification(HotkeyActions.LevelUp); });
+            _hotkeyManager.RegisterAction(HotkeyActions.AllotFlasks, () => { SafeExecute(OpenAllot); _notificationService?.ShowNotification(HotkeyActions.AllotFlasks); });
+            _hotkeyManager.RegisterAction(HotkeyActions.MemorizeSpells, () => { SafeExecute(OpenAttunement); _notificationService?.ShowNotification(HotkeyActions.MemorizeSpells); });
+            _hotkeyManager.RegisterAction(HotkeyActions.MixPhysick, () => { SafeExecute(OpenPhysick); _notificationService?.ShowNotification(HotkeyActions.MixPhysick); });
+            _hotkeyManager.RegisterAction(HotkeyActions.OpenChest, () => { SafeExecute(OpenChest); _notificationService?.ShowNotification(HotkeyActions.OpenChest); });
+            _hotkeyManager.RegisterAction(HotkeyActions.GreatRunes, () => { SafeExecute(OpenGreatRunes); _notificationService?.ShowNotification(HotkeyActions.GreatRunes); });
+            _hotkeyManager.RegisterAction(HotkeyActions.AshesOfWar, () => { SafeExecute(OpenAow); _notificationService?.ShowNotification(HotkeyActions.AshesOfWar); });
+            _hotkeyManager.RegisterAction(HotkeyActions.AlterGarments, () => { SafeExecute(OpenAlterGarments); _notificationService?.ShowNotification(HotkeyActions.AlterGarments); });
+            _hotkeyManager.RegisterAction(HotkeyActions.Upgrade, () => { SafeExecute(OpenUpgrade); _notificationService?.ShowNotification(HotkeyActions.Upgrade); });
+            _hotkeyManager.RegisterAction(HotkeyActions.Sell, () => { SafeExecute(OpenSell); _notificationService?.ShowNotification(HotkeyActions.Sell); });
+            _hotkeyManager.RegisterAction(HotkeyActions.Rebirth, () => { SafeExecute(OpenRebirth); _notificationService?.ShowNotification(HotkeyActions.Rebirth); });
             _hotkeyManager.RegisterAction(HotkeyActions.UpgradeFlask,
-                () => SafeExecuteIfNotBusy(UpgradeFlask, IsUpgradingFlask));
+                () => { SafeExecuteIfNotBusy(UpgradeFlask, IsUpgradingFlask); _notificationService?.ShowNotification(HotkeyActions.UpgradeFlask); });
             _hotkeyManager.RegisterAction(HotkeyActions.IncreaseFlaskCharges,
-                () => SafeExecuteIfNotBusy(IncreaseCharges, IsIncreasingCharges));
-            _hotkeyManager.RegisterAction(HotkeyActions.OpenShopWindow, OpenShopSelector);
+                () => { SafeExecuteIfNotBusy(IncreaseCharges, IsIncreasingCharges); _notificationService?.ShowNotification(HotkeyActions.IncreaseFlaskCharges); });
+            _hotkeyManager.RegisterAction(HotkeyActions.OpenShopWindow, () => { OpenShopSelector(); _notificationService?.ShowNotification(HotkeyActions.OpenShopWindow); });
             _hotkeyManager.RegisterAction(HotkeyActions.ToggleFreeCamPlayerMovement, () =>
             {
                 if (!IsFreeCamEnabled) return;
                 IsPlayerMovementEnabled = !IsPlayerMovementEnabled;
             });
             _hotkeyManager.RegisterAction(HotkeyActions.DrawPoiseBars,
-                () => IsDrawPoiseBarsEnabled = !IsDrawPoiseBarsEnabled);
-            _hotkeyManager.RegisterAction(HotkeyActions.Set20Fps, () => SafeExecute(() => Fps = 20));
-            _hotkeyManager.RegisterAction(HotkeyActions.Set30Fps, () => SafeExecute(() => Fps = 30));
-            _hotkeyManager.RegisterAction(HotkeyActions.Set60Fps, () => SafeExecute(() => Fps = 60));
-            _hotkeyManager.RegisterAction(HotkeyActions.Set90Fps, () => SafeExecute(() => Fps = 90));
-            _hotkeyManager.RegisterAction(HotkeyActions.Set120Fps, () => SafeExecute(() => Fps = 120));
-            _hotkeyManager.RegisterAction(HotkeyActions.Set180Fps, () => SafeExecute(() => Fps = 180));
-            _hotkeyManager.RegisterAction(HotkeyActions.Set240Fps, () => SafeExecute(() => Fps = 240));
+                () => { IsDrawPoiseBarsEnabled = !IsDrawPoiseBarsEnabled; _notificationService?.ShowNotification(HotkeyActions.DrawPoiseBars, IsDrawPoiseBarsEnabled); });
+            _hotkeyManager.RegisterAction(HotkeyActions.Set20Fps, () => { SafeExecute(() => Fps = 20); _notificationService?.ShowNotification(HotkeyActions.Set20Fps); });
+            _hotkeyManager.RegisterAction(HotkeyActions.Set30Fps, () => { SafeExecute(() => Fps = 30); _notificationService?.ShowNotification(HotkeyActions.Set30Fps); });
+            _hotkeyManager.RegisterAction(HotkeyActions.Set60Fps, () => { SafeExecute(() => Fps = 60); _notificationService?.ShowNotification(HotkeyActions.Set60Fps); });
+            _hotkeyManager.RegisterAction(HotkeyActions.Set90Fps, () => { SafeExecute(() => Fps = 90); _notificationService?.ShowNotification(HotkeyActions.Set90Fps); });
+            _hotkeyManager.RegisterAction(HotkeyActions.Set120Fps, () => { SafeExecute(() => Fps = 120); _notificationService?.ShowNotification(HotkeyActions.Set120Fps); });
+            _hotkeyManager.RegisterAction(HotkeyActions.Set180Fps, () => { SafeExecute(() => Fps = 180); _notificationService?.ShowNotification(HotkeyActions.Set180Fps); });
+            _hotkeyManager.RegisterAction(HotkeyActions.Set240Fps, () => { SafeExecute(() => Fps = 240); _notificationService?.ShowNotification(HotkeyActions.Set240Fps); });
             _hotkeyManager.RegisterAction(HotkeyActions.NoUpgradeCost,
-                () => SafeExecute(() => { IsNoUpgradeCostEnabled = !IsNoUpgradeCostEnabled; }));
+                () => { SafeExecute(() => { IsNoUpgradeCostEnabled = !IsNoUpgradeCostEnabled; _notificationService?.ShowNotification(HotkeyActions.NoUpgradeCost, IsNoUpgradeCostEnabled); }); });
             _hotkeyManager.RegisterAction(HotkeyActions.AllDiscardable,
-                () => SafeExecute(() => { IsAllDiscardableEnabled = !IsAllDiscardableEnabled; }));
+                () => { SafeExecute(() => { IsAllDiscardableEnabled = !IsAllDiscardableEnabled; _notificationService?.ShowNotification(HotkeyActions.AllDiscardable, IsAllDiscardableEnabled); }); });
             _hotkeyManager.RegisterAction(HotkeyActions.OpenMapInCombat,
-                () => _isCombatMapEnabled = !IsCombatMapEnabled);
+                () => { IsCombatMapEnabled = !IsCombatMapEnabled; _notificationService?.ShowNotification(HotkeyActions.OpenMapInCombat, IsCombatMapEnabled); });
             _hotkeyManager.RegisterAction(HotkeyActions.WarpInDungeons,
-                () => _isDungeonWarpEnabled = !IsDungeonWarpEnabled);
-            _hotkeyManager.RegisterAction(HotkeyActions.ToggleNextNgCycle, () => TriggerNgCycle());
+                () => { IsDungeonWarpEnabled = !IsDungeonWarpEnabled; _notificationService?.ShowNotification(HotkeyActions.WarpInDungeons, IsDungeonWarpEnabled); });
+            _hotkeyManager.RegisterAction(HotkeyActions.ToggleNextNgCycle, () => { TriggerNgCycle(); _notificationService?.ShowNotification(HotkeyActions.ToggleNextNgCycle); });
             _hotkeyManager.RegisterAction(HotkeyActions.DropRate,
-                () => _isGuaranteedDropEnabled = !IsGuaranteedDropEnabled);
+                () => { IsGuaranteedDropEnabled = !IsGuaranteedDropEnabled; _notificationService?.ShowNotification(HotkeyActions.DropRate, IsGuaranteedDropEnabled); });
             _hotkeyManager.RegisterAction(HotkeyActions.DrawMapTiles1,
-                () => _isDrawMapTiles1Enabled = !IsDrawMapTiles1Enabled);
+                () => { IsDrawMapTiles1Enabled = !IsDrawMapTiles1Enabled; _notificationService?.ShowNotification(HotkeyActions.DrawMapTiles1, IsDrawMapTiles1Enabled); });
             _hotkeyManager.RegisterAction(HotkeyActions.DrawMapTiles2,
-                () => _isDrawMapTiles2Enabled = !IsDrawMapTiles2Enabled);
+                () => { IsDrawMapTiles2Enabled = !IsDrawMapTiles2Enabled; _notificationService?.ShowNotification(HotkeyActions.DrawMapTiles2, IsDrawMapTiles2Enabled); });
             _hotkeyManager.RegisterAction(HotkeyActions.DrawMiniMap,
-                () => _isDrawMiniMapEnabled = !IsDrawMiniMapEnabled);
+                () => { IsDrawMiniMapEnabled = !IsDrawMiniMapEnabled; _notificationService?.ShowNotification(HotkeyActions.DrawMiniMap, IsDrawMiniMapEnabled); });
             _hotkeyManager.RegisterAction(HotkeyActions.DrawTilesOnWorldMap,
-                () => _isDrawMapTiles1Enabled = !IsDrawMapTiles1Enabled);
-            _hotkeyManager.RegisterAction(HotkeyActions.HideMap, () => _isHideMapEnabled = !IsHideMapEnabled);
+                () => { IsDrawTilesOnMapEnabled = !IsDrawTilesOnMapEnabled; _notificationService?.ShowNotification(HotkeyActions.DrawTilesOnWorldMap, IsDrawTilesOnMapEnabled); });
+            _hotkeyManager.RegisterAction(HotkeyActions.HideMap, () => { IsHideMapEnabled = !IsHideMapEnabled; _notificationService?.ShowNotification(HotkeyActions.HideMap, IsHideMapEnabled); });
             _hotkeyManager.RegisterAction(HotkeyActions.HideCharacters,
-                () => _isHideCharactersEnabled = !IsHideCharactersEnabled);
-            _hotkeyManager.RegisterAction(HotkeyActions.OpenMirror, () => SafeExecute(OpenMirror));
+                () => { IsHideCharactersEnabled = !IsHideCharactersEnabled; _notificationService?.ShowNotification(HotkeyActions.HideCharacters, IsHideCharactersEnabled); });
+            _hotkeyManager.RegisterAction(HotkeyActions.OpenMirror, () => { SafeExecute(OpenMirror); _notificationService?.ShowNotification(HotkeyActions.OpenMirror); });
             _hotkeyManager.RegisterAction(HotkeyActions.DisableKbForNoClip,
-                () => _isNoClipKeyboardDisableEnabled = !IsNoClipKeyboardDisableEnabled);
-            _hotkeyManager.RegisterAction(HotkeyActions.Quitout, () => _utilityService.Quitout());
-            _hotkeyManager.RegisterAction(HotkeyActions.OpenSpiritTuning, () => SafeExecute(OpenSpiritTuning));
-            _hotkeyManager.RegisterAction(HotkeyActions.DisableKbForNoClip,
-                () => _isNoClipKeyboardDisableEnabled = !IsNoClipKeyboardDisableEnabled);
+                () => { IsNoClipKeyboardDisableEnabled = !IsNoClipKeyboardDisableEnabled; _notificationService?.ShowNotification(HotkeyActions.DisableKbForNoClip, IsNoClipKeyboardDisableEnabled); });
+            _hotkeyManager.RegisterAction(HotkeyActions.Quitout, () => { _utilityService.Quitout(); _notificationService?.ShowNotification(HotkeyActions.Quitout); });
+            _hotkeyManager.RegisterAction(HotkeyActions.OpenSpiritTuning, () => { SafeExecute(OpenSpiritTuning); _notificationService?.ShowNotification(HotkeyActions.OpenSpiritTuning); });
         }
 
         private void SafeExecute(Action action)

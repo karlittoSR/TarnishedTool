@@ -269,6 +269,7 @@
         <Compile Include="Interfaces\IEzStateService.cs" />
         <Compile Include="Interfaces\IFlaskService.cs" />
         <Compile Include="Interfaces\IGameTickService.cs" />
+        <Compile Include="Interfaces\IHotkeyNotificationService.cs" />
         <Compile Include="Interfaces\IItemService.cs" />
         <Compile Include="Interfaces\IMemoryService.cs" />
         <Compile Include="Interfaces\IParamRepository.cs" />
@@ -305,6 +306,7 @@
         <Compile Include="Models\Grace.cs" />
         <Compile Include="Models\GracePresetEntry.cs" />
         <Compile Include="Models\GracePresetTemplate.cs" />
+        <Compile Include="Models\HotkeyNotification.cs" />
         <Compile Include="Models\Item.cs" />
         <Compile Include="Models\ItemTemplate.cs" />
         <Compile Include="Models\LoadedParam.cs" />
@@ -334,6 +336,7 @@
         <Compile Include="Services\EzStateService.cs" />
         <Compile Include="Services\FlaskService.cs" />
         <Compile Include="Services\GameTickService.cs" />
+        <Compile Include="Services\HotkeyNotificationService.cs" />
         <Compile Include="Services\ItemService.cs" />
         <Compile Include="Services\ParamRepository.cs" />
         <Compile Include="Services\ParamService.cs" />
@@ -485,6 +488,9 @@
         <Compile Include="Views\Windows\GracePresetWindow.xaml.cs">
           <DependentUpon>GracePresetWindow.xaml</DependentUpon>
         </Compile>
+        <Compile Include="Views\Windows\HotkeyNotificationWindow.xaml.cs">
+          <DependentUpon>HotkeyNotificationWindow.xaml</DependentUpon>
+        </Compile>
         <Compile Include="Views\Windows\InputBox.xaml.cs">
           <DependentUpon>InputBox.xaml</DependentUpon>
         </Compile>
@@ -544,6 +550,7 @@
         <Page Include="Views\Windows\AiWindow.xaml" />
         <Page Include="Views\Windows\GraceImportPresentSelectionWindow.xaml" />
         <Page Include="Views\Windows\GracePresetWindow.xaml" />
+        <Page Include="Views\Windows\HotkeyNotificationWindow.xaml" />
         <Page Include="Views\Windows\InputBox.xaml" />
         <Page Include="Views\Windows\ParamEditorWindow.xaml" />
         <Page Include="Views\Windows\ResistancesWindow.xaml" />

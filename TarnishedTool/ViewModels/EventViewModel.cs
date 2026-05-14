@@ -24,6 +24,7 @@ namespace TarnishedTool.ViewModels
         private readonly HotkeyManager _hotkeyManager;
         private readonly IUtilityService _utilityService;
         private readonly IEventLogReader _eventLogReader;
+        private readonly IHotkeyNotificationService _notificationService;
         public const int WhetstoneBladeId = 0x4000218E;
 
         private static readonly int[] StartingFlaskIds =
@@ -40,7 +41,8 @@ namespace TarnishedTool.ViewModels
 
         public EventViewModel(IEventService eventService, IStateService stateService, IItemService itemService,
             IDlcService dlcService, IEzStateService ezStateService, IEmevdService emevdService,
-            HotkeyManager hotkeyManager, IUtilityService utilityService, IEventLogReader eventLogReader)
+            HotkeyManager hotkeyManager, IUtilityService utilityService, IEventLogReader eventLogReader,
+            IHotkeyNotificationService notificationService = null)
         {
             _eventService = eventService;
             _itemService = itemService;
@@ -50,6 +52,7 @@ namespace TarnishedTool.ViewModels
             _hotkeyManager = hotkeyManager;
             _utilityService = utilityService;
             _eventLogReader = eventLogReader;
+            _notificationService = notificationService;
 
 
             stateService.Subscribe(State.Loaded, OnGameLoaded);
@@ -325,36 +328,36 @@ namespace TarnishedTool.ViewModels
 
         private void RegisterHotkeys()
         {
-            _hotkeyManager.RegisterAction(HotkeyActions.DrawEvents, () => IsDrawEventsEnabled = !IsDrawEventsEnabled);
-            _hotkeyManager.RegisterAction(HotkeyActions.GetEvent, () => SafeExecute(GetEvent));
-            _hotkeyManager.RegisterAction(HotkeyActions.SetEvent, () => SafeExecute(SetEvent));
+            _hotkeyManager.RegisterAction(HotkeyActions.DrawEvents, () => { IsDrawEventsEnabled = !IsDrawEventsEnabled; _notificationService?.ShowNotification(HotkeyActions.DrawEvents); });
+            _hotkeyManager.RegisterAction(HotkeyActions.GetEvent, () => { SafeExecute(GetEvent); _notificationService?.ShowNotification(HotkeyActions.GetEvent); });
+            _hotkeyManager.RegisterAction(HotkeyActions.SetEvent, () => { SafeExecute(SetEvent); _notificationService?.ShowNotification(HotkeyActions.SetEvent); });
             _hotkeyManager.RegisterAction(HotkeyActions.DisableEvents,
-                () => IsDisableEventsEnabled = !IsDisableEventsEnabled);
-            _hotkeyManager.RegisterAction(HotkeyActions.OpenEventLogger, () => OpenEventLogWindow());
-            _hotkeyManager.RegisterAction(HotkeyActions.UnlockAffinites, () => SafeExecute(UnlockWhetblades));
-            _hotkeyManager.RegisterAction(HotkeyActions.UnlockGestures, () => SafeExecute(UnlockGestures));
-            _hotkeyManager.RegisterAction(HotkeyActions.FightEldenBeast, () => SafeExecute(FightEldenBeast));
-            _hotkeyManager.RegisterAction(HotkeyActions.FightFortissax, () => SafeExecute(FightFortissax));
-            _hotkeyManager.RegisterAction(HotkeyActions.UnlockMetyr, () => SafeExecute(UnlockMetyr));
-            _hotkeyManager.RegisterAction(HotkeyActions.SetMorning, () => SafeExecute(SetMorning));
-            _hotkeyManager.RegisterAction(HotkeyActions.SetNoon, () => SafeExecute(SetNoon));
-            _hotkeyManager.RegisterAction(HotkeyActions.SetDusk, () => SafeExecute(SetDusk));
-            _hotkeyManager.RegisterAction(HotkeyActions.SetNight, () => SafeExecute(SetNight));
+                () => { IsDisableEventsEnabled = !IsDisableEventsEnabled; _notificationService?.ShowNotification(HotkeyActions.DisableEvents); });
+            _hotkeyManager.RegisterAction(HotkeyActions.OpenEventLogger, () => { OpenEventLogWindow(); _notificationService?.ShowNotification(HotkeyActions.OpenEventLogger); });
+            _hotkeyManager.RegisterAction(HotkeyActions.UnlockAffinites, () => { SafeExecute(UnlockWhetblades); _notificationService?.ShowNotification(HotkeyActions.UnlockAffinites); });
+            _hotkeyManager.RegisterAction(HotkeyActions.UnlockGestures, () => { SafeExecute(UnlockGestures); _notificationService?.ShowNotification(HotkeyActions.UnlockGestures); });
+            _hotkeyManager.RegisterAction(HotkeyActions.FightEldenBeast, () => { SafeExecute(FightEldenBeast); _notificationService?.ShowNotification(HotkeyActions.FightEldenBeast); });
+            _hotkeyManager.RegisterAction(HotkeyActions.FightFortissax, () => { SafeExecute(FightFortissax); _notificationService?.ShowNotification(HotkeyActions.FightFortissax); });
+            _hotkeyManager.RegisterAction(HotkeyActions.UnlockMetyr, () => { SafeExecute(UnlockMetyr); _notificationService?.ShowNotification(HotkeyActions.UnlockMetyr); });
+            _hotkeyManager.RegisterAction(HotkeyActions.SetMorning, () => { SafeExecute(SetMorning); _notificationService?.ShowNotification(HotkeyActions.SetMorning); });
+            _hotkeyManager.RegisterAction(HotkeyActions.SetNoon, () => { SafeExecute(SetNoon); _notificationService?.ShowNotification(HotkeyActions.SetNoon); });
+            _hotkeyManager.RegisterAction(HotkeyActions.SetDusk, () => { SafeExecute(SetDusk); _notificationService?.ShowNotification(HotkeyActions.SetDusk); });
+            _hotkeyManager.RegisterAction(HotkeyActions.SetNight, () => { SafeExecute(SetNight); _notificationService?.ShowNotification(HotkeyActions.SetNight); });
             _hotkeyManager.RegisterAction(HotkeyActions.DefaultWeather,
-                () => SafeExecute(() => SetWeatherByType(0)));
-            _hotkeyManager.RegisterAction(HotkeyActions.RainyWeather, () => SafeExecute(() => SetWeatherByType(1)));
-            _hotkeyManager.RegisterAction(HotkeyActions.SnowyWeather, () => SafeExecute(() => SetWeatherByType(2)));
+                () => { SafeExecute(() => SetWeatherByType(0)); _notificationService?.ShowNotification(HotkeyActions.DefaultWeather); });
+            _hotkeyManager.RegisterAction(HotkeyActions.RainyWeather, () => { SafeExecute(() => SetWeatherByType(1)); _notificationService?.ShowNotification(HotkeyActions.RainyWeather); });
+            _hotkeyManager.RegisterAction(HotkeyActions.SnowyWeather, () => { SafeExecute(() => SetWeatherByType(2)); _notificationService?.ShowNotification(HotkeyActions.SnowyWeather); });
             _hotkeyManager.RegisterAction(HotkeyActions.WindyRainWeather,
-                () => SafeExecute(() => SetWeatherByType(3)));
-            _hotkeyManager.RegisterAction(HotkeyActions.FoggyWeather, () => SafeExecute(() => SetWeatherByType(4)));
+                () => { SafeExecute(() => SetWeatherByType(3)); _notificationService?.ShowNotification(HotkeyActions.WindyRainWeather); });
+            _hotkeyManager.RegisterAction(HotkeyActions.FoggyWeather, () => { SafeExecute(() => SetWeatherByType(4)); _notificationService?.ShowNotification(HotkeyActions.FoggyWeather); });
             _hotkeyManager.RegisterAction(HotkeyActions.FlatCloudsWeather,
-                () => SafeExecute(() => SetWeatherByType(6)));
+                () => { SafeExecute(() => SetWeatherByType(6)); _notificationService?.ShowNotification(HotkeyActions.FlatCloudsWeather); });
             _hotkeyManager.RegisterAction(HotkeyActions.WindyPuffyClouds,
-                () => SafeExecute(() => SetWeatherByType(12)));
+                () => { SafeExecute(() => SetWeatherByType(12)); _notificationService?.ShowNotification(HotkeyActions.WindyPuffyClouds); });
             _hotkeyManager.RegisterAction(HotkeyActions.RainyHeavyFog,
-                () => SafeExecute(() => SetWeatherByType(15)));
+                () => { SafeExecute(() => SetWeatherByType(15)); _notificationService?.ShowNotification(HotkeyActions.RainyHeavyFog); });
             _hotkeyManager.RegisterAction(HotkeyActions.ScatteredRain,
-                () => SafeExecute(() => SetWeatherByType(17)));
+                () => { SafeExecute(() => SetWeatherByType(17)); _notificationService?.ShowNotification(HotkeyActions.ScatteredRain); });
         }
 
         private void SafeExecute(Action action)

@@ -77,51 +77,58 @@ namespace TarnishedTool
 
             _dlcService = new DlcService(_memoryService);
 
+            // Create notification service
+            IHotkeyNotificationService hotkeyNotificationService = new HotkeyNotificationService();
+
             PlayerViewModel playerViewModel = new PlayerViewModel(
                 playerService, _stateService, hotkeyManager,
                 eventService, spEffectService, emevdService,
-                _dlcService, ezStateService, gameTickService, paramService
+                _dlcService, ezStateService, gameTickService, paramService,
+                hotkeyNotificationService
             );
 
             TravelViewModel travelViewModel = new TravelViewModel(
                 travelService, eventService, _stateService,
                 _dlcService, emevdService, playerService,
-                gameTickService, hotkeyManager
+                gameTickService, hotkeyManager, hotkeyNotificationService
             );
 
             EnemyViewModel enemyViewModel = new EnemyViewModel(
                 enemyService, _stateService, hotkeyManager, emevdService,
                 _dlcService, spEffectService, paramService, playerService,
-                eventService, reminderService, travelService, chrInsService
+                eventService, reminderService, travelService, chrInsService,
+                hotkeyNotificationService
             );
 
             TargetViewModel targetViewModel = new TargetViewModel(
                 targetService, _stateService, enemyService,
                 attackInfoService, hotkeyManager, spEffectService,
-                emevdService, gameTickService, aiWindowService
+                emevdService, gameTickService, aiWindowService,
+                hotkeyNotificationService
             );
 
             EventViewModel eventViewModel = new EventViewModel(
                 eventService, _stateService, itemService, _dlcService,
                 ezStateService, emevdService, hotkeyManager,
-                utilityService, eventLogReader
+                utilityService, eventLogReader, hotkeyNotificationService
             );
 
             UtilityViewModel utilityViewModel = new UtilityViewModel(
                 utilityService, _stateService, ezStateService,
                 playerService, hotkeyManager, playerViewModel,
-                _dlcService, spEffectService, flaskService, paramService
+                _dlcService, spEffectService, flaskService, paramService,
+                hotkeyNotificationService
             );
 
             ItemViewModel itemViewModel = new ItemViewModel(
-                itemService, _dlcService, _stateService, eventService, hotkeyManager
+                itemService, _dlcService, _stateService, eventService, hotkeyManager, hotkeyNotificationService
             );
 
             AdvancedViewModel advancedViewModel = new AdvancedViewModel(
                 itemService, _stateService,
                 paramService, paramRepository, spEffectService, playerService,
                 hotkeyManager, gameTickService, reminderService, aiService,
-                utilityService, chrInsService, aiWindowService
+                utilityService, chrInsService, aiWindowService, hotkeyNotificationService
             );
 
             var activateOnLaunchManager = new ActivateOnLaunchManager();

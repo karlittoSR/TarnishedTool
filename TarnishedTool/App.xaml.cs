@@ -6,14 +6,14 @@ namespace TarnishedTool
     /// <summary>
     /// Interaction logic for App.xaml
     /// </summary>
-    public partial class App
+    public partial class App : Application
     {
         
         private static Mutex _mutex;
 
         protected override void OnStartup(StartupEventArgs e)
         {
-            const string appName = "TarnishedTool";
+            const string appName = "TarnishedTool - Karlitto";
 
             _mutex = new Mutex(true, appName, out var createdNew);
 

@@ -122,6 +122,12 @@ public class SettingsManager
     public bool ActivateOnLaunchEnabled { get; set; }
     public string ActivateOnLaunchActionIds { get; set; } = "";
 
+    // Hotkey Notifications
+
+    [DefaultValue(true)] public bool ShowHotkeyNotifications { get; set; }
+    public double NotificationWindowLeft { get; set; }
+    public double NotificationWindowTop { get; set; }
+
 
     private static string SettingsPath => Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),

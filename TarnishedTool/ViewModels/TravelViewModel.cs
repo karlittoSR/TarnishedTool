@@ -24,6 +24,7 @@ namespace TarnishedTool.ViewModels
         private readonly IEmevdService _emevdService;
         private readonly IPlayerService _playerService;
         private readonly IGameTickService _gameTickService;
+        private readonly IHotkeyNotificationService _notificationService;
 
         public SearchableGroupedCollection<string, Grace> Graces { get; }
         public SearchableGroupedCollection<string, BlockWarp> Bosses { get; }
@@ -41,7 +42,7 @@ namespace TarnishedTool.ViewModels
 
         public TravelViewModel(ITravelService travelService, IEventService eventService, IStateService stateService,
             IDlcService dlcService, IEmevdService emevdService, IPlayerService playerService,
-            IGameTickService gameTickService,HotkeyManager hotkeyManager)
+            IGameTickService gameTickService, HotkeyManager hotkeyManager, IHotkeyNotificationService notificationService = null)
         {
             _travelService = travelService;
             _eventService = eventService;
@@ -49,6 +50,7 @@ namespace TarnishedTool.ViewModels
             _dlcService = dlcService;
             _emevdService = emevdService;
             _playerService = playerService;
+            _notificationService = notificationService;
             _gameTickService = gameTickService;
             _hotkeyManager = hotkeyManager;
             
@@ -223,20 +225,20 @@ namespace TarnishedTool.ViewModels
 
         private void RegisterHotkeys()
         {
-            _hotkeyManager.RegisterAction(HotkeyActions.UnlockMainGameMaps, UnlockBaseGameMaps);
-            _hotkeyManager.RegisterAction(HotkeyActions.UnlockDlcMaps, UnlockDlcMaps);
-            _hotkeyManager.RegisterAction(HotkeyActions.UnlockAllMainGameGraces, UnlockMainGameGraces);
-            _hotkeyManager.RegisterAction(HotkeyActions.UnlockAllDlcGraces, UnlockDlcGraces);
-            _hotkeyManager.RegisterAction(HotkeyActions.UnlockAllMainRemembrancesGraces, UnlockBaseArGraces);
-            _hotkeyManager.RegisterAction(HotkeyActions.UnlockAllDlcRemembrancesGraces,UnlockDlcArGraces);
-            _hotkeyManager.RegisterAction(HotkeyActions.UnlockPresetGraces,UnlockGracePreset);
-            _hotkeyManager.RegisterAction(HotkeyActions.ShowAllGraces, () => IsShowAllGracesEnabled = !IsShowAllGracesEnabled );
-            _hotkeyManager.RegisterAction(HotkeyActions.ShowAllMaps, ()  => IsShowAllMapsEnabled = !IsShowAllMapsEnabled );
-            _hotkeyManager.RegisterAction(HotkeyActions.NoMapAcquiredPopup, () => IsNoMapAcquiredPopupsEnabled = !IsNoMapAcquiredPopupsEnabled );
-            _hotkeyManager.RegisterAction(HotkeyActions.WarpToGrace, () => GraceWarp());
-            _hotkeyManager.RegisterAction(HotkeyActions.WarpToBoss, () =>  BossWarp());
-            _hotkeyManager.RegisterAction(HotkeyActions.WarpToCustomLocation,  () => CustomWarp());
-            _hotkeyManager.RegisterAction(HotkeyActions.RestOnWarp,  () => IsRestOnWarpEnabled = !IsRestOnWarpEnabled);
+            _hotkeyManager.RegisterAction(HotkeyActions.UnlockMainGameMaps, () => { UnlockBaseGameMaps(); _notificationService?.ShowNotification(HotkeyActions.UnlockMainGameMaps); });
+            _hotkeyManager.RegisterAction(HotkeyActions.UnlockDlcMaps, () => { UnlockDlcMaps(); _notificationService?.ShowNotification(HotkeyActions.UnlockDlcMaps); });
+            _hotkeyManager.RegisterAction(HotkeyActions.UnlockAllMainGameGraces, () => { UnlockMainGameGraces(); _notificationService?.ShowNotification(HotkeyActions.UnlockAllMainGameGraces); });
+            _hotkeyManager.RegisterAction(HotkeyActions.UnlockAllDlcGraces, () => { UnlockDlcGraces(); _notificationService?.ShowNotification(HotkeyActions.UnlockAllDlcGraces); });
+            _hotkeyManager.RegisterAction(HotkeyActions.UnlockAllMainRemembrancesGraces, () => { UnlockBaseArGraces(); _notificationService?.ShowNotification(HotkeyActions.UnlockAllMainRemembrancesGraces); });
+            _hotkeyManager.RegisterAction(HotkeyActions.UnlockAllDlcRemembrancesGraces, () => { UnlockDlcArGraces(); _notificationService?.ShowNotification(HotkeyActions.UnlockAllDlcRemembrancesGraces); });
+            _hotkeyManager.RegisterAction(HotkeyActions.UnlockPresetGraces, () => { UnlockGracePreset(); _notificationService?.ShowNotification(HotkeyActions.UnlockPresetGraces); });
+            _hotkeyManager.RegisterAction(HotkeyActions.ShowAllGraces, () => { IsShowAllGracesEnabled = !IsShowAllGracesEnabled; _notificationService?.ShowNotification(HotkeyActions.ShowAllGraces, IsShowAllGracesEnabled); });
+            _hotkeyManager.RegisterAction(HotkeyActions.ShowAllMaps, () => { IsShowAllMapsEnabled = !IsShowAllMapsEnabled; _notificationService?.ShowNotification(HotkeyActions.ShowAllMaps, IsShowAllMapsEnabled); });
+            _hotkeyManager.RegisterAction(HotkeyActions.NoMapAcquiredPopup, () => { IsNoMapAcquiredPopupsEnabled = !IsNoMapAcquiredPopupsEnabled; _notificationService?.ShowNotification(HotkeyActions.NoMapAcquiredPopup, IsNoMapAcquiredPopupsEnabled); });
+            _hotkeyManager.RegisterAction(HotkeyActions.WarpToGrace, () => { GraceWarp(); _notificationService?.ShowNotification(HotkeyActions.WarpToGrace); });
+            _hotkeyManager.RegisterAction(HotkeyActions.WarpToBoss, () => { BossWarp(); _notificationService?.ShowNotification(HotkeyActions.WarpToBoss); });
+            _hotkeyManager.RegisterAction(HotkeyActions.WarpToCustomLocation, () => { CustomWarp(); _notificationService?.ShowNotification(HotkeyActions.WarpToCustomLocation); });
+            _hotkeyManager.RegisterAction(HotkeyActions.RestOnWarp, () => { IsRestOnWarpEnabled = !IsRestOnWarpEnabled; _notificationService?.ShowNotification(HotkeyActions.RestOnWarp, IsRestOnWarpEnabled); });
         }
 
         private void OnGameLoaded()

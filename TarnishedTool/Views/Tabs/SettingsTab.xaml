@@ -86,6 +86,25 @@
                     <CheckBox Content="Disable Achievements"
                               IsChecked="{Binding IsDisableAchievementsEnabled}"
                               Margin="0,0,10,0" />
+                    <CheckBox Content="Show Hotkey Notifications"
+                              IsChecked="{Binding ShowHotkeyNotifications}"
+                              Margin="0,0,10,0" />
+                    <Border
+                            Background="#3498db"
+                            CornerRadius="10"
+                            Width="12"
+                            Height="12"
+                            Margin="5,0,10,0"
+                            VerticalAlignment="Center"
+                            ToolTip="Show in-game toast notifications when hotkeys are pressed (e.g., 'No Death ON')"
+                            ToolTipService.InitialShowDelay='100'>
+                            <TextBlock Text="i"
+                                       Foreground="White"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"
+                                       FontWeight="Bold"
+                                       FontSize="10" />
+                        </Border>
                     <Button Content="Activate On Launch"
                             Command="{Binding OpenActivateOnLaunchCommand}" />
                 </StackPanel>

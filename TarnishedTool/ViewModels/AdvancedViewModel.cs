@@ -19,13 +19,13 @@ namespace TarnishedTool.ViewModels;
 public class AdvancedViewModel : BaseViewModel
 {
     private readonly IItemService _itemService;
-    
+
     private readonly ParamEditorViewModel _paramEditorViewModel;
-    
+
     private readonly ISpEffectService _spEffectService;
     private readonly SpEffectViewModel _spEffectViewModel = new();
     private SpEffectsWindow _spEffectsWindow;
-    
+
     private readonly HotkeyManager _hotkeyManager;
     private readonly IGameTickService _gameTickService;
     private readonly IReminderService _reminderService;
@@ -38,14 +38,15 @@ public class AdvancedViewModel : BaseViewModel
     private ParamEditorWindow _paramEditorWindow;
 
     private readonly IPlayerService _playerService;
-    
+    private readonly IHotkeyNotificationService _notificationService;
+
     private bool _hasNotifiedInitialOpen;
 
     public AdvancedViewModel(IItemService itemService, IStateService stateService,
         IParamService paramService, IParamRepository paramRepository, ISpEffectService spEffectService,
         IPlayerService playerService, HotkeyManager hotkeyManager, IGameTickService gameTickService,
         IReminderService reminderService, IAiService aiService, IUtilityService utilityService,
-        IChrInsService chrInsService, IAiWindowService aiWindowService)
+        IChrInsService chrInsService, IAiWindowService aiWindowService, IHotkeyNotificationService notificationService = null)
     {
         _itemService = itemService;
         _spEffectService = spEffectService;
@@ -56,6 +57,7 @@ public class AdvancedViewModel : BaseViewModel
         _aiService = aiService;
         _utilityService = utilityService;
         _hotkeyManager = hotkeyManager;
+        _notificationService = notificationService;
 
         RegisterHotkeys();
 
@@ -174,13 +176,13 @@ public class AdvancedViewModel : BaseViewModel
 
     private void RegisterHotkeys()
     {
-        _hotkeyManager.RegisterAction(HotkeyActions.ApplySpEffect, () => SafeExecute(ApplySpEffect));
-        _hotkeyManager.RegisterAction(HotkeyActions.RemoveSpEffect, () => SafeExecute(RemoveSpEffect));
-        _hotkeyManager.RegisterAction(HotkeyActions.SpawnCustomItem,() => SafeExecute(SpawnWithEquipId));
-        _hotkeyManager.RegisterAction(HotkeyActions.OpenParamPatcher, () => SafeExecute(OpenParamEditor));
-        _hotkeyManager.RegisterAction(HotkeyActions.OpenCharactersList, () => SafeExecute(OpenAiWindow));
-        _hotkeyManager.RegisterAction(HotkeyActions.InjectAiScript, () => SafeExecute(InjectScript));
-        
+        _hotkeyManager.RegisterAction(HotkeyActions.ApplySpEffect, () => { SafeExecute(ApplySpEffect); _notificationService?.ShowNotification(HotkeyActions.ApplySpEffect); });
+        _hotkeyManager.RegisterAction(HotkeyActions.RemoveSpEffect, () => { SafeExecute(RemoveSpEffect); _notificationService?.ShowNotification(HotkeyActions.RemoveSpEffect); });
+        _hotkeyManager.RegisterAction(HotkeyActions.SpawnCustomItem,() => { SafeExecute(SpawnWithEquipId); _notificationService?.ShowNotification(HotkeyActions.SpawnCustomItem); });
+        _hotkeyManager.RegisterAction(HotkeyActions.OpenParamPatcher, () => { SafeExecute(OpenParamEditor); _notificationService?.ShowNotification(HotkeyActions.OpenParamPatcher); });
+        _hotkeyManager.RegisterAction(HotkeyActions.OpenCharactersList, () => { SafeExecute(OpenAiWindow); _notificationService?.ShowNotification(HotkeyActions.OpenCharactersList); });
+        _hotkeyManager.RegisterAction(HotkeyActions.InjectAiScript, () => { SafeExecute(InjectScript); _notificationService?.ShowNotification(HotkeyActions.InjectAiScript); });
+
 
     }
 

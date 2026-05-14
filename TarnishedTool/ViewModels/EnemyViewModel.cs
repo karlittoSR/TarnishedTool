@@ -29,6 +29,7 @@ public class EnemyViewModel : BaseViewModel
     private readonly IReminderService _reminderService;
     private readonly ITravelService _travelService;
     private readonly IChrInsService _chrInsService;
+    private readonly IHotkeyNotificationService _notificationService;
 
     public const uint LionMainBossEntityId = 20000800;
     public const int LionMainBossNpcParamId = 52100088;
@@ -69,7 +70,8 @@ public class EnemyViewModel : BaseViewModel
     public EnemyViewModel(IEnemyService enemyService, IStateService stateService, HotkeyManager hotkeyManager,
         IEmevdService emevdService, IDlcService dlcService, ISpEffectService spEffectService,
         IParamService paramService, IPlayerService playerService, IEventService eventService,
-        IReminderService reminderService, ITravelService travelService, IChrInsService chrInsService)
+        IReminderService reminderService, ITravelService travelService, IChrInsService chrInsService,
+        IHotkeyNotificationService notificationService = null)
     {
         _enemyService = enemyService;
         _hotkeyManager = hotkeyManager;
@@ -82,6 +84,7 @@ public class EnemyViewModel : BaseViewModel
         _reminderService = reminderService;
         _travelService = travelService;
         _chrInsService = chrInsService;
+        _notificationService = notificationService;
 
         stateService.Subscribe(State.Loaded, OnGameLoaded);
         stateService.Subscribe(State.NotLoaded, OnGameNotLoaded);
@@ -397,12 +400,12 @@ public class EnemyViewModel : BaseViewModel
 
     private void RegisterHotkeys()
     {
-        _hotkeyManager.RegisterAction(HotkeyActions.AllNoDeath, () => { IsNoDeathEnabled = !IsNoDeathEnabled; });
-        _hotkeyManager.RegisterAction(HotkeyActions.AllNoDamage, () => { IsNoDamageEnabled = !IsNoDamageEnabled; });
-        _hotkeyManager.RegisterAction(HotkeyActions.AllNoHit, () => { IsNoHitEnabled = !IsNoHitEnabled; });
-        _hotkeyManager.RegisterAction(HotkeyActions.AllNoAttack, () => { IsNoAttackEnabled = !IsNoAttackEnabled; });
-        _hotkeyManager.RegisterAction(HotkeyActions.AllNoMove, () => { IsNoMoveEnabled = !IsNoMoveEnabled; });
-        _hotkeyManager.RegisterAction(HotkeyActions.AllDisableAi, () => { IsDisableAiEnabled = !IsDisableAiEnabled; });
+        _hotkeyManager.RegisterAction(HotkeyActions.AllNoDeath, () => { IsNoDeathEnabled = !IsNoDeathEnabled; _notificationService?.ShowNotification(HotkeyActions.AllNoDeath, IsNoDeathEnabled); });
+        _hotkeyManager.RegisterAction(HotkeyActions.AllNoDamage, () => { IsNoDamageEnabled = !IsNoDamageEnabled; _notificationService?.ShowNotification(HotkeyActions.AllNoDamage, IsNoDamageEnabled); });
+        _hotkeyManager.RegisterAction(HotkeyActions.AllNoHit, () => { IsNoHitEnabled = !IsNoHitEnabled; _notificationService?.ShowNotification(HotkeyActions.AllNoHit, IsNoHitEnabled); });
+        _hotkeyManager.RegisterAction(HotkeyActions.AllNoAttack, () => { IsNoAttackEnabled = !IsNoAttackEnabled; _notificationService?.ShowNotification(HotkeyActions.AllNoAttack, IsNoAttackEnabled); });
+        _hotkeyManager.RegisterAction(HotkeyActions.AllNoMove, () => { IsNoMoveEnabled = !IsNoMoveEnabled; _notificationService?.ShowNotification(HotkeyActions.AllNoMove, IsNoMoveEnabled); });
+        _hotkeyManager.RegisterAction(HotkeyActions.AllDisableAi, () => { IsDisableAiEnabled = !IsDisableAiEnabled; _notificationService?.ShowNotification(HotkeyActions.AllDisableAi, IsDisableAiEnabled); });
         _hotkeyManager.RegisterAction(HotkeyActions.AllTargetingView,
             () => { IsTargetingViewEnabled = !IsTargetingViewEnabled; });
         _hotkeyManager.RegisterAction(HotkeyActions.ForceEbActSequence, () => SafeExecute(ForceEbActSequence));

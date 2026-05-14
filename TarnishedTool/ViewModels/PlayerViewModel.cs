@@ -36,6 +36,7 @@ namespace TarnishedTool.ViewModels
         private readonly IDlcService _dlcService;
         private readonly IEzStateService _ezStateService;
         private readonly IGameTickService _gameTickService;
+        private readonly IHotkeyNotificationService _notificationService;
 
         public static readonly long[] NewGameEventIds = [50, 51, 52, 53, 54, 55, 56, 57];
 
@@ -63,7 +64,7 @@ namespace TarnishedTool.ViewModels
         public PlayerViewModel(IPlayerService playerService, IStateService stateService, HotkeyManager hotkeyManager,
             IEventService eventService, ISpEffectService spEffectService, IEmevdService emevdService,
             IDlcService dlcService, IEzStateService ezStateService, IGameTickService gameTickService,
-            IParamService paramService)
+            IParamService paramService, IHotkeyNotificationService notificationService = null)
         {
             _playerService = playerService;
             _hotkeyManager = hotkeyManager;
@@ -74,6 +75,7 @@ namespace TarnishedTool.ViewModels
             _ezStateService = ezStateService;
             _gameTickService = gameTickService;
             _paramService = paramService;
+            _notificationService = notificationService;
 
             RegisterHotkeys();
 
@@ -812,27 +814,27 @@ namespace TarnishedTool.ViewModels
         {
             _hotkeyManager.RegisterAction(HotkeyActions.SetRfbs, SetRfbs);
             _hotkeyManager.RegisterAction(HotkeyActions.SetMaxHp, SetMaxHp);
-            _hotkeyManager.RegisterAction(HotkeyActions.SavePos1, () => SavePosition(0));
-            _hotkeyManager.RegisterAction(HotkeyActions.SavePos2, () => SavePosition(1));
-            _hotkeyManager.RegisterAction(HotkeyActions.RestorePos1, () => RestorePosition(0));
-            _hotkeyManager.RegisterAction(HotkeyActions.RestorePos2, () => RestorePosition(1));
+            _hotkeyManager.RegisterAction(HotkeyActions.SavePos1, () => { SavePosition(0); _notificationService?.ShowNotification(HotkeyActions.SavePos1); });
+            _hotkeyManager.RegisterAction(HotkeyActions.SavePos2, () => { SavePosition(1); _notificationService?.ShowNotification(HotkeyActions.SavePos2); });
+            _hotkeyManager.RegisterAction(HotkeyActions.RestorePos1, () => { RestorePosition(0); _notificationService?.ShowNotification(HotkeyActions.RestorePos1); });
+            _hotkeyManager.RegisterAction(HotkeyActions.RestorePos2, () => { RestorePosition(1); _notificationService?.ShowNotification(HotkeyActions.RestorePos2); });
             _hotkeyManager.RegisterAction(HotkeyActions.NoDeath,
-                () => { IsNoDeathEnabled = !IsNoDeathEnabled; });
+                () => { IsNoDeathEnabled = !IsNoDeathEnabled; _notificationService?.ShowNotification(HotkeyActions.NoDeath, IsNoDeathEnabled); });
             _hotkeyManager.RegisterAction(HotkeyActions.NoDamage,
-                () => { IsNoDamageEnabled = !IsNoDamageEnabled; });
+                () => { IsNoDamageEnabled = !IsNoDamageEnabled; _notificationService?.ShowNotification(HotkeyActions.NoDamage, IsNoDamageEnabled); });
             _hotkeyManager.RegisterAction(HotkeyActions.InfiniteStamina,
-                () => { IsInfiniteStaminaEnabled = !IsInfiniteStaminaEnabled; });
+                () => { IsInfiniteStaminaEnabled = !IsInfiniteStaminaEnabled; _notificationService?.ShowNotification(HotkeyActions.InfiniteStamina, IsInfiniteStaminaEnabled); });
             _hotkeyManager.RegisterAction(HotkeyActions.InfiniteConsumables,
-                () => { IsInfiniteConsumablesEnabled = !IsInfiniteConsumablesEnabled; });
+                () => { IsInfiniteConsumablesEnabled = !IsInfiniteConsumablesEnabled; _notificationService?.ShowNotification(HotkeyActions.InfiniteConsumables, IsInfiniteConsumablesEnabled); });
             _hotkeyManager.RegisterAction(HotkeyActions.InfiniteArrows,
-                () => { IsInfiniteArrowsEnabled = !IsInfiniteArrowsEnabled; });
+                () => { IsInfiniteArrowsEnabled = !IsInfiniteArrowsEnabled; _notificationService?.ShowNotification(HotkeyActions.InfiniteArrows, IsInfiniteArrowsEnabled); });
             _hotkeyManager.RegisterAction(HotkeyActions.InfiniteFp,
-                () => { IsInfiniteFpEnabled = !IsInfiniteFpEnabled; });
-            _hotkeyManager.RegisterAction(HotkeyActions.OneShot, () => { IsOneShotEnabled = !IsOneShotEnabled; });
+                () => { IsInfiniteFpEnabled = !IsInfiniteFpEnabled; _notificationService?.ShowNotification(HotkeyActions.InfiniteFp, IsInfiniteFpEnabled); });
+            _hotkeyManager.RegisterAction(HotkeyActions.OneShot, () => { IsOneShotEnabled = !IsOneShotEnabled; _notificationService?.ShowNotification(HotkeyActions.OneShot, IsOneShotEnabled); });
             _hotkeyManager.RegisterAction(HotkeyActions.InfinitePoise,
-                () => { IsInfinitePoiseEnabled = !IsInfinitePoiseEnabled; });
-            _hotkeyManager.RegisterAction(HotkeyActions.Silent, () => { IsSilentEnabled = !IsSilentEnabled; });
-            _hotkeyManager.RegisterAction(HotkeyActions.Hidden, () => { IsHiddenEnabled = !IsHiddenEnabled; });
+                () => { IsInfinitePoiseEnabled = !IsInfinitePoiseEnabled; _notificationService?.ShowNotification(HotkeyActions.InfinitePoise, IsInfinitePoiseEnabled); });
+            _hotkeyManager.RegisterAction(HotkeyActions.Silent, () => { IsSilentEnabled = !IsSilentEnabled; _notificationService?.ShowNotification(HotkeyActions.Silent, IsSilentEnabled); });
+            _hotkeyManager.RegisterAction(HotkeyActions.Hidden, () => { IsHiddenEnabled = !IsHiddenEnabled; _notificationService?.ShowNotification(HotkeyActions.Hidden, IsHiddenEnabled); });
             _hotkeyManager.RegisterAction(HotkeyActions.TogglePlayerSpeed, ToggleSpeed);
             _hotkeyManager.RegisterAction(HotkeyActions.IncreasePlayerSpeed,
                 () => SetSpeed(Math.Min(10, PlayerSpeed + 0.25f)));
@@ -841,12 +843,12 @@ namespace TarnishedTool.ViewModels
             _hotkeyManager.RegisterAction(HotkeyActions.RuneArc, () => SafeExecute(ApplyRuneArc));
             _hotkeyManager.RegisterAction(HotkeyActions.Rest, () => SafeExecute(Rest));
             _hotkeyManager.RegisterAction(HotkeyActions.PlayerSetCustomHp, SetCustomHp);
-            _hotkeyManager.RegisterAction(HotkeyActions.NoHit, () => { IsNoHitEnabled = !IsNoHitEnabled; });
+            _hotkeyManager.RegisterAction(HotkeyActions.NoHit, () => { IsNoHitEnabled = !IsNoHitEnabled; _notificationService?.ShowNotification(HotkeyActions.NoHit, IsNoHitEnabled); });
             _hotkeyManager.RegisterAction(HotkeyActions.FasterDeath,
                 () => { IsFasterDeathEnabled = !IsFasterDeathEnabled; });
             _hotkeyManager.RegisterAction(HotkeyActions.HealOverTime, () => { IsHotEnabled = !IsHotEnabled; });
             _hotkeyManager.RegisterAction(HotkeyActions.TorrentNoDeath,
-                () => { IsTorrentNoDeathEnabled = !IsTorrentNoDeathEnabled; });
+                () => { IsTorrentNoDeathEnabled = !IsTorrentNoDeathEnabled; _notificationService?.ShowNotification(HotkeyActions.TorrentNoDeath, IsTorrentNoDeathEnabled); });
             _hotkeyManager.RegisterAction(HotkeyActions.TorrentAnywhere,
                 () => { IsTorrentAnywhereEnabled = !IsTorrentAnywhereEnabled; });
             _hotkeyManager.RegisterAction(HotkeyActions.RfbsOnLoad,

@@ -21,6 +21,7 @@ public class ItemViewModel : BaseViewModel
     private readonly IItemService _itemService;
     private readonly IDlcService _dlcService;
     private readonly IEventService _eventService;
+    private readonly IHotkeyNotificationService _notificationService;
 
     private readonly Dictionary<string, List<Item>> _itemsByCategory;
     private readonly List<AshOfWar> _allAshesOfWar;
@@ -34,12 +35,13 @@ public class ItemViewModel : BaseViewModel
     public ItemSelectionViewModel ItemSelection { get; }
 
     public ItemViewModel(IItemService itemService, IDlcService dlcService, IStateService stateService,
-        IEventService eventService, HotkeyManager hotkeyManager)
+        IEventService eventService, HotkeyManager hotkeyManager, IHotkeyNotificationService notificationService = null)
     {
         _itemService = itemService;
         _dlcService = dlcService;
         _eventService = eventService;
         _hotkeyManager = hotkeyManager;
+        _notificationService = notificationService;
 
         RegisterHotkeys();
 
@@ -213,10 +215,10 @@ public class ItemViewModel : BaseViewModel
 
     private void RegisterHotkeys()
     {
-        _hotkeyManager.RegisterAction(HotkeyActions.SpawnItem, () => SpawnItem());
-        _hotkeyManager.RegisterAction(HotkeyActions.SpawnSelectedLoadout, () => SpawnLoadout());
-        _hotkeyManager.RegisterAction(HotkeyActions.MassSpawn, () => MassSpawn());
-        _hotkeyManager.RegisterAction(HotkeyActions.CreateLoadout, () => OpenCreateLoadoutWindow());
+        _hotkeyManager.RegisterAction(HotkeyActions.SpawnItem, () => { SpawnItem(); _notificationService?.ShowNotification(HotkeyActions.SpawnItem); });
+        _hotkeyManager.RegisterAction(HotkeyActions.SpawnSelectedLoadout, () => { SpawnLoadout(); _notificationService?.ShowNotification(HotkeyActions.SpawnSelectedLoadout); });
+        _hotkeyManager.RegisterAction(HotkeyActions.MassSpawn, () => { MassSpawn(); _notificationService?.ShowNotification(HotkeyActions.MassSpawn); });
+        _hotkeyManager.RegisterAction(HotkeyActions.CreateLoadout, () => { OpenCreateLoadoutWindow(); _notificationService?.ShowNotification(HotkeyActions.CreateLoadout); });
     }
 
     private void OnGameLoaded()

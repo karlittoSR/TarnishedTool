@@ -422,6 +422,19 @@ public class SettingsViewModel : BaseViewModel
         }
     }
 
+    private bool _showHotkeyNotifications;
+
+    public bool ShowHotkeyNotifications
+    {
+        get => _showHotkeyNotifications;
+        set
+        {
+            if (!SetProperty(ref _showHotkeyNotifications, value)) return;
+            SettingsManager.Default.ShowHotkeyNotifications = value;
+            SettingsManager.Default.Save();
+        }
+    }
+
     #endregion
 
     #region Public Methods
@@ -501,6 +514,9 @@ public class SettingsViewModel : BaseViewModel
 
         _isHotkeyReminderEnabled = SettingsManager.Default.HotkeyReminder;
         OnPropertyChanged(nameof(IsHotkeyReminderEnabled));
+
+        _showHotkeyNotifications = SettingsManager.Default.ShowHotkeyNotifications;
+        OnPropertyChanged(nameof(ShowHotkeyNotifications));
     }
 
     private void OnGameLoaded()

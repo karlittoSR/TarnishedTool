@@ -39,13 +39,15 @@ namespace TarnishedTool.ViewModels
         private readonly IEmevdService _emevdService;
         private readonly IGameTickService _gameTickService;
         private readonly IAiWindowService _aiWindowService;
+        private readonly IHotkeyNotificationService _notificationService;
 
         private DateTime _forceActSequenceLastExecuted = DateTime.MinValue;
         private static readonly TimeSpan ForceActSequenceCooldown = TimeSpan.FromSeconds(2);
 
         public TargetViewModel(ITargetService targetService, IStateService stateService, IEnemyService enemyService,
             IAttackInfoService attackInfoService, HotkeyManager hotkeyManager, ISpEffectService spEffectService,
-            IEmevdService emevdService, IGameTickService gameTickService, IAiWindowService aiWindowService)
+            IEmevdService emevdService, IGameTickService gameTickService, IAiWindowService aiWindowService,
+            IHotkeyNotificationService notificationService = null)
         {
             _targetService = targetService;
             _enemyService = enemyService;
@@ -58,6 +60,7 @@ namespace TarnishedTool.ViewModels
             _emevdService = emevdService;
             _gameTickService = gameTickService;
             _aiWindowService = aiWindowService;
+            _notificationService = notificationService;
             RegisterHotkeys();
 
             ShowPoise = SettingsManager.Default.ResistancesShowPoise;
@@ -904,79 +907,82 @@ namespace TarnishedTool.ViewModels
         private void RegisterHotkeys()
         {
             _hotkeyManager.RegisterAction(HotkeyActions.EnableTargetOptions,
-                () => { IsTargetOptionsEnabled = !IsTargetOptionsEnabled; });
+                () => { IsTargetOptionsEnabled = !IsTargetOptionsEnabled; _notificationService?.ShowNotification(HotkeyActions.EnableTargetOptions); });
             _hotkeyManager.RegisterAction(HotkeyActions.KillTarget, () =>
-                ExecuteTargetAction(() => SetHp(0)));
+                { ExecuteTargetAction(() => SetHp(0)); _notificationService?.ShowNotification(HotkeyActions.KillTarget); });
             _hotkeyManager.RegisterAction(HotkeyActions.SetTargetMaxHp, () =>
-                ExecuteTargetAction(() => SetHpPercentage(100)));
+                { ExecuteTargetAction(() => SetHpPercentage(100)); _notificationService?.ShowNotification(HotkeyActions.SetTargetMaxHp); });
             _hotkeyManager.RegisterAction(HotkeyActions.SetTargetCustomHp, () =>
-                ExecuteTargetAction(() => SetHp(CustomHp)));
+                { ExecuteTargetAction(() => SetHp(CustomHp)); _notificationService?.ShowNotification(HotkeyActions.SetTargetCustomHp); });
             _hotkeyManager.RegisterAction(HotkeyActions.ShowAllResistances, () =>
             {
                 if (!IsTargetOptionsEnabled) IsTargetOptionsEnabled = true;
                 _showAllResistances = !_showAllResistances;
                 UpdateResistancesDisplay();
+                _notificationService?.ShowNotification(HotkeyActions.ShowAllResistances);
             });
             _hotkeyManager.RegisterAction(HotkeyActions.FreezeTargetHp,
-                () => ExecuteTargetAction(() => IsFreezeHealthEnabled = !IsFreezeHealthEnabled));
+                () => { ExecuteTargetAction(() => IsFreezeHealthEnabled = !IsFreezeHealthEnabled); _notificationService?.ShowNotification(HotkeyActions.FreezeTargetHp); });
             _hotkeyManager.RegisterAction(HotkeyActions.IncreaseTargetSpeed, () =>
-                ExecuteTargetAction(() => SetSpeed(Math.Min(5, TargetSpeed + 0.25f))));
+                { ExecuteTargetAction(() => SetSpeed(Math.Min(5, TargetSpeed + 0.25f))); _notificationService?.ShowNotification(HotkeyActions.IncreaseTargetSpeed); });
             _hotkeyManager.RegisterAction(HotkeyActions.DecreaseTargetSpeed, () =>
-                ExecuteTargetAction(() => SetSpeed(Math.Max(0, TargetSpeed - 0.25f))));
+                { ExecuteTargetAction(() => SetSpeed(Math.Max(0, TargetSpeed - 0.25f))); _notificationService?.ShowNotification(HotkeyActions.DecreaseTargetSpeed); });
             _hotkeyManager.RegisterAction(HotkeyActions.ToggleTargetSpeed, () =>
-                ExecuteTargetAction(ToggleTargetSpeed));
+                { ExecuteTargetAction(ToggleTargetSpeed); _notificationService?.ShowNotification(HotkeyActions.ToggleTargetSpeed); });
             _hotkeyManager.RegisterAction(HotkeyActions.IncrementForceAct, () =>
                 ExecuteTargetAction(() =>
                 {
                     if (ForceAct + 1 > 99) ForceAct = 0;
                     else ForceAct += 1;
+                    _notificationService?.ShowNotification(HotkeyActions.IncrementForceAct);
                 }));
             _hotkeyManager.RegisterAction(HotkeyActions.DecrementForceAct, () =>
                 ExecuteTargetAction(() =>
                 {
                     if (ForceAct - 1 < 0) ForceAct = 99;
                     else ForceAct -= 1;
+                    _notificationService?.ShowNotification(HotkeyActions.DecrementForceAct);
                 }));
 
             _hotkeyManager.RegisterAction(HotkeyActions.SetForceActToZero, () =>
-                ExecuteTargetAction(() => ForceAct = 0));
+                { ExecuteTargetAction(() => ForceAct = 0); _notificationService?.ShowNotification(HotkeyActions.SetForceActToZero); });
             _hotkeyManager.RegisterAction(HotkeyActions.DisableTargetAi,
-                () => ExecuteTargetAction(() => IsFreezeAiEnabled = !IsFreezeAiEnabled));
+                () => { ExecuteTargetAction(() => IsFreezeAiEnabled = !IsFreezeAiEnabled); _notificationService?.ShowNotification(HotkeyActions.DisableTargetAi); });
             _hotkeyManager.RegisterAction(HotkeyActions.DisableAllExceptTargetAi,
-                () => ExecuteTargetAction(() => IsDisableAllExceptTargetEnabled = !IsDisableAllExceptTargetEnabled));
+                () => { ExecuteTargetAction(() => IsDisableAllExceptTargetEnabled = !IsDisableAllExceptTargetEnabled); _notificationService?.ShowNotification(HotkeyActions.DisableAllExceptTargetAi); });
             _hotkeyManager.RegisterAction(HotkeyActions.TargetNoStagger,
-                () => ExecuteTargetAction(() => IsNoStaggerEnabled = !IsNoStaggerEnabled));
+                () => { ExecuteTargetAction(() => IsNoStaggerEnabled = !IsNoStaggerEnabled); _notificationService?.ShowNotification(HotkeyActions.TargetNoStagger); });
             _hotkeyManager.RegisterAction(HotkeyActions.TargetRepeatAct,
-                () => ExecuteTargetAction(() => IsRepeatActEnabled = !IsRepeatActEnabled));
+                () => { ExecuteTargetAction(() => IsRepeatActEnabled = !IsRepeatActEnabled); _notificationService?.ShowNotification(HotkeyActions.TargetRepeatAct); });
             _hotkeyManager.RegisterAction(HotkeyActions.TargetTargetingView,
-                () => ExecuteTargetAction(() => IsTargetingViewEnabled = !IsTargetingViewEnabled));
+                () => { ExecuteTargetAction(() => IsTargetingViewEnabled = !IsTargetingViewEnabled); _notificationService?.ShowNotification(HotkeyActions.TargetTargetingView); });
             _hotkeyManager.RegisterAction(HotkeyActions.ShowAttackInfo,
-                () => ExecuteWindowAction(() => IsShowAttackInfoEnabled = !IsShowAttackInfoEnabled));
+                () => { ExecuteWindowAction(() => IsShowAttackInfoEnabled = !IsShowAttackInfoEnabled); _notificationService?.ShowNotification(HotkeyActions.ShowAttackInfo); });
             _hotkeyManager.RegisterAction(HotkeyActions.ShowDefenses,
-                () => ExecuteWindowAction(() => IsShowDefensesEnabled = !IsShowDefensesEnabled));
+                () => { ExecuteWindowAction(() => IsShowDefensesEnabled = !IsShowDefensesEnabled); _notificationService?.ShowNotification(HotkeyActions.ShowDefenses); });
             _hotkeyManager.RegisterAction(HotkeyActions.ShowTargetSpEffects,
-                () => ExecuteWindowAction(() => IsShowSpEffectEnabled = !IsShowSpEffectEnabled));
+                () => { ExecuteWindowAction(() => IsShowSpEffectEnabled = !IsShowSpEffectEnabled); _notificationService?.ShowNotification(HotkeyActions.ShowTargetSpEffects); });
             _hotkeyManager.RegisterAction(HotkeyActions.TargetNoMove,
-                () => ExecuteTargetAction(() => IsNoMoveEnabled = !IsNoMoveEnabled));
+                () => { ExecuteTargetAction(() => IsNoMoveEnabled = !IsNoMoveEnabled); _notificationService?.ShowNotification(HotkeyActions.TargetNoMove); });
             _hotkeyManager.RegisterAction(HotkeyActions.TargetNoAttack,
-                () => ExecuteTargetAction(() => IsNoAttackEnabled = !IsNoAttackEnabled));
+                () => { ExecuteTargetAction(() => IsNoAttackEnabled = !IsNoAttackEnabled); _notificationService?.ShowNotification(HotkeyActions.TargetNoAttack); });
             _hotkeyManager.RegisterAction(HotkeyActions.PopoutResistances,
-                () => ExecuteWindowAction(() => IsResistancesWindowOpen = !IsResistancesWindowOpen));
+                () => { ExecuteWindowAction(() => IsResistancesWindowOpen = !IsResistancesWindowOpen); _notificationService?.ShowNotification(HotkeyActions.PopoutResistances); });
             _hotkeyManager.RegisterAction(HotkeyActions.ForceActSequence,
-                () => ExecuteTargetAction(ForceActSequence));
+                () => { ExecuteTargetAction(ForceActSequence); _notificationService?.ShowNotification(HotkeyActions.ForceActSequence); });
             _hotkeyManager.RegisterAction(HotkeyActions.KillAllExceptTarget,
-                () => ExecuteTargetAction(KillAllBesidesTarget));
+                () => { ExecuteTargetAction(KillAllBesidesTarget); _notificationService?.ShowNotification(HotkeyActions.KillAllExceptTarget); });
             _hotkeyManager.RegisterAction(HotkeyActions.ResetTargetPosition,
-                () => ExecuteTargetAction(ResetPosition));
-            _hotkeyManager.RegisterAction(HotkeyActions.TogglePoise, () => ShowPoise = !ShowPoise);
-            _hotkeyManager.RegisterAction(HotkeyActions.ToggleSleep, () => ShowSleep = !ShowSleep);
-            _hotkeyManager.RegisterAction(HotkeyActions.TogglePoison, () => ShowPoison = !ShowPoison);
-            _hotkeyManager.RegisterAction(HotkeyActions.ToggleRot, () => ShowRot = !ShowRot);
-            _hotkeyManager.RegisterAction(HotkeyActions.ToggleFrost, () => ShowFrost = !ShowFrost);
-            _hotkeyManager.RegisterAction(HotkeyActions.ToggleBleed, () => ShowBleed = !ShowBleed);
-            _hotkeyManager.RegisterAction(HotkeyActions.AiInfo, () => ExecuteTargetAction(OpenAiWindow));
-            _hotkeyManager.RegisterAction(HotkeyActions.ToggleMadness, () => ShowMadness = !ShowMadness);
-            _hotkeyManager.RegisterAction(HotkeyActions.ToggleDeathblight, () => ShowDeathBlight = !ShowDeathBlight);
+                () => { ExecuteTargetAction(ResetPosition); _notificationService?.ShowNotification(HotkeyActions.ResetTargetPosition); });
+            _hotkeyManager.RegisterAction(HotkeyActions.TogglePoise, () => { ShowPoise = !ShowPoise; _notificationService?.ShowNotification(HotkeyActions.TogglePoise); });
+            _hotkeyManager.RegisterAction(HotkeyActions.ToggleSleep, () => { ShowSleep = !ShowSleep; _notificationService?.ShowNotification(HotkeyActions.ToggleSleep); });
+            _hotkeyManager.RegisterAction(HotkeyActions.TogglePoison, () => { ShowPoison = !ShowPoison; _notificationService?.ShowNotification(HotkeyActions.TogglePoison); });
+            _hotkeyManager.RegisterAction(HotkeyActions.ToggleRot, () => { ShowRot = !ShowRot; _notificationService?.ShowNotification(HotkeyActions.ToggleRot); });
+            _hotkeyManager.RegisterAction(HotkeyActions.ToggleFrost, () => { ShowFrost = !ShowFrost; _notificationService?.ShowNotification(HotkeyActions.ToggleFrost); });
+            _hotkeyManager.RegisterAction(HotkeyActions.ToggleBleed, () => { ShowBleed = !ShowBleed; _notificationService?.ShowNotification(HotkeyActions.ToggleBleed); });
+            _hotkeyManager.RegisterAction(HotkeyActions.AiInfo, () => { ExecuteTargetAction(OpenAiWindow); _notificationService?.ShowNotification(HotkeyActions.AiInfo); });
+            _hotkeyManager.RegisterAction(HotkeyActions.ToggleMadness, () => { ShowMadness = !ShowMadness; _notificationService?.ShowNotification(HotkeyActions.ToggleMadness); });
+            _hotkeyManager.RegisterAction(HotkeyActions.ToggleDeathblight, () => { ShowDeathBlight = !ShowDeathBlight; _notificationService?.ShowNotification(HotkeyActions.ToggleDeathblight); });
         }
 
         private void ExecuteTargetAction(Action action)
