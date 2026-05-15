@@ -26,6 +26,11 @@ namespace TarnishedTool
         private readonly IStateService _stateService;
         private readonly IDlcService _dlcService;
         private readonly AoBScanner _aobScanner;
+        private HookManager _hookManager;
+
+        private PlayerViewModel _playerViewModel;
+        private EnemyViewModel _enemyViewModel;
+        private UtilityViewModel _utilityViewModel;
 
         private readonly DispatcherTimer _gameLoadedTimer;
 
@@ -47,22 +52,22 @@ namespace TarnishedTool
             _aobScanner = new AoBScanner(_memoryService);
             _stateService = new StateService(_memoryService);
 
-            var hookManager = new HookManager(_memoryService, _stateService);
+            _hookManager = new HookManager(_memoryService, _stateService);
             var hotkeyManager = new HotkeyManager(_memoryService);
 
-            IActionRequestService actionRequestService = new ActionRequestService(_memoryService, hookManager);
+            IActionRequestService actionRequestService = new ActionRequestService(_memoryService, _hookManager);
             IParamService paramService = new ParamService(_memoryService);
-            IReminderService reminderService = new ReminderService(_memoryService, hookManager, _stateService);
+            IReminderService reminderService = new ReminderService(_memoryService, _hookManager, _stateService);
             IChrInsService chrInsService = new ChrInsService(_memoryService);
-            ITravelService travelService = new TravelService(_memoryService, hookManager);
+            ITravelService travelService = new TravelService(_memoryService, _hookManager);
             IPlayerService playerService =
-                new PlayerService(_memoryService, hookManager, travelService, reminderService, paramService, chrInsService, actionRequestService);
-            IUtilityService utilityService = new UtilityService(_memoryService, hookManager, playerService, actionRequestService);
-            IEventService eventService = new EventService(_memoryService, hookManager, reminderService);
-            IAttackInfoService attackInfoService = new AttackInfoService(_memoryService, hookManager);
+                new PlayerService(_memoryService, _hookManager, travelService, reminderService, paramService, chrInsService, actionRequestService);
+            IUtilityService utilityService = new UtilityService(_memoryService, _hookManager, playerService, actionRequestService);
+            IEventService eventService = new EventService(_memoryService, _hookManager, reminderService);
+            IAttackInfoService attackInfoService = new AttackInfoService(_memoryService, _hookManager);
             ITargetService targetService =
-                new TargetService(_memoryService, hookManager, playerService, reminderService, chrInsService);
-            IEnemyService enemyService = new EnemyService(_memoryService, hookManager, reminderService);
+                new TargetService(_memoryService, _hookManager, playerService, reminderService, chrInsService);
+            IEnemyService enemyService = new EnemyService(_memoryService, _hookManager, reminderService);
             ISettingsService settingsService = new SettingsService(_memoryService);
             IEzStateService ezStateService = new EzStateService(_memoryService);
             IItemService itemService = new ItemService(_memoryService);
@@ -86,6 +91,7 @@ namespace TarnishedTool
                 _dlcService, ezStateService, gameTickService, paramService,
                 hotkeyNotificationService
             );
+            _playerViewModel = playerViewModel;
 
             TravelViewModel travelViewModel = new TravelViewModel(
                 travelService, eventService, _stateService,
@@ -99,6 +105,7 @@ namespace TarnishedTool
                 eventService, reminderService, travelService, chrInsService,
                 hotkeyNotificationService
             );
+            _enemyViewModel = enemyViewModel;
 
             TargetViewModel targetViewModel = new TargetViewModel(
                 targetService, _stateService, enemyService,
@@ -119,6 +126,7 @@ namespace TarnishedTool
                 _dlcService, spEffectService, flaskService, paramService,
                 hotkeyNotificationService
             );
+            _utilityViewModel = utilityViewModel;
 
             ItemViewModel itemViewModel = new ItemViewModel(
                 itemService, _dlcService, _stateService, eventService, hotkeyManager, hotkeyNotificationService
@@ -199,6 +207,10 @@ namespace TarnishedTool
                 IsAttachedText.Foreground = (SolidColorBrush)Application.Current.Resources["AttachedBrush"];
 
                 LaunchGameButton.IsEnabled = false;
+                DetachButton.Visibility = Visibility.Visible;
+                // Only enable Detach when the player is actually in-world (WorldChrMan.PlayerIns != 0).
+                // Prevents writing to null pointers on the main menu after a quitout.
+                DetachButton.IsEnabled = _loaded;
 
                 if (!_attachedTime.HasValue)
                 {
@@ -272,6 +284,8 @@ namespace TarnishedTool
                 IsAttachedText.Text = "Not attached";
                 IsAttachedText.Foreground = (SolidColorBrush)Application.Current.Resources["NotAttachedBrush"];
                 LaunchGameButton.IsEnabled = true;
+                DetachButton.Visibility = Visibility.Collapsed;
+                DetachButton.IsEnabled = false;
             }
         }
 
@@ -292,6 +306,35 @@ namespace TarnishedTool
             SettingsManager.Default.WindowLeft = bounds.Left;
             SettingsManager.Default.WindowTop = bounds.Top;
             SettingsManager.Default.Save();
+
+            // On close (red X / Alt+F4), perform the same cleanup as the Detach button
+            // so the game is left in a clean vanilla state.
+            if (_memoryService.IsAttached)
+            {
+                try
+                {
+                    if (_loaded)
+                    {
+                        _playerViewModel.ResetToggles();
+                        _enemyViewModel.ResetToggles();
+                        _utilityViewModel.ResetToggles();
+                    }
+
+                    _hookManager.UninstallAllHooks();
+
+                    if (CodeCaveOffsets.Base != IntPtr.Zero)
+                    {
+                        _memoryService.FreeMem(CodeCaveOffsets.Base);
+                        CodeCaveOffsets.Base = IntPtr.Zero;
+                    }
+
+                    _memoryService.ManualDetach();
+                }
+                catch
+                {
+                    // Best-effort cleanup on exit — never block the close
+                }
+            }
         }
 
         private static bool IsOnVisibleScreen(double left, double top)
@@ -308,7 +351,67 @@ namespace TarnishedTool
                    && top < vBottom - minVisibleY;
         }
 
-        private void LaunchGame_Click(object sender, RoutedEventArgs e) => Task.Run(ExeManager.LaunchGame);
+        private void LaunchGame_Click(object sender, RoutedEventArgs e)
+        {
+            _memoryService.EnableAutoAttach();
+            Task.Run(ExeManager.LaunchGame);
+        }
+
+        private void Detach_Click(object sender, RoutedEventArgs e)
+        {
+            if (!_memoryService.IsAttached) return;
+
+            try
+            {
+                // Only write vanilla values back to memory when the game world is loaded (player pointer valid).
+                // On the main menu after a quitout the pointers are null and writing would crash.
+                if (_loaded)
+                {
+                    _playerViewModel.ResetToggles();
+                    _enemyViewModel.ResetToggles();
+                    _utilityViewModel.ResetToggles();
+                }
+
+                // Uninstall all hooks to restore game code to vanilla state
+                _hookManager.UninstallAllHooks();
+
+                // Free the code cave memory
+                if (CodeCaveOffsets.Base != IntPtr.Zero)
+                {
+                    _memoryService.FreeMem(CodeCaveOffsets.Base);
+                    CodeCaveOffsets.Base = IntPtr.Zero;
+                }
+
+                // Manually detach and prevent auto-reattachment
+                _memoryService.ManualDetach();
+
+                // Always reset UI toggles so checkboxes reflect vanilla state,
+                // even when memory writes were skipped (e.g. main menu after quitout).
+                if (!_loaded)
+                {
+                    _playerViewModel.ResetToggles();
+                    _enemyViewModel.ResetToggles();
+                    _utilityViewModel.ResetToggles();
+                }
+
+                // Reset the attached state flags
+                _hasAllocatedMemory = false;
+                _appliedOneTimeFeatures = false;
+                _hasPublishedLoaded = false;
+                _hasPublishedFadedIn = false;
+                _hasCheckedPatch = false;
+                _loaded = false;
+                _attachedTime = null;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    $"Error during detach: {ex.Message}",
+                    "Detach Error",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+            }
+        }
 
         private void CheckUpdate_Click(object sender, RoutedEventArgs e) =>
             VersionChecker.CheckForUpdates(this, true);

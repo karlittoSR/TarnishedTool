@@ -337,19 +337,16 @@ namespace TarnishedTool.Services
 
         public void ToggleDebugFlag(int offset, bool isEnabled, bool needsReminder = false)
         {
-            if (needsReminder) reminderService.TrySetReminder();
             memoryService.Write(ChrDbgFlags.Base + offset, isEnabled);
         }
 
         public void ToggleNoDamage(bool isNoDamageEnabled)
         {
-            reminderService.TrySetReminder();
             chrInsService.ToggleNoDamage(GetPlayerIns(), isNoDamageEnabled);
         }
 
         public void ToggleNoHit(bool isNoHitEnabled)
         {
-            reminderService.TrySetReminder();
             memoryService.SetBitValue(GetChrInsFlagsPtr(), (int)ChrIns.ChrInsFlags.NoHit, isNoHitEnabled);
         }
 

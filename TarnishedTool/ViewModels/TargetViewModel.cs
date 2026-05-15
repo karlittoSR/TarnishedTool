@@ -947,25 +947,25 @@ namespace TarnishedTool.ViewModels
             _hotkeyManager.RegisterAction(HotkeyActions.SetForceActToZero, () =>
                 { ExecuteTargetAction(() => ForceAct = 0); _notificationService?.ShowNotification(HotkeyActions.SetForceActToZero); });
             _hotkeyManager.RegisterAction(HotkeyActions.DisableTargetAi,
-                () => { ExecuteTargetAction(() => IsFreezeAiEnabled = !IsFreezeAiEnabled); _notificationService?.ShowNotification(HotkeyActions.DisableTargetAi); });
+                () => { ExecuteTargetAction(() => IsFreezeAiEnabled = !IsFreezeAiEnabled); _notificationService?.ShowNotification(HotkeyActions.DisableTargetAi, IsFreezeAiEnabled); });
             _hotkeyManager.RegisterAction(HotkeyActions.DisableAllExceptTargetAi,
-                () => { ExecuteTargetAction(() => IsDisableAllExceptTargetEnabled = !IsDisableAllExceptTargetEnabled); _notificationService?.ShowNotification(HotkeyActions.DisableAllExceptTargetAi); });
+                () => { ExecuteTargetAction(() => IsDisableAllExceptTargetEnabled = !IsDisableAllExceptTargetEnabled); _notificationService?.ShowNotification(HotkeyActions.DisableAllExceptTargetAi, IsDisableAllExceptTargetEnabled); });
             _hotkeyManager.RegisterAction(HotkeyActions.TargetNoStagger,
-                () => { ExecuteTargetAction(() => IsNoStaggerEnabled = !IsNoStaggerEnabled); _notificationService?.ShowNotification(HotkeyActions.TargetNoStagger); });
+                () => { ExecuteTargetAction(() => IsNoStaggerEnabled = !IsNoStaggerEnabled); _notificationService?.ShowNotification(HotkeyActions.TargetNoStagger, IsNoStaggerEnabled); });
             _hotkeyManager.RegisterAction(HotkeyActions.TargetRepeatAct,
-                () => { ExecuteTargetAction(() => IsRepeatActEnabled = !IsRepeatActEnabled); _notificationService?.ShowNotification(HotkeyActions.TargetRepeatAct); });
+                () => { ExecuteTargetAction(() => IsRepeatActEnabled = !IsRepeatActEnabled); _notificationService?.ShowNotification(HotkeyActions.TargetRepeatAct, IsRepeatActEnabled); });
             _hotkeyManager.RegisterAction(HotkeyActions.TargetTargetingView,
-                () => { ExecuteTargetAction(() => IsTargetingViewEnabled = !IsTargetingViewEnabled); _notificationService?.ShowNotification(HotkeyActions.TargetTargetingView); });
+                () => { ExecuteTargetAction(() => IsTargetingViewEnabled = !IsTargetingViewEnabled); _notificationService?.ShowNotification(HotkeyActions.TargetTargetingView, IsTargetingViewEnabled); });
             _hotkeyManager.RegisterAction(HotkeyActions.ShowAttackInfo,
-                () => { ExecuteWindowAction(() => IsShowAttackInfoEnabled = !IsShowAttackInfoEnabled); _notificationService?.ShowNotification(HotkeyActions.ShowAttackInfo); });
+                () => { ExecuteWindowAction(() => IsShowAttackInfoEnabled = !IsShowAttackInfoEnabled); _notificationService?.ShowNotification(HotkeyActions.ShowAttackInfo, IsShowAttackInfoEnabled); });
             _hotkeyManager.RegisterAction(HotkeyActions.ShowDefenses,
-                () => { ExecuteWindowAction(() => IsShowDefensesEnabled = !IsShowDefensesEnabled); _notificationService?.ShowNotification(HotkeyActions.ShowDefenses); });
+                () => { ExecuteWindowAction(() => IsShowDefensesEnabled = !IsShowDefensesEnabled); _notificationService?.ShowNotification(HotkeyActions.ShowDefenses, IsShowDefensesEnabled); });
             _hotkeyManager.RegisterAction(HotkeyActions.ShowTargetSpEffects,
-                () => { ExecuteWindowAction(() => IsShowSpEffectEnabled = !IsShowSpEffectEnabled); _notificationService?.ShowNotification(HotkeyActions.ShowTargetSpEffects); });
+                () => { ExecuteWindowAction(() => IsShowSpEffectEnabled = !IsShowSpEffectEnabled); _notificationService?.ShowNotification(HotkeyActions.ShowTargetSpEffects, IsShowSpEffectEnabled); });
             _hotkeyManager.RegisterAction(HotkeyActions.TargetNoMove,
-                () => { ExecuteTargetAction(() => IsNoMoveEnabled = !IsNoMoveEnabled); _notificationService?.ShowNotification(HotkeyActions.TargetNoMove); });
+                () => { ExecuteTargetAction(() => IsNoMoveEnabled = !IsNoMoveEnabled); _notificationService?.ShowNotification(HotkeyActions.TargetNoMove, IsNoMoveEnabled); });
             _hotkeyManager.RegisterAction(HotkeyActions.TargetNoAttack,
-                () => { ExecuteTargetAction(() => IsNoAttackEnabled = !IsNoAttackEnabled); _notificationService?.ShowNotification(HotkeyActions.TargetNoAttack); });
+                () => { ExecuteTargetAction(() => IsNoAttackEnabled = !IsNoAttackEnabled); _notificationService?.ShowNotification(HotkeyActions.TargetNoAttack, IsNoAttackEnabled); });
             _hotkeyManager.RegisterAction(HotkeyActions.PopoutResistances,
                 () => { ExecuteWindowAction(() => IsResistancesWindowOpen = !IsResistancesWindowOpen); _notificationService?.ShowNotification(HotkeyActions.PopoutResistances); });
             _hotkeyManager.RegisterAction(HotkeyActions.ForceActSequence,
@@ -980,7 +980,7 @@ namespace TarnishedTool.ViewModels
             _hotkeyManager.RegisterAction(HotkeyActions.ToggleRot, () => { ShowRot = !ShowRot; _notificationService?.ShowNotification(HotkeyActions.ToggleRot); });
             _hotkeyManager.RegisterAction(HotkeyActions.ToggleFrost, () => { ShowFrost = !ShowFrost; _notificationService?.ShowNotification(HotkeyActions.ToggleFrost); });
             _hotkeyManager.RegisterAction(HotkeyActions.ToggleBleed, () => { ShowBleed = !ShowBleed; _notificationService?.ShowNotification(HotkeyActions.ToggleBleed); });
-            _hotkeyManager.RegisterAction(HotkeyActions.AiInfo, () => { ExecuteTargetAction(OpenAiWindow); _notificationService?.ShowNotification(HotkeyActions.AiInfo); });
+            _hotkeyManager.RegisterAction(HotkeyActions.AiInfo, () => { ExecuteTargetAction(OpenAiWindow); _notificationService?.ShowNotification(HotkeyActions.AiInfo, IsShowAiInfoEnabled); });
             _hotkeyManager.RegisterAction(HotkeyActions.ToggleMadness, () => { ShowMadness = !ShowMadness; _notificationService?.ShowNotification(HotkeyActions.ToggleMadness); });
             _hotkeyManager.RegisterAction(HotkeyActions.ToggleDeathblight, () => { ShowDeathBlight = !ShowDeathBlight; _notificationService?.ShowNotification(HotkeyActions.ToggleDeathblight); });
         }

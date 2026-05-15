@@ -13,7 +13,7 @@ public class ReminderService : IReminderService
 {
     private const uint MessageCategory = 205;
     private const int ReminderEntryIndex = 3;
-    private const string ReminderText = "Tarnished Tool Active";
+    private const string ReminderText = "TarnishedTool - Speedrun Edition";
 
     private bool _hasDoneReminder;
     private readonly IMemoryService _memoryService;
@@ -23,6 +23,7 @@ public class ReminderService : IReminderService
     {
         _memoryService = memoryService;
         _hookManager = hookManager;
+        stateService.Subscribe(State.Loaded, TrySetReminder);
         stateService.Subscribe(State.Detached, OnDetached);
     }
 
@@ -43,7 +44,9 @@ public class ReminderService : IReminderService
 
         InstallHook();
 
-        _memoryService.WriteString(fmg + offset, ReminderText, ReminderText.Length * 2);
+        // +2 to include the UTF-16LE null terminator (\0\0), preventing the game from reading
+        // past our string and concatenating leftover FMG text.
+        _memoryService.WriteString(fmg + offset, ReminderText, ReminderText.Length * 2 + 2);
         _hasDoneReminder = true;
     }
 

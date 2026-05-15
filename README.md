@@ -1,18 +1,35 @@
 <div align="center">
-  <img height="130" alt="Icon" src="https://raw.githubusercontent.com/borgCode/TarnishedTool/9d2a9b050db9ec8dcf3539db7fac6a9f66668949/TarnishedTool/Assets/icon.ico">
-  <h1 style="display: inline; vertical-align: middle; margin-left: 10px;">Tarnished Tool</h1>
+  <img height="130" alt="Icon" src="TarnishedTool/Assets/icon.ico">
+  <h1 style="display: inline; vertical-align: middle; margin-left: 10px;">TarnishedTool — Speedrun Edition</h1>
 </div>
 
-<p>Tarnished Tool is an offline practice tool for Elden Ring mainly catered towards Challenge Runners, Hitless Runners & Speedrunners with support for all game patches (1.02 all the way to 1.16.1) It also provides a bunch of quality of life options for modders.</p>
+<p>A fork of <a href="https://github.com/borgCode/TarnishedTool">Tarnished Tool</a> by borgCode, tailored for speedrun session workflow. Adds clean session management (Detach), richer in-game hotkey feedback, and quality-of-life improvements for runners.</p>
 
-[![Latest Release](https://img.shields.io/github/v/release/borgCode/TarnishedTool.svg)](https://github.com/borgCode/TarnishedTool/releases/latest)
-[![All Releases](https://img.shields.io/github/downloads/borgCode/TarnishedTool/total.svg)](https://github.com/borgCode/TarnishedTool/releases/latest/download/TarnishedTool.exe)
-[![Report Issues](https://img.shields.io/github/issues/borgCode/TarnishedTool.svg)](https://github.com/borgCode/TarnishedTool/issues)
-[![Nexusmods Page](https://img.shields.io/badge/Nexusmods_Page-orange)](https://www.nexusmods.com/eldenring/mods/9277)
+[![Latest Release](https://img.shields.io/github/v/release/karlittoSR/TarnishedTool.svg)](https://github.com/karlittoSR/TarnishedTool/releases/latest)
 
 **This tool is strictly for offline use only, it directly manipulates game memory which violates the Terms of Service and will most likely lead to a ban if you use this online.**
 
-*Whenever specific features that could potentially be used for cheating in challenge runs are enabled, the loading screen title in game will change until the game is exited.*
+*When attached, the loading screen title in game changes to "TarnishedTool - Speedrun Edition".*
+
+## Speedrun Edition — What's New
+
+### Clean Session Management (Detach)
+* **Detach button** — resets all active toggles, uninstalls all hooks, frees the code cave and releases the game process in one click, leaving the game in a vanilla state ready for a run.
+* The Detach button is only enabled when the player is **in-world** (prevents crashes from null pointers on the main menu).
+* **Closing the tool** (red X / Alt+F4) automatically performs the same cleanup — no manual detach needed.
+
+### Hotkey Notifications
+* Every hotkey now shows an **ON / OFF toast notification** (green / red) instead of a generic one-shot popup.
+* All notification labels use human-readable names (no raw enum names).
+* Only one toast is on screen at a time — the latest one always replaces the previous.
+* Notifications are **ON by default**.
+
+### Bug Fixes
+* Fixed loading screen reminder text showing vanilla FMG text appended after the custom string (missing UTF-16LE null terminator).
+* Fixed reminder text not appearing when no player flags were active — it now always writes on every `State.Loaded` event.
+* Fixed a crash when detaching on the main menu (null pointer writes now silently skip in `MemoryService`).
+
+---
 
 ## Features
 This tool offers plenty of features such as:

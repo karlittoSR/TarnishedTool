@@ -743,6 +743,31 @@ namespace TarnishedTool.ViewModels
         public void SetSpiritAsh(int value) => _playerService.SetSpiritAsh(value);
         public void SetSpeed(float value) => PlayerSpeed = value;
 
+        public void ResetToggles()
+        {
+            IsNoDeathEnabled = false;
+            IsNoDamageEnabled = false;
+            IsNoHitEnabled = false;
+            IsInfiniteStaminaEnabled = false;
+            IsInfiniteConsumablesEnabled = false;
+            IsInfiniteArrowsEnabled = false;
+            IsInfiniteFpEnabled = false;
+            IsOneShotEnabled = false;
+            IsInfinitePoiseEnabled = false;
+            IsSilentEnabled = false;
+            IsHiddenEnabled = false;
+            IsTorrentNoDeathEnabled = false;
+            IsTorrentAnywhereEnabled = false;
+            IsNoRuneLossEnabled = false;
+            IsNoRuneArcLossEnabled = false;
+            IsNoRuneGainEnabled = false;
+            IsNoTimePassOnDeathEnabled = false;
+            IsFasterDeathEnabled = false;
+            IsHpLocked = false;
+            IsNoRollEnabled = false;
+            PlayerSpeed = DefaultSpeed;
+        }
+
         #endregion
 
         #region Private Methods
@@ -1028,11 +1053,19 @@ namespace TarnishedTool.ViewModels
 
             if (!IsApproximately(PlayerSpeed, DefaultSpeed))
             {
+                // Currently not at default speed, save current and go back to 1.0
                 _playerDesiredSpeed = PlayerSpeed;
                 SetSpeed(DefaultSpeed);
             }
-            else if (_playerDesiredSpeed >= 0)
+            else
             {
+                // Currently at default speed, toggle to desired speed
+                // If no desired speed set, use saved setting (if valid) or default to 2.0
+                if (_playerDesiredSpeed < 0)
+                {
+                    float savedSpeed = IsRememberSpeedEnabled ? SettingsManager.Default.PlayerSpeed : 0f;
+                    _playerDesiredSpeed = (savedSpeed > DefaultSpeed) ? savedSpeed : 2f;
+                }
                 SetSpeed(_playerDesiredSpeed);
             }
         }

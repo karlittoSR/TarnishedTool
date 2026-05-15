@@ -36,6 +36,8 @@ public interface IMemoryService
 
     nint AllocateMem(uint size);
     void FreeMem(nint addr);
-    
+
     void StartAutoAttach();
+    void ManualDetach();
+    void EnableAutoAttach();
 }

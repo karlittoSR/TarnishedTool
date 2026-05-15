@@ -2,7 +2,7 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:controls="clr-namespace:TarnishedTool.Controls"
-        Title="Tarnished Tool - Karlitto"
+        Title="Tarnished Tool - Speedrun Edition"
         Height="720"
         Width="600"
         Background="{StaticResource BackgroundBrush}"
@@ -20,7 +20,7 @@
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
         
-        <controls:TitleBar Title="Tarnished Tool - Karlitto" />
+        <controls:TitleBar Title="Tarnished Tool - Speedrun Edition" />
 
         <Grid Grid.Row="1" Margin="0,5,0,10">
             <Grid.ColumnDefinitions>
@@ -45,6 +45,12 @@
                         Click="LaunchGame_Click"
                         Margin="0,0,10,0"
                         VerticalAlignment="Center"/>
+                <Button x:Name="DetachButton" Content="Detach"
+                        Click="Detach_Click"
+                        Margin="0,0,10,0"
+                        VerticalAlignment="Center"
+                        Visibility="Collapsed"
+                        ToolTip="Reset all modifications and detach from game (for speedrun sessions)"/>
                 <TextBlock x:Name="IsAttachedText" Text=""
                            HorizontalAlignment="Right" VerticalAlignment="Center"
                            Width="100"

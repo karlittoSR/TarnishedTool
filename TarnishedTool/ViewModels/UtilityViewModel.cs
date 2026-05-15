@@ -780,6 +780,32 @@ namespace TarnishedTool.ViewModels
 
         public void SetSpeed(float value) => GameSpeed = value;
 
+        public void ResetToggles()
+        {
+            IsNoClipEnabled = false;
+            IsFreeCamEnabled = false;
+            IsFreezeWorldEnabled = false;
+            IsCombatMapEnabled = false;
+            IsDungeonWarpEnabled = false;
+            IsGuaranteedDropEnabled = false;
+            IsDrawHitboxEnabled = false;
+            IsDrawLowHitEnabled = false;
+            IsDrawHighHitEnabled = false;
+            IsDrawRagdollsEnabled = false;
+            IsDrawPoiseBarsEnabled = false;
+            IsDrawPlayerSoundEnabled = false;
+            IsDrawMapTiles1Enabled = false;
+            IsDrawMapTiles2Enabled = false;
+            IsDrawMiniMapEnabled = false;
+            IsDrawTilesOnMapEnabled = false;
+            IsHideCharactersEnabled = false;
+            IsHideMapEnabled = false;
+            IsShowFullShopLineupEnabled = false;
+            IsNoUpgradeCostEnabled = false;
+            IsAllDiscardableEnabled = false;
+            GameSpeed = DefaultGameSpeed;
+        }
+
         #endregion
 
         #region Private Methods

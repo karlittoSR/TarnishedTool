@@ -34,6 +34,7 @@ namespace TarnishedTool.Services
 
         private const string ProcessName = "eldenring";
         private bool _disposed;
+        private bool _manuallyDetached;
 
         private Timer _autoAttachTimer;
         
@@ -63,6 +64,10 @@ namespace TarnishedTool.Services
         
         public byte[] ReadBytes(IntPtr addr, int size)
         {
+            // Guard: silently return zeroes if the address or process handle is invalid.
+            // This prevents crashes when service calls are made while the game world is not loaded
+            // (e.g. main menu after a quitout, or during/after detach).
+            if (addr == IntPtr.Zero || ProcessHandle == IntPtr.Zero) return new byte[size];
             var array = new byte[size];
             var lpNumberOfBytesRead = 1;
             Kernel32.ReadProcessMemory(ProcessHandle, addr, array, size, ref lpNumberOfBytesRead);
@@ -129,6 +134,8 @@ namespace TarnishedTool.Services
         
         public void WriteBytes(IntPtr addr, byte[] val)
         {
+            // Guard: silently skip if the address or process handle is invalid.
+            if (addr == IntPtr.Zero || ProcessHandle == IntPtr.Zero) return;
             Kernel32.WriteProcessMemory(ProcessHandle, addr, val, val.Length, 0);
         }
 
@@ -234,7 +241,25 @@ namespace TarnishedTool.Services
 
             _autoAttachTimer.Start();
         }
-        
+
+        public void ManualDetach()
+        {
+            if (ProcessHandle != IntPtr.Zero)
+            {
+                Kernel32.CloseHandle(ProcessHandle);
+                ProcessHandle = IntPtr.Zero;
+                TargetProcess = null;
+                IsAttached = false;
+            }
+
+            _manuallyDetached = true;
+        }
+
+        public void EnableAutoAttach()
+        {
+            _manuallyDetached = false;
+        }
+
         private void TryAttachToProcess()
         {
             if (ProcessHandle != IntPtr.Zero)
@@ -245,10 +270,15 @@ namespace TarnishedTool.Services
                     ProcessHandle = IntPtr.Zero;
                     TargetProcess = null;
                     IsAttached = false;
+                    _manuallyDetached = false;
                 }
 
                 return;
             }
+
+            // Don't auto-reattach if manually detached
+            if (_manuallyDetached)
+                return;
 
             var processes = Process.GetProcessesByName(ProcessName);
             if (processes.Length > 0 && !processes[0].HasExited)

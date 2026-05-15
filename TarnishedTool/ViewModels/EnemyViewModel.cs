@@ -355,6 +355,21 @@ public class EnemyViewModel : BaseViewModel
 
     #endregion
 
+    public void ResetToggles()
+    {
+        IsNoDeathEnabled = false;
+        IsNoDamageEnabled = false;
+        IsNoHitEnabled = false;
+        IsNoAttackEnabled = false;
+        IsNoMoveEnabled = false;
+        IsDisableAiEnabled = false;
+        IsRykardNoMegaEnabled = false;
+        IsTargetingViewEnabled = false;
+        IsDrawNavigationRouteEnabled = false;
+        IsLionMainBossPhaseLockEnabled = false;
+        IsLionMiniBossPhaseLockEnabled = false;
+    }
+
     #region Private Methods
 
     private void OnGameLoaded()
