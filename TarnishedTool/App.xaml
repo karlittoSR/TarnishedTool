@@ -9,11 +9,11 @@
         <Color x:Key="BackgroundColor">#121212</Color>
         <Color x:Key="PanelColor">#1A1A1A</Color>
         <Color x:Key="TextColor">#EAEAEA</Color>
-        <Color x:Key="AccentColor">#b37c07 </Color>
-        <Color x:Key="HoverColor">#C27927 </Color>
+        <Color x:Key="AccentColor">#055096</Color>
+        <Color x:Key="HoverColor">#4669bd</Color>
         <Color x:Key="BorderColor">#333333</Color>
         <Color x:Key="ControlBackgroundColor">#252525</Color>
-        <Color x:Key="TitleBarColor">#92400E  </Color>
+        <Color x:Key="TitleBarColor">#182e52</Color>
 
 
         <SolidColorBrush x:Key="BackgroundBrush" Color="{StaticResource BackgroundColor}" />
@@ -138,7 +138,7 @@
                                     CornerRadius="2">
                                 <Path x:Name="checkMark"
                                       Data="M1,5 L4,9 L9,1"
-                                      Stroke="{StaticResource AccentBrush}"
+                                      Stroke="#7ec8f7"
                                       StrokeThickness="2"
                                       Visibility="Collapsed" />
                             </Border>
@@ -469,7 +469,7 @@
         <Style TargetType="ScrollBar">
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="BorderBrush" Value="Transparent" />
-            <Setter Property="Foreground" Value="#92400E  " />
+            <Setter Property="Foreground" Value="#055096" />
             <Setter Property="Width" Value="8" />
             <Setter Property="Template">
                 <Setter.Value>
@@ -762,8 +762,8 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsHighlighted" Value="True">
-                                <Setter TargetName="Bd" Property="Background" Value="#55C27927" />
-                                <Setter TargetName="Bd" Property="BorderBrush" Value="#E8952E" />
+                                <Setter TargetName="Bd" Property="Background" Value="#554669bd" />
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="#4669bd" />
                             </Trigger>
                             <Trigger Property="IsEnabled" Value="False">
                                 <Setter Property="Foreground" Value="#555555" />
