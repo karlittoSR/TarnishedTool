@@ -85,6 +85,11 @@
                             IsEnabled="{Binding AreOptionsEnabled}"
                             IsChecked="{Binding IsNoUpgradeCostEnabled}"
                             Margin="15,0,0,0" />
+                        <CheckBox
+                            Content="Show IGT"
+                            IsChecked="{Binding IsShowIgtEnabled}"
+                            ToolTip="Display In-Game Time overlay"
+                            Margin="15,0,0,0" />
 
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,10,0,0">
@@ -326,6 +331,7 @@
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
 
                     <CheckBox Content="Draw hitbox"
@@ -345,6 +351,11 @@
                               IsChecked="{Binding IsDrawPoiseBarsEnabled}"
                               Grid.Column="0" Grid.Row="3"
                               Margin="0,0,5,0" />
+
+                    <CheckBox Content="Draw Stable Position"
+                              IsChecked="{Binding IsDrawStablePosEnabled}"
+                              Grid.Column="0" Grid.Row="4"
+                              Margin="0,2,5,0" />
 
                     <CheckBox Content="Draw Low Hit"
                               IsChecked="{Binding IsDrawLowHitEnabled}"

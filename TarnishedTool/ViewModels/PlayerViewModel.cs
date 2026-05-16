@@ -93,7 +93,7 @@ namespace TarnishedTool.ViewModels
             SavePositionCommand = new DelegateCommand(SavePosition);
             RestorePositionCommand = new DelegateCommand(RestorePosition);
 
-            GiveRunesCommand = new DelegateCommand(GiveRunes);
+            ChangeRunesCommand = new DelegateCommand(ChangeRunes);
             ApplyRuneArcCommand = new DelegateCommand(ApplyRuneArc);
             RestCommand = new DelegateCommand(Rest);
 
@@ -113,7 +113,7 @@ namespace TarnishedTool.ViewModels
         public ICommand SavePositionCommand { get; set; }
         public ICommand RestorePositionCommand { get; set; }
 
-        public ICommand GiveRunesCommand { get; set; }
+        public ICommand ChangeRunesCommand { get; set; }
         public ICommand ApplyRuneArcCommand { get; set; }
         public ICommand RestCommand { get; set; }
 
@@ -1045,7 +1045,7 @@ namespace TarnishedTool.ViewModels
             _spEffectService.ApplySpEffect(playerIns, SpEffect.RuneArc);
         }
 
-        private void GiveRunes() => _playerService.GiveRunes(Runes);
+        private void ChangeRunes() => _playerService.ChangeRunes(Runes);
 
         private void ToggleSpeed()
         {

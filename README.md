@@ -11,7 +11,33 @@
 
 *When attached, the loading screen title in game changes to "TarnishedTool - Speedrun Edition".*
 
-## Speedrun Edition — What's New
+---
+
+## Changelog
+
+### v1.1.1
+* **Change Runes** — replaced "Give Runes" with an exact-set mechanic: the value you type becomes your exact rune count. Clamped to `0 – 999,999,999`. Negative values are rejected by the UI.
+* **No-Clip default speed** — no-clip now starts at speed `3` instead of `1` for more practical out-of-the-box use.
+* **Draw Stable Position** — new toggle under Utility → Rendering. Enables the in-game stable-position indicator (ported from veeenu's practice tool). Bindable to a hotkey, shows ON/OFF toast notification.
+* **IGT Overlay** — new "Show IGT" checkbox under Utility → General. Opens a draggable, always-on-top transparent overlay showing the current In-Game Time (`IGT HH:MM:SS.cs`). Updates every 16 ms (1-frame precision at 60 fps). Position is saved between sessions.
+* **Check for Updates** — the update button now points to this fork's releases (`karlittoSR/TarnishedTool`) instead of the original upstream repo.
+
+### v1.1.0
+* **Detach button** — resets all active toggles, uninstalls all hooks, frees the code cave and releases the game process in one click, leaving the game in a vanilla state ready for a run.
+* The Detach button is only enabled when the player is **in-world** (prevents crashes from null pointers on the main menu).
+* **Closing the tool** (red X / Alt+F4) automatically performs the same cleanup — no manual detach needed.
+* **Hotkey notifications** — every hotkey now shows an **ON / OFF toast notification** (green / red). Only one toast on screen at a time; latest always replaces the previous. ON by default.
+* All notification labels use human-readable names.
+* **Blue theme** — replaced the original orange/amber palette with a blue speedrun-focused palette.
+* **Loading screen text** changed to `TarnishedTool - Speedrun Edition`.
+* Fixed loading screen reminder text showing vanilla FMG text appended after the custom string (missing UTF-16LE null terminator).
+* Fixed reminder text not appearing when no player flags were active.
+* Fixed a crash when detaching on the main menu (null pointer writes now silently skip).
+* Fixed player speed toggle setting speed to `0` when no previous speed was remembered.
+
+---
+
+## Speedrun Edition — Features
 
 ### Clean Session Management (Detach)
 * **Detach button** — resets all active toggles, uninstalls all hooks, frees the code cave and releases the game process in one click, leaving the game in a vanilla state ready for a run.
@@ -24,10 +50,15 @@
 * Only one toast is on screen at a time — the latest one always replaces the previous.
 * Notifications are **ON by default**.
 
-### Bug Fixes
-* Fixed loading screen reminder text showing vanilla FMG text appended after the custom string (missing UTF-16LE null terminator).
-* Fixed reminder text not appearing when no player flags were active — it now always writes on every `State.Loaded` event.
-* Fixed a crash when detaching on the main menu (null pointer writes now silently skip in `MemoryService`).
+### IGT Overlay
+* Toggle **Show IGT** in the Utility tab to open a draggable transparent overlay showing current In-Game Time.
+* Updates every 16 ms (1-frame precision at 60 fps).
+* Overlay position is saved between sessions — drag it wherever you want it.
+
+### Other Additions
+* **Change Runes** — set your exact rune count directly (clamped to valid game range).
+* **Draw Stable Position** — rendering toggle to display the player's stable position indicator in-game, bindable to a hotkey.
+* **No-Clip** now defaults to speed `3`.
 
 ---
 

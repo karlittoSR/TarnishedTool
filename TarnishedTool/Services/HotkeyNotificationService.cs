@@ -177,6 +177,7 @@ namespace TarnishedTool.Services
                 HotkeyActions.DrawPlayerSound => "Draw Player Sound",
                 HotkeyActions.DrawRagdolls => "Draw Ragdolls",
                 HotkeyActions.DrawPoiseBars => "Draw Poise Bars",
+                HotkeyActions.DrawStablePos => "Draw Stable Position",
                 HotkeyActions.DrawLowHit => "Draw Low Hit",
                 HotkeyActions.DrawHighHit => "Draw High Hit",
                 HotkeyActions.OpenMapInCombat => "Map in Combat",

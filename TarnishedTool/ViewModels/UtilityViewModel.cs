@@ -16,7 +16,7 @@ namespace TarnishedTool.ViewModels
 {
     public class UtilityViewModel : BaseViewModel
     {
-        private const float DefaultNoclipMultiplier = 1f;
+        private const float DefaultNoclipMultiplier = 3f;
 
         private float _desiredGameSpeed = -1f;
         private const float DefaultGameSpeed = 1f;
@@ -26,7 +26,9 @@ namespace TarnishedTool.ViewModels
         private bool _wasTorrentNoDeathEnabled;
 
         private ShopSelectorWindow _shopSelectorWindow;
+        private IgtOverlayWindow _igtOverlayWindow;
 
+        private readonly IMemoryService _memoryService;
         private readonly IUtilityService _utilityService;
         private readonly IEzStateService _ezStateService;
         private readonly IPlayerService _playerService;
@@ -78,8 +80,9 @@ namespace TarnishedTool.ViewModels
             IEzStateService ezStateService, IPlayerService playerService, HotkeyManager hotkeyManager,
             PlayerViewModel playerViewModel, IDlcService dlcService,
             ISpEffectService spEffectService, IFlaskService flaskService, IParamService paramService,
-            IHotkeyNotificationService notificationService = null)
+            IHotkeyNotificationService notificationService = null, IMemoryService memoryService = null)
         {
+            _memoryService = memoryService;
             _utilityService = utilityService;
             _ezStateService = ezStateService;
             _playerService = playerService;
@@ -468,6 +471,58 @@ namespace TarnishedTool.ViewModels
             }
         }
 
+        private bool _isShowIgtEnabled;
+
+        public bool IsShowIgtEnabled
+        {
+            get => _isShowIgtEnabled;
+            set
+            {
+                if (!SetProperty(ref _isShowIgtEnabled, value)) return;
+                SettingsManager.Default.ShowIgtOverlay = value;
+                SettingsManager.Default.Save();
+                if (value)
+                    OpenIgtOverlay();
+                else
+                    CloseIgtOverlay();
+            }
+        }
+
+        private void OpenIgtOverlay()
+        {
+            if (_igtOverlayWindow != null && _igtOverlayWindow.IsVisible)
+            {
+                _igtOverlayWindow.Activate();
+                return;
+            }
+            _igtOverlayWindow = new IgtOverlayWindow(_memoryService);
+            _igtOverlayWindow.Closed += (_, _) =>
+            {
+                _igtOverlayWindow = null;
+                SetProperty(ref _isShowIgtEnabled, false, nameof(IsShowIgtEnabled));
+            };
+            _igtOverlayWindow.Show();
+        }
+
+        private void CloseIgtOverlay()
+        {
+            _igtOverlayWindow?.Close();
+            _igtOverlayWindow = null;
+        }
+
+        private bool _isDrawStablePosEnabled;
+
+        public bool IsDrawStablePosEnabled
+        {
+            get => _isDrawStablePosEnabled;
+            set
+            {
+                if (!SetProperty(ref _isDrawStablePosEnabled, value)) return;
+                _utilityService.ToggleDrawStablePos(_isDrawStablePosEnabled);
+                _notificationService?.ShowNotification(HotkeyActions.DrawStablePos, _isDrawStablePosEnabled);
+            }
+        }
+
         private bool _isDrawPlayerSoundEnabled;
 
         public bool IsDrawPlayerSoundEnabled
@@ -793,6 +848,7 @@ namespace TarnishedTool.ViewModels
             IsDrawHighHitEnabled = false;
             IsDrawRagdollsEnabled = false;
             IsDrawPoiseBarsEnabled = false;
+            IsDrawStablePosEnabled = false;
             IsDrawPlayerSoundEnabled = false;
             IsDrawMapTiles1Enabled = false;
             IsDrawMapTiles2Enabled = false;
@@ -830,6 +886,7 @@ namespace TarnishedTool.ViewModels
             }
 
             if (IsDrawHitboxEnabled) _utilityService.ToggleDrawHitbox(true);
+            if (IsDrawStablePosEnabled) _utilityService.ToggleDrawStablePos(true);
             if (IsDrawPoiseBarsEnabled)
             {
                 _utilityService.PatchDebugFont();
@@ -976,6 +1033,8 @@ namespace TarnishedTool.ViewModels
             });
             _hotkeyManager.RegisterAction(HotkeyActions.DrawPoiseBars,
                 () => { IsDrawPoiseBarsEnabled = !IsDrawPoiseBarsEnabled; _notificationService?.ShowNotification(HotkeyActions.DrawPoiseBars, IsDrawPoiseBarsEnabled); });
+            _hotkeyManager.RegisterAction(HotkeyActions.DrawStablePos,
+                () => { IsDrawStablePosEnabled = !IsDrawStablePosEnabled; _notificationService?.ShowNotification(HotkeyActions.DrawStablePos, IsDrawStablePosEnabled); });
             _hotkeyManager.RegisterAction(HotkeyActions.Set20Fps, () => { SafeExecute(() => Fps = 20); _notificationService?.ShowNotification(HotkeyActions.Set20Fps); });
             _hotkeyManager.RegisterAction(HotkeyActions.Set30Fps, () => { SafeExecute(() => Fps = 30); _notificationService?.ShowNotification(HotkeyActions.Set30Fps); });
             _hotkeyManager.RegisterAction(HotkeyActions.Set60Fps, () => { SafeExecute(() => Fps = 60); _notificationService?.ShowNotification(HotkeyActions.Set60Fps); });
@@ -1029,6 +1088,13 @@ namespace TarnishedTool.ViewModels
             _isRememberSpeedEnabled = SettingsManager.Default.RememberGameSpeed;
             OnPropertyChanged(nameof(IsRememberSpeedEnabled));
             if (_isRememberSpeedEnabled) _desiredGameSpeed = SettingsManager.Default.GameSpeed;
+
+            if (SettingsManager.Default.ShowIgtOverlay && _memoryService != null)
+            {
+                _isShowIgtEnabled = true;
+                OnPropertyChanged(nameof(IsShowIgtEnabled));
+                OpenIgtOverlay();
+            }
         }
 
         private void Save() => _utilityService.ForceSave();

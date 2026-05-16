@@ -35,6 +35,7 @@ public interface IUtilityService
     void ToggleNoclipKeyboardHook(bool isEnabled);
     void ToggleGuaranteedDrop(bool isGuaranteedDropEnabled);
     void ToggleDrawPoiseBars(bool isDrawPoiseBarsEnabled);
+    void ToggleDrawStablePos(bool isEnabled);
     void SetFps(int fps);
     int GetFps();
 }

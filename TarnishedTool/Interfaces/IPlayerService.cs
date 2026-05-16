@@ -40,7 +40,7 @@ public interface IPlayerService
     void ToggleNoTimePassOnDeath(bool isNoTimePassOnDeathEnabled);
     void SetNewGame(int value);
     int GetNewGame();
-    void GiveRunes(int runes);
+    void ChangeRunes(int runes);
     int GetRuneLevel();
     Stats GetStats();
     void SetStat(int offset, int newValue);

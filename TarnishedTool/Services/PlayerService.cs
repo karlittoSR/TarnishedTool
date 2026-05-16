@@ -443,19 +443,13 @@ namespace TarnishedTool.Services
         public int GetNewGame() =>
             memoryService.Read<int>(memoryService.Read<nint>(GameDataMan.Base) + GameDataMan.NewGame);
 
-        public void GiveRunes(int runes)
+        public void ChangeRunes(int runes)
         {
-            var bytes = AsmLoader.GetAsmBytes(AsmScript.GiveRunes);
+            var value = Math.Max(0, Math.Min(999_999_999, runes));
             var playerGameData =
                 memoryService.Read<nint>(memoryService.Read<nint>(GameDataMan.Base) + GameDataMan.PlayerGameData);
-            AsmHelper.WriteAbsoluteAddresses(bytes, new[]
-            {
-                (playerGameData, 0x0 + 2),
-                (runes, 0xA + 2),
-                (Functions.GiveRunes, 0x14 + 2)
-            });
-
-            memoryService.AllocateAndExecute(bytes);
+            var runePtr = playerGameData + (int)GameDataMan.PlayerGameDataOffsets.Runes;
+            memoryService.Write(runePtr, value);
         }
 
         public int GetRuneLevel() =>

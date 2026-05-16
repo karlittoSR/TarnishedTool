@@ -501,6 +501,9 @@
         <Compile Include="Views\Windows\ShopSelectorWindow.xaml.cs">
           <DependentUpon>ShopSelectorWindow.xaml</DependentUpon>
         </Compile>
+        <Compile Include="Views\Windows\IgtOverlayWindow.xaml.cs">
+          <DependentUpon>IgtOverlayWindow.xaml</DependentUpon>
+        </Compile>
         <Compile Include="Views\Windows\SpEffectsWindow.xaml.cs">
           <DependentUpon>SpEffectsWindow.xaml</DependentUpon>
         </Compile>
@@ -555,6 +558,7 @@
         <Page Include="Views\Windows\ParamEditorWindow.xaml" />
         <Page Include="Views\Windows\ResistancesWindow.xaml" />
         <Page Include="Views\Windows\ShopSelectorWindow.xaml" />
+        <Page Include="Views\Windows\IgtOverlayWindow.xaml" />
         <Page Include="Views\Windows\SpEffectsWindow.xaml" />
     </ItemGroup>
     <ItemGroup>

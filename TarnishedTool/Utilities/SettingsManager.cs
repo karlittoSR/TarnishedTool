@@ -58,6 +58,9 @@ public class SettingsManager
     public double DefensesWindowLeft { get; set; }
     public double DefensesWindowTop { get; set; }
     public string HotkeyActionIds { get; set; } = "";
+    public double IgtOverlayLeft { get; set; }
+    public double IgtOverlayTop { get; set; }
+    public bool ShowIgtOverlay { get; set; }
     public bool EnableHotkeys { get; set; }
     public bool RememberPlayerSpeed { get; set; }
     public float PlayerSpeed { get; set; }

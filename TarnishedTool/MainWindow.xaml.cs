@@ -124,7 +124,7 @@ namespace TarnishedTool
                 utilityService, _stateService, ezStateService,
                 playerService, hotkeyManager, playerViewModel,
                 _dlcService, spEffectService, flaskService, paramService,
-                hotkeyNotificationService
+                hotkeyNotificationService, _memoryService
             );
             _utilityViewModel = utilityViewModel;
 

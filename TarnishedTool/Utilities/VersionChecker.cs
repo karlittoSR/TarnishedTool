@@ -26,7 +26,7 @@ public static class VersionChecker
                 new ProductInfoHeaderValue("TarnishedTool", currentVersion.ToString()));
 
             var response = await client.GetStringAsync(
-                "https://api.github.com/repos/borgCode/TarnishedTool/releases/latest");
+                "https://api.github.com/repos/karlittoSR/TarnishedTool/releases/latest");
 
             int tagIndex = response.IndexOf("\"tag_name\":", StringComparison.OrdinalIgnoreCase);
             if (tagIndex == -1) return (false, currentVersion, null);

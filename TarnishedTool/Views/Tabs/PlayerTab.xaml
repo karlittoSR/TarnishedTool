@@ -503,8 +503,8 @@
                             IsEnabled="{Binding AreOptionsEnabled}"
                             BorderBrush="#3F3F46" />
 
-                        <Button Content="Give Runes"
-                                Command="{Binding GiveRunesCommand}"
+                        <Button Content="Change Runes"
+                                Command="{Binding ChangeRunesCommand}"
                                 IsEnabled="{Binding AreOptionsEnabled}"
                                 Margin="10,0,0,0"
                                 Width="100"

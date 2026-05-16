@@ -170,6 +170,12 @@ namespace TarnishedTool.Services
             memoryService.Write(worldChrManDbg + WorldChrManDbg.PoiseBarsFlag, isEnabled);
         }
 
+        public void ToggleDrawStablePos(bool isEnabled)
+        {
+            var playerIns = playerService.GetPlayerIns();
+            memoryService.Write(playerIns + WorldChrMan.PlayerInsOffsets.DisplayStablePos, isEnabled);
+        }
+
         public void SetFps(int fps) =>
             memoryService.Write(Patches.FpsCap + 0x3, 1f / fps);
 

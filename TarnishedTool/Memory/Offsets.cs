@@ -129,6 +129,14 @@ namespace TarnishedTool.Memory
                     _ => 0x6CC,
                 };
 
+                public static int DisplayStablePos => Version switch
+                {
+                    Version1_2_0 or Version1_2_1 or Version1_2_2 or Version1_2_3 or Version1_3_0 or Version1_3_1
+                        or Version1_3_2 => 0x6FD,
+                    Version1_4_0 or Version1_4_1 or Version1_5_0 or Version1_6_0 or Version1_7_0 => 0x6F5,
+                    _ => 0x735,
+                };
+
                 public static readonly int[] NpcParam = [0x5F0, 0x0];
             }
         }

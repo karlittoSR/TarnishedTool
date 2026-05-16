@@ -80,6 +80,7 @@ public enum HotkeyActions
     DrawPlayerSound,
     DrawRagdolls,
     DrawPoiseBars,
+    DrawStablePos,
     DrawLowHit,
     DrawHighHit,
     LevelUp,

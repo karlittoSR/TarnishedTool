@@ -187,6 +187,7 @@ public class SettingsViewModel : BaseViewModel
                 new("Draw Player Sound", HotkeyActions.DrawPlayerSound),
                 new("Draw Ragdolls", HotkeyActions.DrawRagdolls),
                 new("Draw Poise Bars", HotkeyActions.DrawPoiseBars),
+                new("Draw Stable Position", HotkeyActions.DrawStablePos),
                 new("Draw Low Hit", HotkeyActions.DrawLowHit),
                 new("Draw High Hit", HotkeyActions.DrawHighHit),
                 new("Level Up", HotkeyActions.LevelUp),
