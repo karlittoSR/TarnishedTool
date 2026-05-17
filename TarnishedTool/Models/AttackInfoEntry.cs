@@ -37,11 +37,13 @@ public class AttackInfoEntry
     public bool HasMagicDamage => MagicDamage > 0;
     public bool HasLightningDamage => LightningDamage > 0;
     public bool HasHolyDamage => HolyDamage > 0;
+    public bool HasPhysicalDamage => PhysicalDamage > 0;
 
     public bool HasRawFireDamage => RawFireDamage > 0;
     public bool HasRawMagicDamage => RawMagicDamage > 0;
     public bool HasRawLightningDamage => RawLightningDamage > 0;
     public bool HasRawHolyDamage => RawHolyDamage > 0;
+    public bool HasRawPhysicalDamage => RawPhysicalDamage > 0;
 
     public AttackInfoEntry(AttackInfo attack)
     {

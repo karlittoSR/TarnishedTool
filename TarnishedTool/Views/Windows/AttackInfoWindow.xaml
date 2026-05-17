@@ -106,7 +106,8 @@
                                 </TextBlock>
                                 
                                 <WrapPanel Grid.Row="2" Margin="0,2,0,0">
-                                    <TextBlock FontSize="11" Margin="0,0,10,0">
+                                    <TextBlock FontSize="11" Margin="0,0,10,0"
+                                               Visibility="{Binding HasPhysicalDamage, Converter={StaticResource BoolToVis}}">
                                         <Run Text="Phys " Foreground="{StaticResource DimTextBrush}" />
                                         <Run Text="{Binding PhysicalDamage, Mode=OneWay}"
                                              Foreground="{StaticResource PhysicalBrush}" />
@@ -147,7 +148,8 @@
                                         <Run Text="Raw:" />
                                     </TextBlock>
 
-                                    <TextBlock FontSize="10" Margin="0,0,8,0">
+                                    <TextBlock FontSize="10" Margin="0,0,8,0"
+                                               Visibility="{Binding HasRawPhysicalDamage, Converter={StaticResource BoolToVis}}">
                                         <Run Text="{Binding RawPhysicalDamage, StringFormat={}{0:F2}, Mode=OneWay}"
                                              Foreground="{StaticResource PhysicalBrush}" />
                                     </TextBlock>
