@@ -165,6 +165,10 @@ public class AttackInfoViewModel : BaseViewModel
 
     private void AddAttack(AttackInfo attack)
     {
+        // Skip attacks with 0 damage
+        if (attack.TotalDamage <= 0)
+            return;
+
         // Start a new fight session on the first hit only if no session is active
         if (_fightStartTime == null && !_fightFinished && _sessionChrIns != 0)
         {
