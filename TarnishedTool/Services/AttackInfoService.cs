@@ -61,6 +61,8 @@ public class AttackInfoService(IMemoryService memoryService, HookManager hookMan
             int id = memoryService.Read<int>(baseAddr);
             if (id <= _lastProcessedId) continue;
 
+            byte damageTypeRaw = memoryService.Read<byte>(baseAddr + 0x24);
+
             var info = new AttackInfo
             {
                 MyId = id,
@@ -70,7 +72,8 @@ public class AttackInfoService(IMemoryService memoryService, HookManager hookMan
                 RawLightningDamage = memoryService.Read<float>(baseAddr + 0x14),
                 RawHolyDamage = memoryService.Read<float>(baseAddr + 0x18),
                 PoiseDamage = memoryService.Read<float>(baseAddr + 0x20),
-                PhysicalAttackType = (PhysicalAttackType)memoryService.Read<byte>(baseAddr + 0x24),
+                PhysicalAttackType = (PhysicalAttackType)damageTypeRaw,
+                DamageTypeRawValue = damageTypeRaw,
                 TotalDamage = memoryService.Read<int>(baseAddr + 0x28),
                 FireDamage = memoryService.Read<int>(baseAddr + 0x2C),
                 MagicDamage = memoryService.Read<int>(baseAddr + 0x30),

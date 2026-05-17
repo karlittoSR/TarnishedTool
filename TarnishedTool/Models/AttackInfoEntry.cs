@@ -10,33 +10,34 @@ public class AttackInfoEntry
     public int Id { get; }
     public int EnemyId { get; }
     public string AttackType { get; }
-    
+    public byte DamageTypeRawValue { get; }
+
     public int TotalDamage { get; }
     public int PhysicalDamage { get; }
     public int FireDamage { get; }
     public int MagicDamage { get; }
     public int LightningDamage { get; }
     public int HolyDamage { get; }
-    
+
     public float RawPhysicalDamage { get; }
     public float RawFireDamage { get; }
     public float RawMagicDamage { get; }
     public float RawLightningDamage { get; }
     public float RawHolyDamage { get; }
-    
+
     public float PoiseDamage { get; }
-    
+
     public string RawSplitText { get; }
     public string FinalSplitText { get; }
-    
+
     public bool HasRawSplit => !string.IsNullOrEmpty(RawSplitText);
     public bool HasFinalSplit => !string.IsNullOrEmpty(FinalSplitText);
-    
+
     public bool HasFireDamage => FireDamage > 0;
     public bool HasMagicDamage => MagicDamage > 0;
     public bool HasLightningDamage => LightningDamage > 0;
     public bool HasHolyDamage => HolyDamage > 0;
-    
+
     public bool HasRawFireDamage => RawFireDamage > 0;
     public bool HasRawMagicDamage => RawMagicDamage > 0;
     public bool HasRawLightningDamage => RawLightningDamage > 0;
@@ -46,12 +47,14 @@ public class AttackInfoEntry
     {
         Id = attack.MyId;
         EnemyId = attack.EnemyId;
-        
+        DamageTypeRawValue = attack.DamageTypeRawValue;
+
         AttackType = attack.PhysicalAttackType switch
         {
             PhysicalAttackType.Slash => "Slash",
             PhysicalAttackType.Strike => "Strike",
             PhysicalAttackType.Pierce => "Pierce",
+            PhysicalAttackType.Standard => "Standard",
             _ => "Unknown"
         };
         

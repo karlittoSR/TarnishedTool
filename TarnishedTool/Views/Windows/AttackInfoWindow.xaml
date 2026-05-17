@@ -86,6 +86,10 @@
                                                    Foreground="{StaticResource PhysicalBrush}"
                                                    Text="{Binding AttackType, Mode=OneWay}"
                                                    Margin="0,0,8,0" />
+                                        <TextBlock FontSize="9"
+                                                   Foreground="{StaticResource DimTextBrush}"
+                                                   Text="{Binding DamageTypeRawValue, StringFormat={}({0}), Mode=OneWay}"
+                                                   Margin="0,0,8,0" />
                                         <TextBlock FontSize="11">
                                             <Run Text="Poise: " Foreground="{StaticResource DimTextBrush}" />
                                             <Run Text="{Binding PoiseDamage, StringFormat={}{0:F2}, Mode=OneWay}"
