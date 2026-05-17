@@ -360,6 +360,7 @@
         <Compile Include="Utilities\ExeManager.cs" />
         <Compile Include="Utilities\HotkeyManager.cs" />
         <Compile Include="Utilities\MsgBox.cs" />
+        <Compile Include="Utilities\DiagnosticsLogger.cs" />
         <Compile Include="Utilities\SettingsManager.cs" />
         <Compile Include="Utilities\UpDownHelper.cs" />
         <Compile Include="Utilities\User32.cs" />
@@ -501,6 +502,9 @@
         <Compile Include="Views\Windows\ShopSelectorWindow.xaml.cs">
           <DependentUpon>ShopSelectorWindow.xaml</DependentUpon>
         </Compile>
+        <Compile Include="Views\Windows\DpsOverlayWindow.xaml.cs">
+          <DependentUpon>DpsOverlayWindow.xaml</DependentUpon>
+        </Compile>
         <Compile Include="Views\Windows\IgtOverlayWindow.xaml.cs">
           <DependentUpon>IgtOverlayWindow.xaml</DependentUpon>
         </Compile>
@@ -508,9 +512,18 @@
           <DependentUpon>SpEffectsWindow.xaml</DependentUpon>
         </Compile>
         <Compile Include="Views\Windows\TopmostWindow.cs" />
-        <Page Include="Controls\CoordinateDisplay.xaml" />
-        <Page Include="Controls\Titlebar.xaml" />
-        <Page Include="Controls\TitleBarWithMaximize.xaml" />
+        <Page Include="Controls\CoordinateDisplay.xaml">
+            <Generator>MSBuild:Compile</Generator>
+            <SubType>Designer</SubType>
+        </Page>
+        <Page Include="Controls\Titlebar.xaml">
+            <Generator>MSBuild:Compile</Generator>
+            <SubType>Designer</SubType>
+        </Page>
+        <Page Include="Controls\TitleBarWithMaximize.xaml">
+            <Generator>MSBuild:Compile</Generator>
+            <SubType>Designer</SubType>
+        </Page>
         <Page Include="MainWindow.xaml">
             <Generator>MSBuild:Compile</Generator>
             <SubType>Designer</SubType>
@@ -523,43 +536,158 @@
             <DependentUpon>MainWindow.xaml</DependentUpon>
             <SubType>Code</SubType>
         </Compile>
-        <Page Include="Views\Tabs\AdvancedTab.xaml" />
-        <Page Include="Views\Tabs\EnemyTab.xaml" />
-        <Page Include="Views\Tabs\ItemTab.xaml" />
-        <Page Include="Views\Tabs\SettingsTab.xaml" />
-        <Page Include="Views\Tabs\TargetTab.xaml" />
-        <Page Include="Views\Tabs\EventTab.xaml" />
-        <Page Include="Views\Tabs\PlayerTab.xaml" />
-        <Page Include="Views\Tabs\TravelTab.xaml" />
-        <Page Include="Views\Tabs\UtilityTab.xaml" />
-        <Page Include="Views\Windows\ActivateOnLaunchWindow.xaml" />
-        <Page Include="Views\Windows\AiOverlay\AiOverlayToolbar.xaml" />
-        <Page Include="Views\Windows\AiOverlay\CoolTimesOverlayWindow.xaml" />
-        <Page Include="Views\Windows\AiOverlay\GoalsOverlayWindow.xaml" />
-        <Page Include="Views\Windows\AiOverlay\InterruptsOverlayWindow.xaml" />
-        <Page Include="Views\Windows\AiOverlay\LuaNumbersOverlayWindow.xaml" />
-        <Page Include="Views\Windows\AiOverlay\LuaTimersOverlayWindow.xaml" />
-        <Page Include="Views\Windows\AiOverlay\SpEffectObserversOverlayWindow.xaml" />
-        <Page Include="Views\Windows\AiOverlay\SpEffectsOverlayWindow.xaml" />
-        <Page Include="Views\Windows\BossSelectionWindow.xaml" />
-        <Page Include="Views\Windows\ChrInsWindow.xaml" />
-        <Page Include="Views\Windows\AttackInfoWindow.xaml" />
-        <Page Include="Views\Windows\CreateCustomWarpWindow.xaml" />
-        <Page Include="Views\Windows\CreateLoadoutWindow.xaml" />
-        <Page Include="Views\Windows\CustomMessageBox.xaml" />
-        <Page Include="Views\Windows\CustomWarpImportSelectionWindow.xaml" />
-        <Page Include="Views\Windows\DefensesWindow.xaml" />
-        <Page Include="Views\Windows\EventLogWindow.xaml" />
-        <Page Include="Views\Windows\AiWindow.xaml" />
-        <Page Include="Views\Windows\GraceImportPresentSelectionWindow.xaml" />
-        <Page Include="Views\Windows\GracePresetWindow.xaml" />
-        <Page Include="Views\Windows\HotkeyNotificationWindow.xaml" />
-        <Page Include="Views\Windows\InputBox.xaml" />
-        <Page Include="Views\Windows\ParamEditorWindow.xaml" />
-        <Page Include="Views\Windows\ResistancesWindow.xaml" />
-        <Page Include="Views\Windows\ShopSelectorWindow.xaml" />
-        <Page Include="Views\Windows\IgtOverlayWindow.xaml" />
-        <Page Include="Views\Windows\SpEffectsWindow.xaml" />
+        <Page Include="Views\Tabs\AdvancedTab.xaml">
+            <Generator>MSBuild:Compile</Generator>
+            <SubType>Designer</SubType>
+        </Page>
+        <Page Include="Views\Tabs\EnemyTab.xaml">
+            <Generator>MSBuild:Compile</Generator>
+            <SubType>Designer</SubType>
+        </Page>
+        <Page Include="Views\Tabs\ItemTab.xaml">
+            <Generator>MSBuild:Compile</Generator>
+            <SubType>Designer</SubType>
+        </Page>
+        <Page Include="Views\Tabs\SettingsTab.xaml">
+            <Generator>MSBuild:Compile</Generator>
+            <SubType>Designer</SubType>
+        </Page>
+        <Page Include="Views\Tabs\TargetTab.xaml">
+            <Generator>MSBuild:Compile</Generator>
+            <SubType>Designer</SubType>
+        </Page>
+        <Page Include="Views\Tabs\EventTab.xaml">
+            <Generator>MSBuild:Compile</Generator>
+            <SubType>Designer</SubType>
+        </Page>
+        <Page Include="Views\Tabs\PlayerTab.xaml">
+            <Generator>MSBuild:Compile</Generator>
+            <SubType>Designer</SubType>
+        </Page>
+        <Page Include="Views\Tabs\TravelTab.xaml">
+            <Generator>MSBuild:Compile</Generator>
+            <SubType>Designer</SubType>
+        </Page>
+        <Page Include="Views\Tabs\UtilityTab.xaml">
+            <Generator>MSBuild:Compile</Generator>
+            <SubType>Designer</SubType>
+        </Page>
+        <Page Include="Views\Windows\ActivateOnLaunchWindow.xaml">
+            <Generator>MSBuild:Compile</Generator>
+            <SubType>Designer</SubType>
+        </Page>
+        <Page Include="Views\Windows\AiOverlay\AiOverlayToolbar.xaml">
+            <Generator>MSBuild:Compile</Generator>
+            <SubType>Designer</SubType>
+        </Page>
+        <Page Include="Views\Windows\AiOverlay\CoolTimesOverlayWindow.xaml">
+            <Generator>MSBuild:Compile</Generator>
+            <SubType>Designer</SubType>
+        </Page>
+        <Page Include="Views\Windows\AiOverlay\GoalsOverlayWindow.xaml">
+            <Generator>MSBuild:Compile</Generator>
+            <SubType>Designer</SubType>
+        </Page>
+        <Page Include="Views\Windows\AiOverlay\InterruptsOverlayWindow.xaml">
+            <Generator>MSBuild:Compile</Generator>
+            <SubType>Designer</SubType>
+        </Page>
+        <Page Include="Views\Windows\AiOverlay\LuaNumbersOverlayWindow.xaml">
+            <Generator>MSBuild:Compile</Generator>
+            <SubType>Designer</SubType>
+        </Page>
+        <Page Include="Views\Windows\AiOverlay\LuaTimersOverlayWindow.xaml">
+            <Generator>MSBuild:Compile</Generator>
+            <SubType>Designer</SubType>
+        </Page>
+        <Page Include="Views\Windows\AiOverlay\SpEffectObserversOverlayWindow.xaml">
+            <Generator>MSBuild:Compile</Generator>
+            <SubType>Designer</SubType>
+        </Page>
+        <Page Include="Views\Windows\AiOverlay\SpEffectsOverlayWindow.xaml">
+            <Generator>MSBuild:Compile</Generator>
+            <SubType>Designer</SubType>
+        </Page>
+        <Page Include="Views\Windows\BossSelectionWindow.xaml">
+            <Generator>MSBuild:Compile</Generator>
+            <SubType>Designer</SubType>
+        </Page>
+        <Page Include="Views\Windows\ChrInsWindow.xaml">
+            <Generator>MSBuild:Compile</Generator>
+            <SubType>Designer</SubType>
+        </Page>
+        <Page Include="Views\Windows\AttackInfoWindow.xaml">
+            <Generator>MSBuild:Compile</Generator>
+            <SubType>Designer</SubType>
+        </Page>
+        <Page Include="Views\Windows\CreateCustomWarpWindow.xaml">
+            <Generator>MSBuild:Compile</Generator>
+            <SubType>Designer</SubType>
+        </Page>
+        <Page Include="Views\Windows\CreateLoadoutWindow.xaml">
+            <Generator>MSBuild:Compile</Generator>
+            <SubType>Designer</SubType>
+        </Page>
+        <Page Include="Views\Windows\CustomMessageBox.xaml">
+            <Generator>MSBuild:Compile</Generator>
+            <SubType>Designer</SubType>
+        </Page>
+        <Page Include="Views\Windows\CustomWarpImportSelectionWindow.xaml">
+            <Generator>MSBuild:Compile</Generator>
+            <SubType>Designer</SubType>
+        </Page>
+        <Page Include="Views\Windows\DefensesWindow.xaml">
+            <Generator>MSBuild:Compile</Generator>
+            <SubType>Designer</SubType>
+        </Page>
+        <Page Include="Views\Windows\EventLogWindow.xaml">
+            <Generator>MSBuild:Compile</Generator>
+            <SubType>Designer</SubType>
+        </Page>
+        <Page Include="Views\Windows\AiWindow.xaml">
+            <Generator>MSBuild:Compile</Generator>
+            <SubType>Designer</SubType>
+        </Page>
+        <Page Include="Views\Windows\GraceImportPresentSelectionWindow.xaml">
+            <Generator>MSBuild:Compile</Generator>
+            <SubType>Designer</SubType>
+        </Page>
+        <Page Include="Views\Windows\GracePresetWindow.xaml">
+            <Generator>MSBuild:Compile</Generator>
+            <SubType>Designer</SubType>
+        </Page>
+        <Page Include="Views\Windows\HotkeyNotificationWindow.xaml">
+            <Generator>MSBuild:Compile</Generator>
+            <SubType>Designer</SubType>
+        </Page>
+        <Page Include="Views\Windows\InputBox.xaml">
+            <Generator>MSBuild:Compile</Generator>
+            <SubType>Designer</SubType>
+        </Page>
+        <Page Include="Views\Windows\ParamEditorWindow.xaml">
+            <Generator>MSBuild:Compile</Generator>
+            <SubType>Designer</SubType>
+        </Page>
+        <Page Include="Views\Windows\ResistancesWindow.xaml">
+            <Generator>MSBuild:Compile</Generator>
+            <SubType>Designer</SubType>
+        </Page>
+        <Page Include="Views\Windows\ShopSelectorWindow.xaml">
+            <Generator>MSBuild:Compile</Generator>
+            <SubType>Designer</SubType>
+        </Page>
+        <Page Include="Views\Windows\DpsOverlayWindow.xaml">
+            <Generator>MSBuild:Compile</Generator>
+            <SubType>Designer</SubType>
+        </Page>
+        <Page Include="Views\Windows\IgtOverlayWindow.xaml">
+            <Generator>MSBuild:Compile</Generator>
+            <SubType>Designer</SubType>
+        </Page>
+        <Page Include="Views\Windows\SpEffectsWindow.xaml">
+            <Generator>MSBuild:Compile</Generator>
+            <SubType>Designer</SubType>
+        </Page>
     </ItemGroup>
     <ItemGroup>
         <Compile Include="Memory\AobScanner.cs" />

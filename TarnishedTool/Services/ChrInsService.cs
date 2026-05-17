@@ -146,6 +146,14 @@ public class ChrInsService(IMemoryService memoryService) : IChrInsService
     public float[] GetDefenses(nint chrIns)
     {
         var ptr = GetNpcParamPtr(chrIns);
+        if (ptr == IntPtr.Zero)
+        {
+            DiagnosticsLogger.LogThrottled(
+                $"GetDefenses-NpcParamPtr-{chrIns:X}",
+                $"GetDefenses failed: npcParamPtr=0x0 chrIns=0x{(long)chrIns:X} npcParamId={GetNpcParamId(chrIns)} chrId={GetChrId(chrIns)}");
+            return new float[8];
+        }
+
         var defenses = new float[8];
         defenses[0] = memoryService.Read<float>(ptr + (int)ChrIns.NpcParamOffsets.StandardAbsorption);
         defenses[1] = memoryService.Read<float>(ptr + (int)ChrIns.NpcParamOffsets.SlashAbsorption);
@@ -162,6 +170,14 @@ public class ChrInsService(IMemoryService memoryService) : IChrInsService
     {
         var ptr = GetNpcParamPtr(chrIns);
         if (ptr == IntPtr.Zero) ptr = GetPlayerNpcParamPtr(chrIns);
+        if (ptr == IntPtr.Zero)
+        {
+            DiagnosticsLogger.LogThrottled(
+                $"GetImmunities-NpcParamPtr-{chrIns:X}",
+                $"GetImmunities failed: npcParamPtr=0x0 chrIns=0x{(long)chrIns:X} npcParamId={GetNpcParamId(chrIns)} chrId={GetChrId(chrIns)}");
+            return new bool[7];
+        }
+
         var immunities = new bool[7];
         var sleepImmune = memoryService.Read<int>(ptr + (int)ChrIns.NpcParamOffsets.SleepImmune);
         immunities[0] = sleepImmune == 90300 || sleepImmune == 5852 || sleepImmune == 9648 || sleepImmune == 9642;
@@ -186,6 +202,14 @@ public class ChrInsService(IMemoryService memoryService) : IChrInsService
     public ResistanceData GetAllResistances(nint chrIns)
     {
         var ptr = GetChrResistPtr(chrIns);
+        if (ptr == IntPtr.Zero)
+        {
+            DiagnosticsLogger.LogThrottled(
+                $"GetAllResistances-ChrResistPtr-{chrIns:X}",
+                $"GetAllResistances failed: chrResistPtr=0x0 chrIns=0x{(long)chrIns:X} npcParamId={GetNpcParamId(chrIns)} chrId={GetChrId(chrIns)}");
+            return new ResistanceData(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+        }
+
         var block = new MemoryBlock(memoryService.ReadBytes(ptr, ResistBlockSize));
         return new ResistanceData(
             block.Get<int>((int)ChrIns.ChrResistOffsets.PoisonCurrent),

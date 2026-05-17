@@ -40,7 +40,7 @@ public static class VersionChecker
 
             return (webVersion > currentVersion, currentVersion, webVersion);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             return (false, null, null);
         }

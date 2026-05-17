@@ -16,7 +16,6 @@ namespace TarnishedTool.Services
         IMemoryService memoryService,
         HookManager hookManager,
         ITravelService travelService,
-        IReminderService reminderService,
         IParamService paramService,
         IChrInsService chrInsService,
         IActionRequestService actionRequestService) : IPlayerService

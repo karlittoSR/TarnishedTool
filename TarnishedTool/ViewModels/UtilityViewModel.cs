@@ -49,9 +49,6 @@ namespace TarnishedTool.ViewModels
         public const int MaterialId06Offset = 0x14;
         */
         public const int ItemNum01Offset = 0x20;
-        private List<byte[]>? _originalMaterialIds;
-        private List<byte[]>? _originalItemNums;
-
         public const int ReinforcePriceRateOffset = 0x68;
         public const int BaseChangePriceRateOffset = 0x6C;
         private List<byte[]>? _originalReinforcePriceRate;
@@ -911,6 +908,7 @@ namespace TarnishedTool.ViewModels
         {
             AreOptionsEnabled = false;
             IsFreeCamEnabled = false;
+            IsShowIgtEnabled = false;
             if (IsDrawLowHitEnabled)
             {
                 _utilityService.ToggleDrawLowHit(false);

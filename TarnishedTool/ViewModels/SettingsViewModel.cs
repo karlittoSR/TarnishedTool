@@ -152,6 +152,7 @@ public class SettingsViewModel : BaseViewModel
                 new("Repeat Act", HotkeyActions.TargetRepeatAct),
                 new("Targeting View", HotkeyActions.TargetTargetingView),
                 new("Open Attack Info", HotkeyActions.ShowAttackInfo),
+                new("Show DPS Overlay", HotkeyActions.ShowDps),
                 new("Open Defenses", HotkeyActions.ShowDefenses),
                 new("Open Special Effects", HotkeyActions.ShowTargetSpEffects),
                 new("No Move", HotkeyActions.TargetNoMove),
@@ -599,7 +600,7 @@ public class SettingsViewModel : BaseViewModel
                 binding.HotkeyText = e.Keys.ToString();
             }
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             if (_hotkeyLookup.TryGetValue(_currentSettingHotkeyId, out var binding))
             {

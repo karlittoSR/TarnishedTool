@@ -22,6 +22,7 @@ namespace TarnishedTool.ViewModels
 
         private AttackInfoWindow _attackInfoWindow;
         private AttackInfoViewModel _attackInfoViewModel;
+        private DpsOverlayWindow _dpsOverlayWindow;
 
         private ResistancesWindow _resistancesWindowWindow;
 
@@ -75,6 +76,7 @@ namespace TarnishedTool.ViewModels
 
             stateService.Subscribe(State.Loaded, OnGameLoaded);
             stateService.Subscribe(State.NotLoaded, OnGameNotLoaded);
+            stateService.Subscribe(State.Detached, OnGameDetached);
 
             SetHpCommand = new DelegateCommand(SetHp);
             SetHpPercentageCommand = new DelegateCommand(SetHpPercentage);
@@ -132,6 +134,7 @@ namespace TarnishedTool.ViewModels
                     IsShowAiInfoEnabled = false;
                     IsShowDefensesEnabled = false;
                     IsShowAttackInfoEnabled = false;
+                    IsShowDpsEnabled = false;
                     IsShowSpEffectEnabled = false;
                     IsRepeatActEnabled = false;
                     IsResistancesWindowOpen = false;
@@ -210,6 +213,7 @@ namespace TarnishedTool.ViewModels
             set
             {
                 SetProperty(ref _showPoison, value);
+                OnPropertyChanged(nameof(ShowPoisonAndNotImmune));
                 RefreshResistancesWindow();
                 SettingsManager.Default.ResistancesShowPoison = value;
                 SettingsManager.Default.Save();
@@ -222,7 +226,11 @@ namespace TarnishedTool.ViewModels
         public bool IsPoisonImmune
         {
             get => _isPoisonImmune;
-            set => SetProperty(ref _isPoisonImmune, value);
+            set
+            {
+                SetProperty(ref _isPoisonImmune, value);
+                OnPropertyChanged(nameof(ShowPoisonAndNotImmune));
+            }
         }
 
         private int _currentBleed;
@@ -249,6 +257,7 @@ namespace TarnishedTool.ViewModels
             set
             {
                 SetProperty(ref _showBleed, value);
+                OnPropertyChanged(nameof(ShowBleedAndNotImmune));
                 RefreshResistancesWindow();
                 SettingsManager.Default.ResistancesShowBleed = value;
                 SettingsManager.Default.Save();
@@ -261,7 +270,11 @@ namespace TarnishedTool.ViewModels
         public bool IsBleedImmune
         {
             get => _isBleedImmune;
-            set => SetProperty(ref _isBleedImmune, value);
+            set
+            {
+                SetProperty(ref _isBleedImmune, value);
+                OnPropertyChanged(nameof(ShowBleedAndNotImmune));
+            }
         }
 
         private int _currentRot;
@@ -288,6 +301,7 @@ namespace TarnishedTool.ViewModels
             set
             {
                 SetProperty(ref _showRot, value);
+                OnPropertyChanged(nameof(ShowRotAndNotImmune));
                 RefreshResistancesWindow();
                 SettingsManager.Default.ResistancesShowRot = value;
                 SettingsManager.Default.Save();
@@ -300,7 +314,11 @@ namespace TarnishedTool.ViewModels
         public bool IsRotImmune
         {
             get => _isRotImmune;
-            set => SetProperty(ref _isRotImmune, value);
+            set
+            {
+                SetProperty(ref _isRotImmune, value);
+                OnPropertyChanged(nameof(ShowRotAndNotImmune));
+            }
         }
 
         private int _currentFrost;
@@ -327,6 +345,7 @@ namespace TarnishedTool.ViewModels
             set
             {
                 SetProperty(ref _showFrost, value);
+                OnPropertyChanged(nameof(ShowFrostAndNotImmune));
                 RefreshResistancesWindow();
                 SettingsManager.Default.ResistancesShowFrost = value;
                 SettingsManager.Default.Save();
@@ -339,7 +358,11 @@ namespace TarnishedTool.ViewModels
         public bool IsFrostImmune
         {
             get => _isFrostImmune;
-            set => SetProperty(ref _isFrostImmune, value);
+            set
+            {
+                SetProperty(ref _isFrostImmune, value);
+                OnPropertyChanged(nameof(ShowFrostAndNotImmune));
+            }
         }
 
         private int _currentSleep;
@@ -382,6 +405,7 @@ namespace TarnishedTool.ViewModels
             set
             {
                 SetProperty(ref _showMadness, value);
+                OnPropertyChanged(nameof(ShowMadnessAndNotImmune));
                 RefreshResistancesWindow();
                 SettingsManager.Default.ResistancesShowMadness = value;
                 SettingsManager.Default.Save();
@@ -413,6 +437,7 @@ namespace TarnishedTool.ViewModels
             set
             {
                 SetProperty(ref _showDeathBlight, value);
+                OnPropertyChanged(nameof(ShowDeathBlightAndNotImmune));
                 RefreshResistancesWindow();
                 SettingsManager.Default.ResistancesShowDeathBlight = value;
                 SettingsManager.Default.Save();
@@ -428,6 +453,7 @@ namespace TarnishedTool.ViewModels
             set
             {
                 SetProperty(ref _showSleep, value);
+                OnPropertyChanged(nameof(ShowSleepAndNotImmune));
                 RefreshResistancesWindow();
                 SettingsManager.Default.ResistancesShowSleep = value;
                 SettingsManager.Default.Save();
@@ -440,7 +466,11 @@ namespace TarnishedTool.ViewModels
         public bool IsSleepImmune
         {
             get => _isSleepImmune;
-            set => SetProperty(ref _isSleepImmune, value);
+            set
+            {
+                SetProperty(ref _isSleepImmune, value);
+                OnPropertyChanged(nameof(ShowSleepAndNotImmune));
+            }
         }
 
         private bool _isMadnessImmune;
@@ -448,7 +478,11 @@ namespace TarnishedTool.ViewModels
         public bool IsMadnessImmune
         {
             get => _isMadnessImmune;
-            set => SetProperty(ref _isMadnessImmune, value);
+            set
+            {
+                SetProperty(ref _isMadnessImmune, value);
+                OnPropertyChanged(nameof(ShowMadnessAndNotImmune));
+            }
         }
 
         private bool _isDeathBlightImmune;
@@ -456,7 +490,11 @@ namespace TarnishedTool.ViewModels
         public bool IsDeathBlightImmune
         {
             get => _isDeathBlightImmune;
-            set => SetProperty(ref _isDeathBlightImmune, value);
+            set
+            {
+                SetProperty(ref _isDeathBlightImmune, value);
+                OnPropertyChanged(nameof(ShowDeathBlightAndNotImmune));
+            }
         }
 
         private bool _showAllResistances;
@@ -786,7 +824,26 @@ namespace TarnishedTool.ViewModels
                     if (_isShowAttackInfoEnabled) OpenAttackInfoWindow();
                     else CloseAttackInfoWindow();
 
-                    _attackInfoService.ToggleAttackInfoHook(_isShowAttackInfoEnabled);
+                    _attackInfoService.ToggleAttackInfoHook(_isShowAttackInfoEnabled || _isShowDpsEnabled);
+                }
+            }
+        }
+
+        private bool _isShowDpsEnabled;
+
+        public bool IsShowDpsEnabled
+        {
+            get => _isShowDpsEnabled;
+            set
+            {
+                if (SetProperty(ref _isShowDpsEnabled, value))
+                {
+                    if (_isShowDpsEnabled) OpenDpsOverlay();
+                    else CloseDpsOverlay();
+
+                    SettingsManager.Default.ShowDpsOverlay = value;
+                    SettingsManager.Default.Save();
+                    _attackInfoService.ToggleAttackInfoHook(_isShowAttackInfoEnabled || _isShowDpsEnabled);
                 }
             }
         }
@@ -882,6 +939,8 @@ namespace TarnishedTool.ViewModels
 
         private void OnGameLoaded()
         {
+            _attackInfoViewModel.ResetSession();
+
             if (IsTargetOptionsEnabled)
             {
                 _targetService.ToggleTargetHook(true);
@@ -890,6 +949,15 @@ namespace TarnishedTool.ViewModels
 
             _targetService.ToggleTargetAi(false);
             AreOptionsEnabled = true;
+
+            if (SettingsManager.Default.ShowDpsOverlay)
+            {
+                _isShowDpsEnabled = true;
+                OnPropertyChanged(nameof(IsShowDpsEnabled));
+                OpenDpsOverlay();
+                _attackInfoService.ToggleAttackInfoHook(true);
+                _gameTickService.Subscribe(TargetTick);
+            }
         }
 
         private void OnGameNotLoaded()
@@ -902,6 +970,13 @@ namespace TarnishedTool.ViewModels
             _targetService.ToggleNoHeal(false);
             _enemyService.UnhookForceAct();
             IsShowAiInfoEnabled = false;
+        }
+
+        private void OnGameDetached()
+        {
+            IsTargetOptionsEnabled = false;
+            _attackInfoViewModel.ResetSession();
+            OnGameNotLoaded();
         }
 
         private void RegisterHotkeys()
@@ -958,6 +1033,8 @@ namespace TarnishedTool.ViewModels
                 () => { ExecuteTargetAction(() => IsTargetingViewEnabled = !IsTargetingViewEnabled); _notificationService?.ShowNotification(HotkeyActions.TargetTargetingView, IsTargetingViewEnabled); });
             _hotkeyManager.RegisterAction(HotkeyActions.ShowAttackInfo,
                 () => { ExecuteWindowAction(() => IsShowAttackInfoEnabled = !IsShowAttackInfoEnabled); _notificationService?.ShowNotification(HotkeyActions.ShowAttackInfo, IsShowAttackInfoEnabled); });
+            _hotkeyManager.RegisterAction(HotkeyActions.ShowDps,
+                () => { ExecuteWindowAction(() => IsShowDpsEnabled = !IsShowDpsEnabled); _notificationService?.ShowNotification(HotkeyActions.ShowDps, IsShowDpsEnabled); });
             _hotkeyManager.RegisterAction(HotkeyActions.ShowDefenses,
                 () => { ExecuteWindowAction(() => IsShowDefensesEnabled = !IsShowDefensesEnabled); _notificationService?.ShowNotification(HotkeyActions.ShowDefenses, IsShowDefensesEnabled); });
             _hotkeyManager.RegisterAction(HotkeyActions.ShowTargetSpEffects,
@@ -1148,18 +1225,23 @@ namespace TarnishedTool.ViewModels
             UpdateResistances();
 
 
-            if (IsShowAttackInfoEnabled)
+            if (IsShowAttackInfoEnabled || IsShowDpsEnabled)
             {
-                var attackInfo = _attackInfoService.PollAttackInfo();
-                if (attackInfo.Count > 0)
+                bool isSessionTarget = _attackInfoViewModel.NotifyTargetChanged(chrIns);
+                if (isSessionTarget)
                 {
-                    _attackInfoViewModel.AddAttacks(attackInfo);
+                    var attackInfo = _attackInfoService.PollAttackInfo();
+                    if (attackInfo.Count > 0)
+                        _attackInfoViewModel.AddAttacks(attackInfo);
+                    _attackInfoViewModel.NotifyTarget(CurrentHealth);
+                    _attackInfoViewModel.NotifyHpDelta(CurrentHealth, MaxHealth);
                 }
+                _attackInfoViewModel.RefreshDpsDisplay();
             }
 
             if (IsShowSpEffectEnabled)
             {
-                var spEffects = _spEffectService.GetActiveSpEffectList(_targetService.GetTargetChrIns());
+                var spEffects = _spEffectService.GetActiveSpEffectList(chrIns);
                 _spEffectViewModel.RefreshEffects(spEffects);
             }
         }
@@ -1212,22 +1294,46 @@ namespace TarnishedTool.ViewModels
         {
             long chrIns = _targetService.GetTargetChrIns();
             if (chrIns == 0)
+            {
+                DiagnosticsLogger.LogThrottled("InvalidTarget-ChrInsZero", "IsTargetValid failed: target chrIns is 0x0");
                 return false;
+            }
 
             float health = _targetService.GetCurrentHp();
             float maxHealth = _targetService.GetMaxHp();
             if (health < 0 || maxHealth <= 0 || health > 10000000 || maxHealth > 10000000)
+            {
+                DiagnosticsLogger.LogThrottled(
+                    $"InvalidTarget-Health-{chrIns:X}",
+                    $"IsTargetValid failed: chrIns=0x{chrIns:X} health={health} maxHealth={maxHealth}");
                 return false;
+            }
 
-            if (health > maxHealth * 1.5) return false;
+            if (health > maxHealth * 1.5)
+            {
+                DiagnosticsLogger.LogThrottled(
+                    $"InvalidTarget-HealthRatio-{chrIns:X}",
+                    $"IsTargetValid failed: chrIns=0x{chrIns:X} health={health} maxHealth={maxHealth} ratioTooHigh=true");
+                return false;
+            }
 
             var position = _targetService.GetLocalCoords();
 
             if (float.IsNaN(position.X) || float.IsNaN(position.Y) || float.IsNaN(position.Z))
+            {
+                DiagnosticsLogger.LogThrottled(
+                    $"InvalidTarget-NaNPosition-{chrIns:X}",
+                    $"IsTargetValid failed: chrIns=0x{chrIns:X} position=({position.X}, {position.Y}, {position.Z}) containsNaN=true");
                 return false;
+            }
 
             if (Math.Abs(position.X) > 10000 || Math.Abs(position.Y) > 10000 || Math.Abs(position.Z) > 10000)
+            {
+                DiagnosticsLogger.LogThrottled(
+                    $"InvalidTarget-PositionRange-{chrIns:X}",
+                    $"IsTargetValid failed: chrIns=0x{chrIns:X} position=({position.X}, {position.Y}, {position.Z}) outOfRange=true");
                 return false;
+            }
 
             return true;
         }
@@ -1290,6 +1396,7 @@ namespace TarnishedTool.ViewModels
 
         private void OpenAttackInfoWindow()
         {
+            if (_attackInfoWindow != null) return;
             _attackInfoWindow = new AttackInfoWindow
             {
                 DataContext = _attackInfoViewModel
@@ -1308,6 +1415,28 @@ namespace TarnishedTool.ViewModels
             if (_attackInfoWindow == null || !_attackInfoWindow.IsVisible) return;
             _attackInfoWindow.Close();
             _attackInfoWindow = null;
+        }
+
+        private void OpenDpsOverlay()
+        {
+            if (_dpsOverlayWindow != null) return;
+            _dpsOverlayWindow = new DpsOverlayWindow
+            {
+                DataContext = _attackInfoViewModel
+            };
+            _dpsOverlayWindow.Closed += (s, e) =>
+            {
+                _dpsOverlayWindow = null;
+                IsShowDpsEnabled = false;
+            };
+            _dpsOverlayWindow.Show();
+        }
+
+        private void CloseDpsOverlay()
+        {
+            if (_dpsOverlayWindow == null || !_dpsOverlayWindow.IsVisible) return;
+            _dpsOverlayWindow.Close();
+            _dpsOverlayWindow = null;
         }
 
         private void UpdateResistancesDisplay()
@@ -1369,9 +1498,8 @@ namespace TarnishedTool.ViewModels
 
         private void RefreshResistancesWindow()
         {
-            if (!IsResistancesWindowOpen || _resistancesWindowWindow == null) return;
-            _resistancesWindowWindow.DataContext = null;
-            _resistancesWindowWindow.DataContext = this;
+            // DataContext is already set to 'this' when the window is opened;
+            // INotifyPropertyChanged handles all updates automatically.
         }
 
         private void OpenSpEffectsWindow()
