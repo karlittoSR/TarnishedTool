@@ -58,6 +58,7 @@ public enum HotkeyActions
     TargetRepeatAct,
     TargetTargetingView,
     ShowAttackInfo,
+    ShowDps,
     ShowDefenses,
     ShowTargetSpEffects,
     TargetNoMove,

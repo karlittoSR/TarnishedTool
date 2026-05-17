@@ -61,7 +61,7 @@ namespace TarnishedTool
             IChrInsService chrInsService = new ChrInsService(_memoryService);
             ITravelService travelService = new TravelService(_memoryService, _hookManager);
             IPlayerService playerService =
-                new PlayerService(_memoryService, _hookManager, travelService, reminderService, paramService, chrInsService, actionRequestService);
+                new PlayerService(_memoryService, _hookManager, travelService, paramService, chrInsService, actionRequestService);
             IUtilityService utilityService = new UtilityService(_memoryService, _hookManager, playerService, actionRequestService);
             IEventService eventService = new EventService(_memoryService, _hookManager, reminderService);
             IAttackInfoService attackInfoService = new AttackInfoService(_memoryService, _hookManager);

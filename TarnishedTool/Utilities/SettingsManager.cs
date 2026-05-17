@@ -61,6 +61,9 @@ public class SettingsManager
     public double IgtOverlayLeft { get; set; }
     public double IgtOverlayTop { get; set; }
     public bool ShowIgtOverlay { get; set; }
+    public double DpsOverlayLeft { get; set; }
+    public double DpsOverlayTop { get; set; }
+    public bool ShowDpsOverlay { get; set; }
     public bool EnableHotkeys { get; set; }
     public bool RememberPlayerSpeed { get; set; }
     public float PlayerSpeed { get; set; }

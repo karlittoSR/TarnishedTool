@@ -12,13 +12,14 @@ public class AttackInfo
     public float RawHolyDamage { get; set; }
     public float PoiseDamage { get; set; }
     public PhysicalAttackType PhysicalAttackType { get; set; }
+    public byte DamageTypeRawValue { get; set; }
     public int TotalDamage { get; set; }
     public int FireDamage { get; set; }
     public int MagicDamage { get; set; }
     public int LightningDamage { get; set; }
     public int HolyDamage { get; set; }
     public int EnemyId { get; set; }
-    
+
 }
 
 public enum PhysicalAttackType
@@ -26,5 +27,6 @@ public enum PhysicalAttackType
     Slash = 0,
     Strike = 1,
     Pierce = 2,
+    Standard = 3,
 }
 

@@ -36,7 +36,8 @@ public class GameTickService : IGameTickService
 
     private void OnTick(object sender, EventArgs e)
     {
-        foreach (var subscriber in _subscribers)
+        var snapshot = _subscribers.ToArray();
+        foreach (var subscriber in snapshot)
             subscriber();
     }
 }

@@ -18,19 +18,22 @@ public class StateService(IMemoryService memoryService) : IStateService
 
     public void Publish(State eventType)
     {
-        if (_eventHandlers.ContainsKey(eventType))
+        if (_eventHandlers.TryGetValue(eventType, out var handlers))
         {
-            foreach (var handler in _eventHandlers[eventType])
+            foreach (var handler in handlers)
                 handler.Invoke();
         }
     }
 
     public void Subscribe(State eventType, Action handler)
     {
-        if (!_eventHandlers.ContainsKey(eventType))
-            _eventHandlers[eventType] = new List<Action>();
+        if (!_eventHandlers.TryGetValue(eventType, out var handlers))
+        {
+            handlers = new List<Action>();
+            _eventHandlers[eventType] = handlers;
+        }
 
-        _eventHandlers[eventType].Add(handler);
+        handlers.Add(handler);
     }
 
     public void Unsubscribe(State eventType, Action handler)

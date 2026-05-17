@@ -10,7 +10,7 @@
         Style="{StaticResource DefaultWindowStyle}"
         WindowStyle="None"
         AllowsTransparency="True"
-        Title="AttackInfoWindow" Height="450" Width="800">
+        Title="AttackInfoWindow" Height="450" Width="480">
 
     <windows:TopmostWindow.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVis" />
@@ -32,7 +32,7 @@
         </Grid.RowDefinitions>
 
         <controls:TitleBar Grid.Row="0" Title="Attack Information" />
-        
+
         <CheckBox x:Name="AlwaysOnTopCheckBox"
                   Grid.Row="1" 
                   HorizontalAlignment="Right"
@@ -41,7 +41,7 @@
                   Unchecked="AlwaysOnTopCheckBox_Unchecked">
             Always on Top
         </CheckBox>
-        
+
         <Grid Grid.Row="2" Margin="8">
             <Grid.RowDefinitions>
                 <RowDefinition Height="*" />
@@ -68,51 +68,46 @@
                                     <RowDefinition Height="Auto" />
                                     <RowDefinition Height="Auto" />
                                 </Grid.RowDefinitions>
-                                
+
+                                <!-- Row 0: #id · enemy | type  poise -->
                                 <Grid Grid.Row="0">
                                     <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="Auto" />
                                         <ColumnDefinition Width="*" />
                                         <ColumnDefinition Width="Auto" />
                                     </Grid.ColumnDefinitions>
 
                                     <TextBlock Grid.Column="0" FontSize="11" Foreground="{StaticResource DimTextBrush}">
                                         <Run Text="#" /><Run Text="{Binding Id, Mode=OneWay}" />
+                                        <Run Text=" · " /><Run Text="{Binding EnemyId, Mode=OneWay}" />
                                     </TextBlock>
 
-                                    <TextBlock Grid.Column="1"
-                                               HorizontalAlignment="Center"
-                                               FontSize="11"
-                                               Foreground="{StaticResource DimTextBrush}">
-                                        <Run Text="Enemy: " /><Run Text="{Binding EnemyId, Mode=OneWay}" />
-                                    </TextBlock>
-
-                                    <TextBlock Grid.Column="2"
-                                               FontSize="11"
-                                               Foreground="{StaticResource PhysicalBrush}"
-                                               Text="{Binding AttackType, Mode=OneWay}" />
+                                    <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                        <TextBlock FontSize="11"
+                                                   Foreground="{StaticResource PhysicalBrush}"
+                                                   Text="{Binding AttackType, Mode=OneWay}"
+                                                   Margin="0,0,8,0" />
+                                        <TextBlock FontSize="9"
+                                                   Foreground="{StaticResource DimTextBrush}"
+                                                   Text="{Binding DamageTypeRawValue, StringFormat={}({0}), Mode=OneWay}"
+                                                   Margin="0,0,8,0" />
+                                        <TextBlock FontSize="11">
+                                            <Run Text="Poise: " Foreground="{StaticResource DimTextBrush}" />
+                                            <Run Text="{Binding PoiseDamage, StringFormat={}{0:F2}, Mode=OneWay}"
+                                                 Foreground="#FF4444" FontWeight="Bold" />
+                                        </TextBlock>
+                                    </StackPanel>
                                 </Grid>
                                 
-                                <Grid Grid.Row="1" Margin="0,4,0,0">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*" />
-                                        <ColumnDefinition Width="Auto" />
-                                    </Grid.ColumnDefinitions>
-
-                                    <TextBlock Grid.Column="0" FontSize="14" FontWeight="SemiBold">
-                                        <Run Text="{Binding TotalDamage, Mode=OneWay}" />
-                                        <Run Text=" damage" Foreground="{StaticResource DimTextBrush}"
-                                             FontWeight="Normal" FontSize="11" />
-                                    </TextBlock>
-
-                                    <TextBlock Grid.Column="1" FontSize="11">
-                                        <Run Text="Poise: " Foreground="{StaticResource DimTextBrush}" />
-                                        <Run Text="{Binding PoiseDamage, StringFormat={}{0:F2}, Mode=OneWay}" />
-                                    </TextBlock>
-                                </Grid>
+                                <!-- Row 1: total damage -->
+                                <TextBlock Grid.Row="1" FontSize="14" FontWeight="SemiBold" Margin="0,3,0,0">
+                                    <Run Text="{Binding TotalDamage, Mode=OneWay}" />
+                                    <Run Text=" damage" Foreground="{StaticResource DimTextBrush}"
+                                         FontWeight="Normal" FontSize="11" />
+                                </TextBlock>
                                 
                                 <WrapPanel Grid.Row="2" Margin="0,2,0,0">
-                                    <TextBlock FontSize="11" Margin="0,0,10,0">
+                                    <TextBlock FontSize="11" Margin="0,0,10,0"
+                                               Visibility="{Binding HasPhysicalDamage, Converter={StaticResource BoolToVis}}">
                                         <Run Text="Phys " Foreground="{StaticResource DimTextBrush}" />
                                         <Run Text="{Binding PhysicalDamage, Mode=OneWay}"
                                              Foreground="{StaticResource PhysicalBrush}" />
@@ -153,7 +148,8 @@
                                         <Run Text="Raw:" />
                                     </TextBlock>
 
-                                    <TextBlock FontSize="10" Margin="0,0,8,0">
+                                    <TextBlock FontSize="10" Margin="0,0,8,0"
+                                               Visibility="{Binding HasRawPhysicalDamage, Converter={StaticResource BoolToVis}}">
                                         <Run Text="{Binding RawPhysicalDamage, StringFormat={}{0:F2}, Mode=OneWay}"
                                              Foreground="{StaticResource PhysicalBrush}" />
                                     </TextBlock>
