@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v1.1.3] - 2024 (hotfix)
+
+### Fixed
+- **Critical:** Detach and program close now properly reset ALL toggles from the game state.
+  - Target toggles: targeting view, backstab/crit draws, freeze AI, show defenses/attacks/DPS/speffects/AI info now properly disabled.
+  - Travel toggles: "Show All Graces" and "Show All Maps" now properly disabled.
+  - Player toggles: HP Regen (Hot) and FP Regen now properly disabled.
+  - Utility toggles: IGT overlay and Player Movement now properly disabled.
+- Comprehensive cleanup on both in-world and main-menu detach states.
+- Ensures complete vanilla state restoration for speedrunners to switch immediately from training to runs.
+
+
 ## [Unreleased] - v1.1.2
 
 ### Added
