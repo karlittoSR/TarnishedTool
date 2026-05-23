@@ -319,9 +319,11 @@ namespace TarnishedTool
                 {
                     if (_loaded)
                     {
-                        _playerViewModel.ResetToggles();
-                        _enemyViewModel.ResetToggles();
-                        _utilityViewModel.ResetToggles();
+                        _playerViewModel?.ResetToggles();
+                        _enemyViewModel?.ResetToggles();
+                        _utilityViewModel?.ResetToggles();
+                        _targetViewModel?.ResetToggles();
+                        _travelViewModel?.ResetToggles();
                     }
 
                     _hookManager.UninstallAllHooks();
@@ -333,6 +335,17 @@ namespace TarnishedTool
                     }
 
                     _memoryService.ManualDetach();
+
+                    // Always reset UI toggles so checkboxes reflect vanilla state,
+                    // even when memory writes were skipped (e.g. main menu after quitout).
+                    if (!_loaded)
+                    {
+                        _playerViewModel?.ResetToggles();
+                        _enemyViewModel?.ResetToggles();
+                        _utilityViewModel?.ResetToggles();
+                        _targetViewModel?.ResetToggles();
+                        _travelViewModel?.ResetToggles();
+                    }
                 }
                 catch
                 {
