@@ -13,13 +13,13 @@
 
 ---
 
-## What’s new (unreleased / v1.1.2)
+## What’s new (unreleased / v1.1.3)
 
 - Added enhanced logging for physical damage types in the Attack Information panel (shows raw byte value for easier debugging).
 - Suppress zero-damage entries in the Attack Information panel to reduce noise (misses / jumps are ignored).
 - Various diagnostics and debugging utilities added (AttackTypeDebugger, DiagnosticsLogger) to aid future investigations.
 - UI/VM improvements related to attack info and target tracking; small fixes in services and project configuration.
-- Version bumped to 1.1.2
+- Version bumped to 1.1.3
 
 See CHANGELOG.md for a full list of changes since v1.1.1.
 
