@@ -26,10 +26,12 @@ See CHANGELOG.md for a full list of changes since v1.1.1.
 
 ## Speedrun Edition — Features
 
+This fork focuses on reliability and workflow improvements for speedrunners: safer session cleanup, predictable hotkey behavior, and small utilities that make practice and runs easier.
+
 ### Clean Session Management (Detach)
 * **Detach button** — resets all active toggles, uninstalls all hooks, frees the code cave and releases the game process in one click, leaving the game in a vanilla state ready for a run.
 * The Detach button is only enabled when the player is **in-world** (prevents crashes from null pointers on the main menu).
-* **Closing the tool** (red X / Alt+F4) automatically performs the same cleanup — no manual detach needed.
+* **Closing the tool** (red X / Alt+F4) automatically performs the same cleanup — no manual detach needed. The close-path performs the same cleanup as Detach to ensure no toggles remain patched when you exit.
 
 ### Hotkey Notifications
 * Every hotkey now shows an **ON / OFF toast notification** (green / red) instead of a generic one-shot popup.
@@ -41,6 +43,26 @@ See CHANGELOG.md for a full list of changes since v1.1.1.
 * Toggle **Show IGT** in the Utility tab to open a draggable transparent overlay showing current In-Game Time.
 * Updates every 16 ms (1-frame precision at 60 fps).
 * Overlay position is saved between sessions — drag it wherever you want it.
+
+### Recent changes since the fork
+A short summary of the notable feature work and bugfixes added on top of the original project:
+
+- v1.1.3 (hotfix)
+  - Fixed: Closing the program now fully resets ALL toggles (Target, Travel, Player, Utility) and uninstalls hooks — ensures the game returns to a clean vanilla state.
+  - Fixed: Comprehensive cleanup on both in-world and main-menu detach/close flows (ResetToggles added to multiple viewmodels and called from MainWindow close/detach).
+  - Fixed: Settings persistence bugs where remembered speeds or other preferences were not written to disk. Settings are now saved when the Remember toggles or speeds change and flushed on close.
+  - Safety: Guard rails added to avoid applying invalid saved player/game speeds (zero/negative values fall back to sensible defaults).
+
+- v1.1.2
+  - Added: Raw damage-type logging and display in the Attack Information panel to aid diagnostics (shows raw byte alongside mapped attack type).
+  - Changed: Suppress zero-damage attack entries (misses/jumps) in the Attack Information panel to reduce noise.
+  - Added: Diagnostics helpers (AttackTypeDebugger, DiagnosticsLogger) for offline investigation.
+
+- Other recent work
+  - Hotkey system improvements and clearer in-app notifications.
+  - Minor ViewModel/UI cleanups and several bugfixes around detaching, toggles and settings handling.
+
+These updates prioritize safe, deterministic behavior for speedrun workflows and make the tool less likely to leave the game in a patched state after testing.
 
 ### Other Additions
 * **Change Runes** — set your exact rune count directly (clamped to valid game range).
