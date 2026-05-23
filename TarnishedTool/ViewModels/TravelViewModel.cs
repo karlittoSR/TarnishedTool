@@ -436,6 +436,13 @@ namespace TarnishedTool.ViewModels
             DataLoader.SaveCustomWarps(CustomWarps.GroupedItems);
         }
 
+        public void ResetToggles()
+        {
+            IsShowAllGracesEnabled = false;
+            IsShowAllMapsEnabled = false;
+            IsNoMapAcquiredPopupsEnabled = false;
+        }
+
         #endregion
     }
 }

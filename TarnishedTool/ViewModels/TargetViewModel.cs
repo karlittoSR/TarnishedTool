@@ -1562,6 +1562,26 @@ namespace TarnishedTool.ViewModels
 
         public void SetSpeed(double value) => TargetSpeed = (float)value;
 
+        public void ResetToggles()
+        {
+            IsFreezeAiEnabled = false;
+            IsNoAttackEnabled = false;
+            IsNoMoveEnabled = false;
+            IsRepeatActEnabled = false;
+            IsFreezeHealthEnabled = false;
+            IsTargetingViewEnabled = false;
+            IsNoStaggerEnabled = false;
+            IsDisableAllExceptTargetEnabled = false;
+            IsShowDefensesEnabled = false;
+            IsShowAttackInfoEnabled = false;
+            IsShowDpsEnabled = false;
+            IsShowSpEffectEnabled = false;
+            IsShowAiInfoEnabled = false;
+            IsDrawCritViewEnabled = false;
+            IsDrawBackstabViewEnabled = false;
+            ShowAllResistances = false;
+        }
+
         #endregion
     }
 }

@@ -31,6 +31,8 @@ namespace TarnishedTool
         private PlayerViewModel _playerViewModel;
         private EnemyViewModel _enemyViewModel;
         private UtilityViewModel _utilityViewModel;
+        private TargetViewModel _targetViewModel;
+        private TravelViewModel _travelViewModel;
 
         private readonly DispatcherTimer _gameLoadedTimer;
 
@@ -98,6 +100,7 @@ namespace TarnishedTool
                 _dlcService, emevdService, playerService,
                 gameTickService, hotkeyManager, hotkeyNotificationService
             );
+            _travelViewModel = travelViewModel;
 
             EnemyViewModel enemyViewModel = new EnemyViewModel(
                 enemyService, _stateService, hotkeyManager, emevdService,
@@ -113,6 +116,7 @@ namespace TarnishedTool
                 emevdService, gameTickService, aiWindowService,
                 hotkeyNotificationService
             );
+            _targetViewModel = targetViewModel;
 
             EventViewModel eventViewModel = new EventViewModel(
                 eventService, _stateService, itemService, _dlcService,
@@ -370,6 +374,8 @@ namespace TarnishedTool
                     _playerViewModel.ResetToggles();
                     _enemyViewModel.ResetToggles();
                     _utilityViewModel.ResetToggles();
+                    _targetViewModel.ResetToggles();
+                    _travelViewModel.ResetToggles();
                 }
 
                 // Uninstall all hooks to restore game code to vanilla state
@@ -392,6 +398,8 @@ namespace TarnishedTool
                     _playerViewModel.ResetToggles();
                     _enemyViewModel.ResetToggles();
                     _utilityViewModel.ResetToggles();
+                    _targetViewModel.ResetToggles();
+                    _travelViewModel.ResetToggles();
                 }
 
                 // Reset the attached state flags

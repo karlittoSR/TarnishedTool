@@ -856,6 +856,8 @@ namespace TarnishedTool.ViewModels
             IsShowFullShopLineupEnabled = false;
             IsNoUpgradeCostEnabled = false;
             IsAllDiscardableEnabled = false;
+            IsShowIgtEnabled = false;
+            IsPlayerMovementEnabled = false;
             GameSpeed = DefaultGameSpeed;
         }
 
