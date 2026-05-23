@@ -38,7 +38,7 @@ namespace TarnishedTool.ViewModels
         private readonly IGameTickService _gameTickService;
         private readonly IHotkeyNotificationService _notificationService;
 
-        public static readonly long[] NewGameEventIds = [50, 51, 52, 53, 54, 55, 56, 57];
+        public static readonly long[] NewGameEventIds = new long[] { 50, 51, 52, 53, 54, 55, 56, 57 };
 
         // Faster Death Stuff
         private const uint MenuCommonParamRowId = 0;
@@ -646,11 +646,11 @@ namespace TarnishedTool.ViewModels
                     if (IsRememberSpeedEnabled && Math.Abs(value - DefaultSpeed) > Epsilon)
                     {
                         SettingsManager.Default.PlayerSpeed = value;
+                        SettingsManager.Default.Save();
                     }
                 }
             }
         }
-
 
         private bool _isRememberSpeedEnabled;
 
@@ -661,20 +661,19 @@ namespace TarnishedTool.ViewModels
             {
                 if (SetProperty(ref _isRememberSpeedEnabled, value))
                 {
+                    SettingsManager.Default.RememberPlayerSpeed = _isRememberSpeedEnabled;
+
                     if (_isRememberSpeedEnabled)
                     {
-                        SettingsManager.Default.RememberPlayerSpeed = _isRememberSpeedEnabled;
-
                         if (Math.Abs(PlayerSpeed - DefaultSpeed) > Epsilon)
-                        {
                             SettingsManager.Default.PlayerSpeed = PlayerSpeed;
-                        }
                     }
                     else
                     {
                         SettingsManager.Default.PlayerSpeed = DefaultSpeed;
-                        SettingsManager.Default.RememberPlayerSpeed = _isRememberSpeedEnabled;
                     }
+
+                    SettingsManager.Default.Save();
                 }
             }
         }

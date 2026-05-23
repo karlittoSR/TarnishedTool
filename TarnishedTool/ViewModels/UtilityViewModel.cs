@@ -282,6 +282,7 @@ namespace TarnishedTool.ViewModels
                     if (IsRememberSpeedEnabled && Math.Abs(value - DefaultGameSpeed) > Epsilon)
                     {
                         SettingsManager.Default.GameSpeed = value;
+                        SettingsManager.Default.Save();
                     }
                 }
             }
@@ -324,6 +325,9 @@ namespace TarnishedTool.ViewModels
                         SettingsManager.Default.GameSpeed = DefaultGameSpeed;
                         SettingsManager.Default.RememberGameSpeed = _isRememberSpeedEnabled;
                     }
+
+                    // Persist change
+                    SettingsManager.Default.Save();
                 }
             }
         }
