@@ -25,7 +25,8 @@
                 BorderBrush="#333"
                 CornerRadius="3"
                 Margin="0,0,0,5">
-            <StackPanel Margin="5">
+            <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="600">
+                <StackPanel Margin="5">
                 <TextBlock Text="Target Controls"
                            FontWeight="Bold"
                            Margin="0,0,0,5" />
@@ -820,6 +821,7 @@
                     </StackPanel>
                 </StackPanel>
             </StackPanel>
+            </ScrollViewer>
         </Border>
     </Grid>
 </UserControl>
