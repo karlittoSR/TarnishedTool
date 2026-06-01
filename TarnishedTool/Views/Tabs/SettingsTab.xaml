@@ -112,37 +112,41 @@
 
             <Separator Margin="0,0,0,10" />
 
-            <StackPanel Orientation="Horizontal">
-                <TextBlock Text="Hotkey Bindings" FontWeight="Bold" Margin="10,0,5,10" HorizontalAlignment="Left" />
-                <Border Background="#3498db" CornerRadius="10" Width="12" Height="12" Margin="5,0,0,10"
-                        VerticalAlignment="Center"
-                        ToolTip="For Macros simply set the same keybind to a hotkey."
-                        ToolTipService.InitialShowDelay="100">
-                    <TextBlock Text="i" Foreground="White" HorizontalAlignment="Center"
-                               VerticalAlignment="Center" FontWeight="Bold" FontSize="10" />
-                </Border>
-                <CheckBox Content="Enable Hotkeys"
-                          IsChecked="{Binding IsEnableHotkeysEnabled}"
-                          Margin="20,0,0,10" />
-                <CheckBox Content="Block Game Actions"
-                          IsChecked="{Binding IsBlockGameHotkeysEnabled}"
-                          Margin="20,0,10,10" />
+            <StackPanel Orientation="Vertical">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="Hotkey Bindings" FontWeight="Bold" Margin="10,0,5,10" HorizontalAlignment="Left" />
+                    <Border Background="#3498db" CornerRadius="10" Width="12" Height="12" Margin="5,0,0,10"
+                            VerticalAlignment="Center"
+                            ToolTip="For Macros simply set the same keybind to a hotkey."
+                            ToolTipService.InitialShowDelay="100">
+                        <TextBlock Text="i" Foreground="White" HorizontalAlignment="Center"
+                                   VerticalAlignment="Center" FontWeight="Bold" FontSize="10" />
+                    </Border>
+                    <CheckBox Content="Enable Hotkeys"
+                              IsChecked="{Binding IsEnableHotkeysEnabled}"
+                              Margin="20,0,0,10" />
+                    <CheckBox Content="Block Game Actions"
+                              IsChecked="{Binding IsBlockGameHotkeysEnabled}"
+                              Margin="20,0,10,10" />
 
-                <Border Background="#3498db" CornerRadius="10" Width="12" Height="12" Margin="5,0,0,10"
-                        VerticalAlignment="Center"
-                        ToolTip="Disables game actions from happening when you press a hotkey that you've bound to something in here.&#x0A;This may cause some lag depending on your setup"
-                        ToolTipService.InitialShowDelay="100">
-                    <TextBlock Text="i" Foreground="White" HorizontalAlignment="Center"
-                               VerticalAlignment="Center" FontWeight="Bold" FontSize="10" />
-                </Border>
-                <Button
-                    Content="Clear All Bindings"
-                    Margin="15,0,0,10"
-                    Command="{Binding ClearHotkeysCommand}" />
-                <Button
-                    Content="Import from Practice Tool"
-                    Margin="10,0,0,10"
-                    Command="{Binding ImportPracticeToolBindingsCommand}" />
+                    <Border Background="#3498db" CornerRadius="10" Width="12" Height="12" Margin="5,0,0,10"
+                            VerticalAlignment="Center"
+                            ToolTip="Disables game actions from happening when you press a hotkey that you've bound to something in here.&#x0A;This may cause some lag depending on your setup"
+                            ToolTipService.InitialShowDelay="100">
+                        <TextBlock Text="i" Foreground="White" HorizontalAlignment="Center"
+                                   VerticalAlignment="Center" FontWeight="Bold" FontSize="10" />
+                    </Border>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
+                    <Button
+                        Content="Clear All Bindings"
+                        Margin="0,0,0,10"
+                        Command="{Binding ClearHotkeysCommand}" />
+                    <Button
+                        Content="Import from Practice Tool"
+                        Margin="10,0,0,10"
+                        Command="{Binding ImportPracticeToolBindingsCommand}" />
+                </StackPanel>
             </StackPanel>
 
 
