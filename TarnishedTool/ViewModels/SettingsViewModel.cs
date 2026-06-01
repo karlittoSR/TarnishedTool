@@ -288,6 +288,7 @@ public class SettingsViewModel : BaseViewModel
             if (!confirmed) return;
             ClearHotkeys();
         });
+        ImportPracticeToolBindingsCommand = new DelegateCommand(ImportPracticeToolBindings);
         OpenActivateOnLaunchCommand = new DelegateCommand(OpenActivateOnLaunch);
     }
 
@@ -295,6 +296,7 @@ public class SettingsViewModel : BaseViewModel
 
     public ICommand ClearHotkeysCommand { get; set; }
     public ICommand OpenActivateOnLaunchCommand { get; set; }
+    public ICommand ImportPracticeToolBindingsCommand { get; set; }
 
     #endregion
 
@@ -654,6 +656,118 @@ public class SettingsViewModel : BaseViewModel
     {
         _hotkeyManager.ClearAll();
         LoadHotkeyDisplays();
+    }
+
+    private void ImportPracticeToolBindings()
+    {
+        var dialog = new Microsoft.Win32.OpenFileDialog
+        {
+            Filter = "TOML files (*.toml)|*.toml|All files (*.*)|*.*",
+            InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.Desktop),
+            Title = "Import bindings from jdsd_er_practice_tool.toml by johndisandonato"
+        };
+
+        if (dialog.ShowDialog() != true) return;
+
+        try
+        {
+            var content = System.IO.File.ReadAllText(dialog.FileName);
+            var bindings = ParsePracticeToolToml(content);
+
+            if (bindings.Count == 0)
+            {
+                MsgBox.Show("No hotkey bindings found in the Practice Tool config.", "Import Result");
+                return;
+            }
+
+            foreach (var kvp in bindings)
+            {
+                if (_hotkeyLookup.TryGetValue(kvp.Key, out var binding))
+                {
+                    try
+                    {
+                        var keys = H.Hooks.Keys.Parse(kvp.Value);
+                        _hotkeyManager.SetHotkey(kvp.Key, keys);
+                        binding.HotkeyText = kvp.Value;
+                    }
+                    catch
+                    {
+                        // Skip bindings that can't be parsed
+                    }
+                }
+            }
+
+            MsgBox.Show($"Successfully imported {bindings.Count} hotkey binding(s).", "Import Result");
+        }
+        catch (Exception ex)
+        {
+            MsgBox.Show($"Failed to import bindings: {ex.Message}", "Import Error");
+        }
+    }
+
+    private Dictionary<string, string> ParsePracticeToolToml(string content)
+    {
+        var bindings = new Dictionary<string, string>();
+        var mapping = new Dictionary<string, string>
+        {
+            { "no_damage", "NoDamage" },
+            { "no_stamina_consume", "InfiniteStamina" },
+            { "no_fp_consume", "InfiniteFp" },
+            { "no_goods_consume", "InfiniteConsumables" },
+            { "no_arrows_consume", "InfiniteArrows" },
+            { "deathcam", null }, // Cannot transfer
+            { "no_dead", "NoDeath" },
+            { "one_shot", "OneShot" },
+            { "cycle_speed", "TogglePlayerSpeed" },
+            { "runes", null }, // Cannot transfer
+            { "no_update_ai", "AllDisableAi" },
+            { "gravity", null }, // Cannot transfer
+            { "torrent_gravity", null }, // Cannot transfer
+            { "show_all_map_layers", "ShowAllMaps" },
+            { "show_all_graces", "ShowAllGraces" },
+            { "flag.show_map", "ShowAllMaps" },
+            { "flag.show_chr", "HideCharacters" },
+            { "flag.display_stable_pos", "DrawStablePos" },
+            { "flag.hitbox_high", "DrawHighHit" },
+            { "flag.hitbox_low", "DrawLowHit" },
+            { "flag.hitbox_character", "DrawRagdolls" },
+            { "flag.weapon_hitbox", "DrawHitbox" },
+            { "flag.runearc", "RuneArc" },
+            { "target", "EnableTargetOptions" },
+            { "flag.no_trigger_event", "DisableEvents" },
+            { "flag.collision", "Noclip" },
+            { "flag.action_freeze", "TargetRepeatAct" },
+            { "quitout", "Quitout" }
+        };
+
+        var lines = content.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.None);
+        foreach (var line in lines)
+        {
+            var trimmed = line.Trim();
+            if (string.IsNullOrEmpty(trimmed) || trimmed.StartsWith("#") || trimmed.StartsWith("//")) continue;
+
+            // Parse: { flag = "flag_name", hotkey = "key" }
+            if (trimmed.StartsWith("{") && trimmed.EndsWith("},") || trimmed.EndsWith("}"))
+            {
+                var hotkeyMatch = System.Text.RegularExpressions.Regex.Match(trimmed, @"hotkey\s*=\s*[""']([^""']+)[""']");
+                if (!hotkeyMatch.Success) continue;
+
+                var hotkey = hotkeyMatch.Groups[1].Value;
+
+                // Try to match flag or property name
+                var flagMatch = System.Text.RegularExpressions.Regex.Match(trimmed, @"""([a-z_]+)""");
+                if (flagMatch.Success)
+                {
+                    var flagName = flagMatch.Groups[1].Value;
+                    if (mapping.TryGetValue(flagName, out var actionId) && actionId != null)
+                    {
+                        bindings[actionId] = hotkey;
+                    }
+                }
+            }
+        }
+
+        return bindings;
     }
 
     private readonly ActivateOnLaunchViewModel _activateOnLaunchViewModel;

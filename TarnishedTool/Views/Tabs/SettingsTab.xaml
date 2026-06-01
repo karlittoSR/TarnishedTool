@@ -139,6 +139,10 @@
                     Content="Clear All Bindings"
                     Margin="15,0,0,10"
                     Command="{Binding ClearHotkeysCommand}" />
+                <Button
+                    Content="Import from Practice Tool"
+                    Margin="10,0,0,10"
+                    Command="{Binding ImportPracticeToolBindingsCommand}" />
             </StackPanel>
 
 
