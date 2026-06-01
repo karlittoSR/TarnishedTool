@@ -1052,20 +1052,28 @@ namespace TarnishedTool.ViewModels
         {
             if (!AreOptionsEnabled) return;
 
+            // Speed stuck at 0: recover directly to the remembered/saved speed
+            if (IsApproximately(PlayerSpeed, 0f))
+            {
+                float savedSpeed = SettingsManager.Default.PlayerSpeed;
+                float target = savedSpeed > 0f && !IsApproximately(savedSpeed, 0f) ? savedSpeed : DefaultSpeed;
+                _playerDesiredSpeed = target;
+                SetSpeed(target);
+                return;
+            }
+
             if (!IsApproximately(PlayerSpeed, DefaultSpeed))
             {
-                // Currently not at default speed, save current and go back to 1.0
                 _playerDesiredSpeed = PlayerSpeed;
                 SetSpeed(DefaultSpeed);
             }
             else
             {
-                // Currently at default speed, toggle to desired speed
-                // If no desired speed set, use saved setting (if valid) or default to 2.0
-                if (_playerDesiredSpeed < 0)
+                // Guard against a previously-saved 0 being used as desired speed
+                if (_playerDesiredSpeed <= 0f)
                 {
-                    float savedSpeed = IsRememberSpeedEnabled ? SettingsManager.Default.PlayerSpeed : 0f;
-                    _playerDesiredSpeed = (savedSpeed > DefaultSpeed) ? savedSpeed : 2f;
+                    float savedSpeed = SettingsManager.Default.PlayerSpeed;
+                    _playerDesiredSpeed = savedSpeed > DefaultSpeed ? savedSpeed : 2f;
                 }
                 SetSpeed(_playerDesiredSpeed);
             }
