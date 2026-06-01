@@ -69,6 +69,7 @@ namespace TarnishedTool.ViewModels
             FightEldenBeastCommand = new DelegateCommand(FightEldenBeast);
             ClearDlcCommand = new DelegateCommand(ToggleClearDlc);
             DeactivateMausoleumCommand = new DelegateCommand(ToggleSnowfieldMausoleum);
+            LakeOfRotPlatformsCommand = new DelegateCommand(ToggleLakeOfRotPlatforms);
             SetMorningCommand = new DelegateCommand(SetMorning);
             SetNoonCommand = new DelegateCommand(SetNoon);
             SetDuskCommand = new DelegateCommand(SetDusk);
@@ -99,6 +100,7 @@ namespace TarnishedTool.ViewModels
         public ICommand FightEldenBeastCommand { get; set; }
         public ICommand ClearDlcCommand { get; set; }
         public ICommand DeactivateMausoleumCommand { get; set; }
+        public ICommand LakeOfRotPlatformsCommand { get; set; }
         public ICommand SetMorningCommand { get; set; }
         public ICommand SetNoonCommand { get; set; }
         public ICommand SetDuskCommand { get; set; }
@@ -216,6 +218,22 @@ namespace TarnishedTool.ViewModels
             set => SetProperty(ref _deactivateMausoleumStatusColor, value);
         }
 
+        private string _deactivatePlatformsStatusText;
+
+        public string DeactivatePlatformsStatusText
+        {
+            get => _deactivatePlatformsStatusText;
+            set => SetProperty(ref _deactivatePlatformsStatusText, value);
+        }
+
+        private Brush _deactivatePlatformsStatusColor;
+
+        public Brush DeactivatePlatformsStatusColor
+        {
+            get => _deactivatePlatformsStatusColor;
+            set => SetProperty(ref _deactivatePlatformsStatusColor, value);
+        }
+
         private bool _isDrawEventsEnabled;
 
         public bool IsDrawEventsEnabled
@@ -322,6 +340,8 @@ namespace TarnishedTool.ViewModels
             (DlcClearStatusText, DlcClearStatusColor) = GetStatus(_eventService.GetEvent(Event.ClearDlc));
             (DeactivateMausoleumStatusText, DeactivateMausoleumStatusColor) =
                 GetStatus(_eventService.GetEvent(Event.SnowfieldMausoleum));
+            (DeactivatePlatformsStatusText, DeactivatePlatformsStatusColor) =
+                GetStatus(_eventService.AreAllEventsTrue(Event.LakeOfRotPlatforms));
         }
 
         private (string, Brush) GetStatus(bool isOn) => isOn ? ("ON", OnColor) : ("OFF", OffColor);
@@ -401,10 +421,7 @@ namespace TarnishedTool.ViewModels
 
         private void UnlockMetyr()
         {
-            foreach (var eventId in Event.UnlockMetyr)
-            {
-                _eventService.SetEvent(eventId, true);
-            }
+                _eventService.SetEvents(Event.UnlockMetyr, true);
         }
 
         private void FightFortissax() => _eventService.SetEvent(Event.FightFortissax, true);
@@ -425,6 +442,7 @@ namespace TarnishedTool.ViewModels
             {
                 _ezStateService.ExecuteTalkCommand(EzState.TalkCommands.AcquireGesture(baseGameGestureId));
             }
+
             // Pre-Order Check
             int basePreOrderGestureId = !PreOrderBaseGesture ? 109 : 108;
             _ezStateService.ExecuteTalkCommand(EzState.TalkCommands.AcquireGesture(basePreOrderGestureId));
@@ -436,6 +454,7 @@ namespace TarnishedTool.ViewModels
             {
                 _ezStateService.ExecuteTalkCommand(EzState.TalkCommands.AcquireGesture(dlcGestureId));
             }
+
             // Pre-Order Check
             int dlcPreOrderGestureId = !PreOrderDlcGesture ? 113 : 116;
             _ezStateService.ExecuteTalkCommand(EzState.TalkCommands.AcquireGesture(dlcPreOrderGestureId));
@@ -450,6 +469,12 @@ namespace TarnishedTool.ViewModels
         private void ToggleSnowfieldMausoleum()
         {
             _eventService.ToggleEvent(Event.SnowfieldMausoleum);
+            UpdateEventStatus();
+        }
+
+        private void ToggleLakeOfRotPlatforms()
+        {
+            _eventService.ToggleEvents(Event.LakeOfRotPlatforms);
             UpdateEventStatus();
         }
 
