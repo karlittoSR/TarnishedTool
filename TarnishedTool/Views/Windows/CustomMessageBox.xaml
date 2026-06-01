@@ -15,9 +15,9 @@
         AllowsTransparency="True"
         Background="Transparent"
         >
-    <Border Background="#2D2D30" 
-            BorderBrush="#92400E" 
-            BorderThickness="1" 
+    <Border Background="#2D2D30"
+            BorderBrush="#055096"
+            BorderThickness="1"
             CornerRadius="4"
             Margin="10">
         <Border.Effect>
@@ -31,8 +31,8 @@
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
             
-            <Border Grid.Row="0" 
-                    Background="#92400E" 
+            <Border Grid.Row="0"
+                    Background="#055096"
                     CornerRadius="3,3,0,0"
                     MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
                 <TextBlock x:Name="TitleText"
@@ -112,7 +112,7 @@
                     <Setter Property="Background" Value="#505054"/>
                 </Trigger>
                 <Trigger Property="IsPressed" Value="True">
-                    <Setter Property="Background" Value="#92400E"/>
+                    <Setter Property="Background" Value="#055096"/>
                 </Trigger>
             </Style.Triggers>
         </Style>

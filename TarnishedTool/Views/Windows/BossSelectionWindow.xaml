@@ -40,14 +40,14 @@
                     <Setter Property="Background" Value="#505054"/>
                 </Trigger>
                 <Trigger Property="IsPressed" Value="True">
-                    <Setter Property="Background" Value="#92400E"/>
+                    <Setter Property="Background" Value="#055096"/>
                 </Trigger>
             </Style.Triggers>
         </Style>
     </Window.Resources>
-    
-    <Border Background="#252526" 
-            BorderBrush="#92400E" 
+
+    <Border Background="#252526"
+            BorderBrush="#055096" 
             BorderThickness="1" 
             CornerRadius="4"
             Margin="10">
@@ -64,8 +64,8 @@
             </Grid.RowDefinitions>
             
             <!-- Title Bar -->
-            <Border Grid.Row="0" 
-                    Background="#92400E" 
+            <Border Grid.Row="0"
+                    Background="#055096"
                     CornerRadius="3,3,0,0"
                     MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
                 <TextBlock Text="Multiple Bosses Nearby Found" 
@@ -109,7 +109,7 @@
                                             <Setter TargetName="Border" Property="Background" Value="#3E3E42"/>
                                         </Trigger>
                                         <Trigger Property="IsSelected" Value="True">
-                                            <Setter TargetName="Border" Property="Background" Value="#92400E"/>
+                                            <Setter TargetName="Border" Property="Background" Value="#055096"/>
                                         </Trigger>
                                     </ControlTemplate.Triggers>
                                 </ControlTemplate>

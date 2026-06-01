@@ -776,7 +776,7 @@
 
         <Style TargetType="ContextMenu">
             <Setter Property="Background" Value="#2D2D2D" />
-            <Setter Property="BorderBrush" Value="#edaa57" />
+            <Setter Property="BorderBrush" Value="#055096" />
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="Template">
                 <Setter.Value>
