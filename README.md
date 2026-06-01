@@ -13,13 +13,27 @@
 
 ---
 
-## What’s new (unreleased / v1.1.3)
+## What’s new (v1.1.3)
 
-- Added enhanced logging for physical damage types in the Attack Information panel (shows raw byte value for easier debugging).
-- Suppress zero-damage entries in the Attack Information panel to reduce noise (misses / jumps are ignored).
-- Various diagnostics and debugging utilities added (AttackTypeDebugger, DiagnosticsLogger) to aid future investigations.
-- UI/VM improvements related to attack info and target tracking; small fixes in services and project configuration.
-- Version bumped to 1.1.3
+### Bugfixes
+- **Fixed:** IGT overlay now persists across game quit-outs (returning to main menu) — checkbox stays checked and overlay remains open.
+- **Fixed:** Player speed no longer gets stuck at 0 when decreased via hotkey — toggling recovery applies remembered speed from settings.
+- **Fixed:** Confirmation dialogs for destructive operations (deletion, clear all bindings) now appear before action — prevents accidental data loss.
+
+### Upstream Merge
+Merged upstream improvements from borgCode/TarnishedTool:
+- Deletion confirmation dialogs for loadouts, grace presets, custom warps (UX improvement).
+- Lake of Rot platforms toggle feature (new gameplay feature).
+- New patch offsets for Elden Ring 1.16.2 support (maintained in this version).
+
+### UI/Theme
+- Updated message box and dialog colors from orange to Speedrun Edition blue theme for visual consistency.
+
+### Previous work (v1.1.2 & earlier)
+- Added enhanced logging for physical damage types in the Attack Information panel.
+- Suppress zero-damage entries in the Attack Information panel to reduce noise.
+- Various diagnostics and debugging utilities added.
+- Hotkey system improvements and clearer in-app notifications.
 
 See CHANGELOG.md for a full list of changes since v1.1.1.
 
