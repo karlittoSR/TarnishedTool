@@ -643,7 +643,8 @@ namespace TarnishedTool.ViewModels
                 if (SetProperty(ref _playerSpeed, value))
                 {
                     _playerService.SetSpeed(value);
-                    if (IsRememberSpeedEnabled && Math.Abs(value - DefaultSpeed) > Epsilon)
+                    // Only save speed if it's a meaningful increase (> 1.0), never save 0 or 1.0
+                    if (IsRememberSpeedEnabled && value > DefaultSpeed + Epsilon)
                     {
                         SettingsManager.Default.PlayerSpeed = value;
                         SettingsManager.Default.Save();
@@ -1069,11 +1070,14 @@ namespace TarnishedTool.ViewModels
             }
             else
             {
-                // Guard against a previously-saved 0 being used as desired speed
-                if (_playerDesiredSpeed <= 0f)
+                // Guard against invalid speeds (0, 1.0, or uninitialized) being used as desired speed
+                if (_playerDesiredSpeed <= DefaultSpeed + Epsilon)
                 {
                     float savedSpeed = SettingsManager.Default.PlayerSpeed;
-                    _playerDesiredSpeed = savedSpeed > DefaultSpeed ? savedSpeed : 2f;
+                    System.Diagnostics.Debug.WriteLine($"[ToggleSpeed] _playerDesiredSpeed was {_playerDesiredSpeed}, checking savedSpeed from settings: {savedSpeed}");
+                    // Only use saved speed if it's a meaningful increase (> 1.0), otherwise default to 2.0
+                    _playerDesiredSpeed = savedSpeed > DefaultSpeed + Epsilon ? savedSpeed : 2f;
+                    System.Diagnostics.Debug.WriteLine($"[ToggleSpeed] Condition: {savedSpeed} > {DefaultSpeed} = {savedSpeed > DefaultSpeed + Epsilon}, using: {_playerDesiredSpeed}");
                 }
                 SetSpeed(_playerDesiredSpeed);
             }
@@ -1097,7 +1101,16 @@ namespace TarnishedTool.ViewModels
         {
             _isRememberSpeedEnabled = SettingsManager.Default.RememberPlayerSpeed;
             OnPropertyChanged(nameof(IsRememberSpeedEnabled));
-            if (_isRememberSpeedEnabled) _playerDesiredSpeed = SettingsManager.Default.PlayerSpeed;
+            System.Diagnostics.Debug.WriteLine($"[PlayerViewModel.ApplyPrefs] RememberPlayerSpeed={_isRememberSpeedEnabled}, SettingsManager.PlayerSpeed={SettingsManager.Default.PlayerSpeed}");
+            if (_isRememberSpeedEnabled)
+            {
+                _playerDesiredSpeed = SettingsManager.Default.PlayerSpeed;
+                System.Diagnostics.Debug.WriteLine($"[PlayerViewModel.ApplyPrefs] Initialized _playerDesiredSpeed from settings: {_playerDesiredSpeed}");
+            }
+            else
+            {
+                System.Diagnostics.Debug.WriteLine($"[PlayerViewModel.ApplyPrefs] RememberPlayerSpeed is false, _playerDesiredSpeed remains: {_playerDesiredSpeed}");
+            }
         }
 
         private void SetNewGame(int value)

@@ -214,7 +214,12 @@ public class SettingsManager
                 };
 
                 if (parsed != null)
+                {
                     prop.SetValue(settings, parsed);
+                    // DEBUG: Log PlayerSpeed loading
+                    if (key == "PlayerSpeed")
+                        System.Diagnostics.Debug.WriteLine($"[SettingsManager] Loaded PlayerSpeed from settings.txt: '{value}' → parsed as: {parsed}");
+                }
             }
         }
         catch
