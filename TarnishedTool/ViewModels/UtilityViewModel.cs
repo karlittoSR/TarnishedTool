@@ -914,7 +914,6 @@ namespace TarnishedTool.ViewModels
         {
             AreOptionsEnabled = false;
             IsFreeCamEnabled = false;
-            IsShowIgtEnabled = false;
             if (IsDrawLowHitEnabled)
             {
                 _utilityService.ToggleDrawLowHit(false);
