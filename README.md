@@ -13,29 +13,21 @@
 
 ---
 
-## What’s new (v1.1.3)
+## What’s new (v1.1.4)
 
-### Bugfixes
-- **Fixed:** IGT overlay now persists across game quit-outs (returning to main menu) — checkbox stays checked and overlay remains open.
-- **Fixed:** Player speed no longer gets stuck at 0 when decreased via hotkey — toggling recovery applies remembered speed from settings.
-- **Fixed:** Confirmation dialogs for destructive operations (deletion, clear all bindings) now appear before action — prevents accidental data loss.
+### Added
+- **Import from Practice Tool** — import hotkey bindings directly from the Elden Ring Practice Tool, mapping compatible bindings in one click.
 
-### Upstream Merge
-Merged upstream improvements from borgCode/TarnishedTool:
-- Deletion confirmation dialogs for loadouts, grace presets, custom warps (UX improvement).
-- Lake of Rot platforms toggle feature (new gameplay feature).
-- New patch offsets for Elden Ring 1.16.2 support (maintained in this version).
+### Fixed
+- Hotkey buttons now wrap to a second line when they overflow, keeping all controls visible without clipping.
 
-### UI/Theme
-- Updated message box and dialog colors from orange to Speedrun Edition blue theme for visual consistency.
+### Previous work (v1.1.3)
+- Fixed: Closing the program now fully resets ALL toggles and uninstalls hooks.
+- Fixed: Comprehensive cleanup on both in-world and main-menu detach/close flows.
+- Fixed: Settings persistence bugs (remembered speeds, preferences now saved correctly).
+- Safety: Guard rails against invalid saved speeds (zero/negative values fall back to defaults).
 
-### Previous work (v1.1.2 & earlier)
-- Added enhanced logging for physical damage types in the Attack Information panel.
-- Suppress zero-damage entries in the Attack Information panel to reduce noise.
-- Various diagnostics and debugging utilities added.
-- Hotkey system improvements and clearer in-app notifications.
-
-See CHANGELOG.md for a full list of changes since v1.1.1.
+See CHANGELOG.md for a full list of changes.
 
 
 ## Speedrun Edition — Features
@@ -60,6 +52,10 @@ This fork focuses on reliability and workflow improvements for speedrunners: saf
 
 ### Recent changes since the fork
 A short summary of the notable feature work and bugfixes added on top of the original project:
+
+- v1.1.4
+  - Added: Import hotkey bindings from the Elden Ring Practice Tool in one click.
+  - Fixed: Hotkey buttons wrap to a second line when they overflow — no more clipped controls.
 
 - v1.1.3 (hotfix)
   - Fixed: Closing the program now fully resets ALL toggles (Target, Travel, Player, Utility) and uninstalls hooks — ensures the game returns to a clean vanilla state.

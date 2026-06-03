@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v1.1.4] - 2026-06-04
+
+### Added
+- Import hotkey bindings directly from the Elden Ring Practice Tool — maps compatible bindings in one click.
+
+### Fixed
+- Hotkey buttons now wrap to a second line when they overflow, keeping all controls visible without clipping.
+
+
 ## [v1.1.3] - 2024 (hotfix)
 
 ### Fixed
