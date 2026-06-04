@@ -13,25 +13,6 @@
 
 ---
 
-## What’s new (v1.1.4)
-
-### Added
-- **Import from Practice Tool** — import hotkey bindings directly from the Elden Ring Practice Tool, mapping compatible bindings in one click.
-- **Acts Overlay** — optional transparent overlay for target act history and Force Acts sequence progress.
-
-### Fixed
-- Hotkey buttons now wrap to a second line when they overflow, keeping all controls visible without clipping.
-- Camera angle is now correctly restored when loading a saved character position.
-
-### Previous work (v1.1.3)
-- Fixed: Closing the program now fully resets ALL toggles and uninstalls hooks.
-- Fixed: Comprehensive cleanup on both in-world and main-menu detach/close flows.
-- Fixed: Settings persistence bugs (remembered speeds, preferences now saved correctly).
-- Safety: Guard rails against invalid saved speeds (zero/negative values fall back to defaults).
-
-See CHANGELOG.md for a full list of changes.
-
-
 ## Speedrun Edition — Features
 
 This fork focuses on reliability and workflow improvements for speedrunners: safer session cleanup, predictable hotkey behavior, and small utilities that make practice and runs easier.
@@ -57,33 +38,8 @@ This fork focuses on reliability and workflow improvements for speedrunners: saf
 * During Force Acts sequences, the overlay shows the configured act chain and highlights the act currently observed from the boss.
 * The overlay is display-only and does not change Repeat Last Act or Force Act state.
 
-### Recent changes since the fork
-A short summary of the notable feature work and bugfixes added on top of the original project:
-
-- v1.1.4
-  - Added: Import hotkey bindings from the Elden Ring Practice Tool in one click.
-  - Added: Acts Overlay for target act history and Force Acts sequence progress.
-  - Fixed: Hotkey buttons wrap to a second line when they overflow — no more clipped controls.
-  - Fixed: Camera angle is now correctly restored when loading a saved character position.
-
-- v1.1.3 (hotfix)
-  - Fixed: Closing the program now fully resets ALL toggles (Target, Travel, Player, Utility) and uninstalls hooks — ensures the game returns to a clean vanilla state.
-  - Fixed: Comprehensive cleanup on both in-world and main-menu detach/close flows (ResetToggles added to multiple viewmodels and called from MainWindow close/detach).
-  - Fixed: Settings persistence bugs where remembered speeds or other preferences were not written to disk. Settings are now saved when the Remember toggles or speeds change and flushed on close.
-  - Safety: Guard rails added to avoid applying invalid saved player/game speeds (zero/negative values fall back to sensible defaults).
-
-- v1.1.2
-  - Added: Raw damage-type logging and display in the Attack Information panel to aid diagnostics (shows raw byte alongside mapped attack type).
-  - Changed: Suppress zero-damage attack entries (misses/jumps) in the Attack Information panel to reduce noise.
-  - Added: Diagnostics helpers (AttackTypeDebugger, DiagnosticsLogger) for offline investigation.
-
-- Other recent work
-  - Hotkey system improvements and clearer in-app notifications.
-  - Minor ViewModel/UI cleanups and several bugfixes around detaching, toggles and settings handling.
-
-These updates prioritize safe, deterministic behavior for speedrun workflows and make the tool less likely to leave the game in a patched state after testing.
-
 ### Other Additions
+* **Import from Practice Tool** — import hotkey bindings directly from the Elden Ring Practice Tool, mapping compatible bindings in one click.
 * **Change Runes** — set your exact rune count directly (clamped to valid game range).
 * **Draw Stable Position** — rendering toggle to display the player's stable position indicator in-game, bindable to a hotkey.
 * **No-Clip** now defaults to speed `3`.
