@@ -81,7 +81,8 @@ public class ActivateOnLaunchViewModel : BaseViewModel
         if (IsAllDisableAiChecked) _enemyViewModel.IsDisableAiEnabled = true;
         if (IsRestOnReviveChecked) _enemyViewModel.IsRestOnReviveEnabled = true;
 
-        // Utility 
+        // Utility
+        if (IsShowIgtChecked) _utilityViewModel.IsShowIgtEnabled = true;
         if (IsOpenMapInCombatChecked) _utilityViewModel.IsCombatMapEnabled = true;
         if (IsWarpInDungeonsChecked) _utilityViewModel.IsDungeonWarpEnabled = true;
         if (IsDropRateChecked) _utilityViewModel.IsGuaranteedDropEnabled = true;
@@ -187,6 +188,7 @@ public class ActivateOnLaunchViewModel : BaseViewModel
         
         _isAllDiscardableChecked = Get(nameof(IsAllDiscardableChecked));
         _isNoUpgradeCostChecked = Get(nameof(IsNoUpgradeCostChecked));
+        _isShowIgtChecked = Get(nameof(IsShowIgtChecked));
         _isOpenMapInCombatChecked = Get(nameof(IsOpenMapInCombatChecked));
         _isWarpInDungeonsChecked = Get(nameof(IsWarpInDungeonsChecked));
         _isDropRateChecked = Get(nameof(IsDropRateChecked));
@@ -205,7 +207,7 @@ public class ActivateOnLaunchViewModel : BaseViewModel
         _isUnlockWeaponOnStartChecked = Get(nameof(IsUnlockWeaponOnStartChecked));
         _isUnlockLoadoutOnStartChecked = Get(nameof(IsUnlockLoadoutOnStartChecked));
         
-        _launchFps = _aol.GetInt(nameof(LaunchFps), defaultValue: 60);
+        _launchFps = _aol.GetInt(nameof(LaunchFps), defaultValue: 0);
     }
 
     // Master toggle
@@ -539,6 +541,17 @@ public class ActivateOnLaunchViewModel : BaseViewModel
     }
 
     // Utility
+    private bool _isShowIgtChecked;
+
+    public bool IsShowIgtChecked
+    {
+        get => _isShowIgtChecked;
+        set
+        {
+            if (SetProperty(ref _isShowIgtChecked, value)) Set(nameof(IsShowIgtChecked), value);
+        }
+    }
+
     private bool _isAllDiscardableChecked;
 
     public bool IsAllDiscardableChecked

@@ -131,6 +131,8 @@ namespace TarnishedTool
                 hotkeyNotificationService, _memoryService
             );
             _utilityViewModel = utilityViewModel;
+            utilityViewModel.SetTargetViewModel(targetViewModel);
+            targetViewModel.SetUtilityViewModel(utilityViewModel);
 
             ItemViewModel itemViewModel = new ItemViewModel(
                 itemService, _dlcService, _stateService, eventService, hotkeyManager, hotkeyNotificationService
@@ -310,48 +312,6 @@ namespace TarnishedTool
             SettingsManager.Default.WindowLeft = bounds.Left;
             SettingsManager.Default.WindowTop = bounds.Top;
             SettingsManager.Default.Save();
-
-            // On close (red X / Alt+F4), perform the same cleanup as the Detach button
-            // so the game is left in a clean vanilla state.
-            if (_memoryService.IsAttached)
-            {
-                try
-                {
-                    if (_loaded)
-                    {
-                        _playerViewModel?.ResetToggles();
-                        _enemyViewModel?.ResetToggles();
-                        _utilityViewModel?.ResetToggles();
-                        _targetViewModel?.ResetToggles();
-                        _travelViewModel?.ResetToggles();
-                    }
-
-                    _hookManager.UninstallAllHooks();
-
-                    if (CodeCaveOffsets.Base != IntPtr.Zero)
-                    {
-                        _memoryService.FreeMem(CodeCaveOffsets.Base);
-                        CodeCaveOffsets.Base = IntPtr.Zero;
-                    }
-
-                    _memoryService.ManualDetach();
-
-                    // Always reset UI toggles so checkboxes reflect vanilla state,
-                    // even when memory writes were skipped (e.g. main menu after quitout).
-                    if (!_loaded)
-                    {
-                        _playerViewModel?.ResetToggles();
-                        _enemyViewModel?.ResetToggles();
-                        _utilityViewModel?.ResetToggles();
-                        _targetViewModel?.ResetToggles();
-                        _travelViewModel?.ResetToggles();
-                    }
-                }
-                catch
-                {
-                    // Best-effort cleanup on exit — never block the close
-                }
-            }
         }
 
         private static bool IsOnVisibleScreen(double left, double top)

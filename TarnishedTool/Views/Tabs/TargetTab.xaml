@@ -819,6 +819,13 @@
                             </Button.IsEnabled>
                         </Button>
                     </StackPanel>
+
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,0">
+                        <CheckBox Content="Show Acts Overlay"
+                                  Margin="10,6,0,0"
+                                  Foreground="{StaticResource TextBrush}"
+                                  IsChecked="{Binding IsShowActsOverlayEnabled}" />
+                    </StackPanel>
                 </StackPanel>
             </StackPanel>
             </ScrollViewer>

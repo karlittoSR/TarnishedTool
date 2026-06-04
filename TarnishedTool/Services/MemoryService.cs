@@ -137,6 +137,7 @@ namespace TarnishedTool.Services
             // Guard: silently skip if the address or process handle is invalid.
             if (addr == IntPtr.Zero || ProcessHandle == IntPtr.Zero) return;
             Kernel32.WriteProcessMemory(ProcessHandle, addr, val, val.Length, 0);
+            Kernel32.FlushInstructionCache(ProcessHandle, addr, (UIntPtr)val.Length);
         }
 
         public void SetBitValue(IntPtr addr, int flagMask, bool setValue)

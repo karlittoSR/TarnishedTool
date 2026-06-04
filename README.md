@@ -17,6 +17,7 @@
 
 ### Added
 - **Import from Practice Tool** — import hotkey bindings directly from the Elden Ring Practice Tool, mapping compatible bindings in one click.
+- **Acts Overlay** — optional transparent overlay for target act history and Force Acts sequence progress.
 
 ### Fixed
 - Hotkey buttons now wrap to a second line when they overflow, keeping all controls visible without clipping.
@@ -37,7 +38,7 @@ This fork focuses on reliability and workflow improvements for speedrunners: saf
 ### Clean Session Management (Detach)
 * **Detach button** — resets all active toggles, uninstalls all hooks, frees the code cave and releases the game process in one click, leaving the game in a vanilla state ready for a run.
 * The Detach button is only enabled when the player is **in-world** (prevents crashes from null pointers on the main menu).
-* **Closing the tool** (red X / Alt+F4) automatically performs the same cleanup — no manual detach needed. The close-path performs the same cleanup as Detach to ensure no toggles remain patched when you exit.
+* **Closing the tool** (red X / Alt+F4) only saves window settings — it does **not** reset game state. Always use the Detach button before closing if you want the game left in a clean vanilla state.
 
 ### Hotkey Notifications
 * Every hotkey now shows an **ON / OFF toast notification** (green / red) instead of a generic one-shot popup.
@@ -50,11 +51,17 @@ This fork focuses on reliability and workflow improvements for speedrunners: saf
 * Updates every 16 ms (1-frame precision at 60 fps).
 * Overlay position is saved between sessions — drag it wherever you want it.
 
+### Acts Overlay
+* Toggle **Show Acts Overlay** in the Target tab to show the locked-on target's recent act history in a draggable transparent overlay.
+* During Force Acts sequences, the overlay shows the configured act chain and highlights the act currently observed from the boss.
+* The overlay is display-only and does not change Repeat Last Act or Force Act state.
+
 ### Recent changes since the fork
 A short summary of the notable feature work and bugfixes added on top of the original project:
 
 - v1.1.4
   - Added: Import hotkey bindings from the Elden Ring Practice Tool in one click.
+  - Added: Acts Overlay for target act history and Force Acts sequence progress.
   - Fixed: Hotkey buttons wrap to a second line when they overflow — no more clipped controls.
 
 - v1.1.3 (hotfix)

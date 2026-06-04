@@ -505,8 +505,8 @@
         <Compile Include="Views\Windows\DpsOverlayWindow.xaml.cs">
           <DependentUpon>DpsOverlayWindow.xaml</DependentUpon>
         </Compile>
-        <Compile Include="Views\Windows\IgtOverlayWindow.xaml.cs">
-          <DependentUpon>IgtOverlayWindow.xaml</DependentUpon>
+        <Compile Include="Views\Windows\InfoOverlayWindow.xaml.cs">
+          <DependentUpon>InfoOverlayWindow.xaml</DependentUpon>
         </Compile>
         <Compile Include="Views\Windows\SpEffectsWindow.xaml.cs">
           <DependentUpon>SpEffectsWindow.xaml</DependentUpon>
@@ -680,7 +680,7 @@
             <Generator>MSBuild:Compile</Generator>
             <SubType>Designer</SubType>
         </Page>
-        <Page Include="Views\Windows\IgtOverlayWindow.xaml">
+        <Page Include="Views\Windows\InfoOverlayWindow.xaml">
             <Generator>MSBuild:Compile</Generator>
             <SubType>Designer</SubType>
         </Page>

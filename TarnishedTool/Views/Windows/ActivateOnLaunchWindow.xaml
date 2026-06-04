@@ -61,7 +61,7 @@
                             Width="100"
                             Height="20"
                             Value="{Binding LaunchFps, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                            Minimum="30"
+                            Minimum="0"
                             Maximum="360"
                             Increment="10"
                             TextAlignment="Center"
@@ -74,7 +74,7 @@
                             Height="12"
                             Margin="5,4.5,0,0"
                             VerticalAlignment="Center"
-                            ToolTip="Activates as soon as tool attaches to the game."
+                            ToolTip="Activates as soon as tool attaches to the game. Set to 0 to disable."
                             ToolTipService.InitialShowDelay='100'>
                             <TextBlock Text="i"
                                        Foreground="White"
@@ -250,6 +250,9 @@
                                        FontSize="10" />
                         </Border>
                         </StackPanel>
+                        <CheckBox Content="Show IGT" Margin="0,0,0,4"
+                                  IsChecked="{Binding IsShowIgtChecked}"
+                                  IsEnabled="{Binding IsEnabled}"/>
                         <CheckBox Content="Discard Anything" Margin="0,0,0,4"
                                   IsChecked="{Binding IsAllDiscardableChecked}"
                                   IsEnabled="{Binding IsEnabled}"/>

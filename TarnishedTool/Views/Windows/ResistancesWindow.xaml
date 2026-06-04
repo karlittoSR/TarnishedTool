@@ -61,7 +61,7 @@
                             <Button Content="⚔" Width="24" Height="20" FontSize="10" Padding="3,3,0,0"
                                     Background="Transparent" BorderThickness="0" Foreground="#CCFFFFFF"
                                     Click="ToggleCombatInfo_Click" Cursor="Hand"
-                                    ToolTip="Toggle Distance, Last Act and Current Animation" />
+                                    ToolTip="Toggle Distance and Current Animation" />
 
                         </StackPanel>
 
@@ -108,20 +108,12 @@
                     <Run Text="{Binding Dist, StringFormat={}{0:F2}, Mode=OneWay}"
                          Foreground="#FF9900" FontSize="12" FontWeight="Bold" />
                 </TextBlock>
-                <!-- Last Act Field -->
+                <!-- Animation Field -->
                 <TextBlock Grid.Row="3" HorizontalAlignment="Left" Margin="0,20,0,8"
-                           Visibility="{Binding ShowCombatInfo, Converter={StaticResource BoolToVis}}">
-                    <Run Text="Last Act" Foreground="#FF9900" FontSize="12" />
-                </TextBlock>
-                <TextBlock Grid.Row="3" HorizontalAlignment="Right" Margin="0,20,0,8"
-                           Visibility="{Binding ShowCombatInfo, Converter={StaticResource BoolToVis}}">
-                    <Run Text="{Binding LastAct, Mode=OneWay}" Foreground="#FF9900" FontSize="12" FontWeight="Bold" />
-                </TextBlock>
-                <TextBlock Grid.Row="3" HorizontalAlignment="Left" Margin="0,40,0,8"
                            Visibility="{Binding ShowCombatInfo, Converter={StaticResource BoolToVis}}">
                     <Run Text="Animation" Foreground="#FF9900" FontSize="12" />
                 </TextBlock>
-                <TextBlock Grid.Row="3" HorizontalAlignment="Right" Margin="0,40,0,8"
+                <TextBlock Grid.Row="3" HorizontalAlignment="Right" Margin="0,20,0,8"
                            Visibility="{Binding ShowCombatInfo, Converter={StaticResource BoolToVis}}">
                     <Run Text="{Binding CurrentAnimation, Mode=OneWay}" Foreground="#FF9900" FontSize="12"
                          FontWeight="Bold" />

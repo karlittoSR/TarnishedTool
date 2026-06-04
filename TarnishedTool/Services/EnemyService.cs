@@ -98,12 +98,22 @@ public class EnemyService(IMemoryService memoryService, HookManager hookManager,
 
     public void ForceActSequence(int[] actSequence, int npcThinkParamId)
     {
+        if (actSequence.Length == 0 || actSequence.Length > MaxNumOfActs) return;
+
         reminderService.TrySetReminder();
         var actsArr = CodeCaveOffsets.Base + CodeCaveOffsets.ActArray;
         var currentIdx = CodeCaveOffsets.Base + CodeCaveOffsets.CurrentIdx;
         var shouldRunFlag = CodeCaveOffsets.Base + CodeCaveOffsets.ShouldRun;
         var code = CodeCaveOffsets.Base + CodeCaveOffsets.ForceActSequence;
         var hookLoc = Hooks.GetForceActIdx;
+
+        if (CodeCaveOffsets.Base == IntPtr.Zero || code == IntPtr.Zero || hookLoc == 0)
+        {
+            return;
+        }
+
+        hookManager.UninstallHook(code.ToInt64());
+        var originalBytes = GetCurrentForceActInstructionBytes(hookLoc);
 
         for (int i = 0; i < actSequence.Length; i++)
         {
@@ -118,8 +128,8 @@ public class EnemyService(IMemoryService memoryService, HookManager hookManager,
         memoryService.Write(currentIdx, 0);
 
         var bytes = AsmLoader.GetAsmBytes(AsmScript.ForceActSequence);
+        bytes[0x32] = (byte)actSequence.Length;
 
-        var originalBytes = OriginalBytesByPatch.GetForceActIdx.GetOriginal();
         //Copy to usage in script
         Array.Copy(originalBytes, 0, bytes, 0x42, 7);
         
@@ -145,8 +155,42 @@ public class EnemyService(IMemoryService memoryService, HookManager hookManager,
     public void UnhookForceAct()
     {
         var codeLoc = CodeCaveOffsets.Base + CodeCaveOffsets.ForceActSequence;
+        var hookLoc = Hooks.GetForceActIdx;
+
+        if (CodeCaveOffsets.Base == IntPtr.Zero || codeLoc == IntPtr.Zero || hookLoc == 0)
+        {
+            return;
+        }
+
+        bool isHookInstalled = hookManager.IsHookInstalled(codeLoc.ToInt64());
+        byte shouldRun = memoryService.Read<byte>(CodeCaveOffsets.Base + CodeCaveOffsets.ShouldRun);
+
+        if (!isHookInstalled && shouldRun == 0)
+        {
+            return;
+        }
+
         hookManager.UninstallHook(codeLoc.ToInt64());
+        memoryService.Write(CodeCaveOffsets.Base + CodeCaveOffsets.ShouldRun, (byte)0);
+        memoryService.Write(CodeCaveOffsets.Base + CodeCaveOffsets.CurrentIdx, 0);
     }
+
+    private byte[] GetCurrentForceActInstructionBytes(long hookLoc)
+    {
+        byte[] bytes = memoryService.ReadBytes((IntPtr)hookLoc, 7);
+        return IsForceActInstruction(bytes)
+            ? bytes
+            : OriginalBytesByPatch.GetForceActIdx.GetOriginal();
+    }
+
+    private static bool IsForceActInstruction(byte[] bytes) =>
+        bytes.Length >= 7 &&
+        bytes[0] == 0x0F &&
+        bytes[1] == 0xBE &&
+        bytes[2] == 0x80 &&
+        bytes[4] == 0xE9 &&
+        bytes[5] == 0x00 &&
+        bytes[6] == 0x00;
 
     public void ToggleLionCooldownHook(bool isEnabled, int lionEntityId)
     {

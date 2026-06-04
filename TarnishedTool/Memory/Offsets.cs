@@ -285,6 +285,8 @@ namespace TarnishedTool.Memory
 
             public enum ChrPhysicsOffsets
             {
+                Angle1 = 0x54,
+                Angle2 = 0x64,
                 Coords = 0x70,
                 NoGravity = 0x1D6,
                 HurtCapsuleRadius = 0x344
@@ -309,7 +311,7 @@ namespace TarnishedTool.Memory
                 public const int Backstab = 0x129;
             }
 
-            public static readonly int[] AiThink = [ChrManipulator, 0xC0];
+            public static int[] AiThink => [ChrManipulator, 0xC0];
 
             public static class AiThinkOffsets
             {
@@ -433,8 +435,8 @@ namespace TarnishedTool.Memory
             public static readonly BitFlag YellowTargetView = new(0xC8, 1 << 5);
             public static readonly BitFlag WhiteLineToPlayer = new(0xC8, 1 << 6);
 
-            public static readonly int[] NpcParam = [ChrManipulator, 0xC0, 0x18];
-            public static readonly int[] NpcThinkParam = [ChrManipulator, 0xC0, 0x30];
+            public static int[] NpcParam => [ChrManipulator, 0xC0, 0x18];
+            public static int[] NpcThinkParam => [ChrManipulator, 0xC0, 0x30];
 
             public enum NpcParamOffsets
             {

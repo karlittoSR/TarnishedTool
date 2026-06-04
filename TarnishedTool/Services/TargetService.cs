@@ -79,12 +79,50 @@ namespace TarnishedTool.Services
 
         public void ToggleRepeatAct(bool isRepeatActEnabled)
         {
-            var ptr = GetAiThinkPtr() + ChrIns.AiThinkOffsets.ForceAct;
-            memoryService.Write(ptr, isRepeatActEnabled ? memoryService.Read<byte>(ptr + 1) : (byte)0);
+            hookManager.UninstallHook((CodeCaveOffsets.Base + CodeCaveOffsets.ForceActSequence).ToInt64());
+            IntPtr instruction = GetForceActInstructionAddress();
+            byte[] bytes = OriginalBytesByPatch.GetForceActIdx.GetOriginal();
+            bytes[3] = isRepeatActEnabled ? GetLastActOffsetByte() : GetForceActOffsetByte();
+            memoryService.WriteBytes(instruction, bytes);
         }
 
-        public bool IsTargetRepeating() =>
-            memoryService.Read<byte>(GetAiThinkPtr() + ChrIns.AiThinkOffsets.ForceAct) != 0;
+        public bool IsTargetRepeating()
+        {
+            IntPtr instruction = GetForceActInstructionAddress();
+            byte actual = memoryService.Read<byte>(GetRepeatActPatchAddress(instruction));
+            return actual == GetLastActOffsetByte();
+        }
+
+        private IntPtr GetForceActInstructionAddress()
+        {
+            IntPtr hook = (IntPtr)Hooks.GetForceActIdx;
+            byte[] bytes = memoryService.ReadBytes(hook, 11);
+
+            if (IsForceActReadInstruction(bytes, 0)) return hook;
+            if (IsForceActReadInstruction(bytes, 4)) return hook + 4;
+
+            return hook;
+        }
+
+        private static bool IsForceActReadInstruction(byte[] bytes, int offset)
+        {
+            if (bytes.Length < offset + 7) return false;
+            return bytes[offset] == 0x0F
+                   && bytes[offset + 1] == 0xBE
+                   && bytes[offset + 2] == 0x80
+                   && bytes[offset + 4] == 0xE9
+                   && bytes[offset + 5] == 0x00
+                   && bytes[offset + 6] == 0x00;
+        }
+
+        private static IntPtr GetRepeatActPatchAddress(IntPtr instruction) =>
+            instruction + 3;
+
+        private static byte GetForceActOffsetByte() =>
+            unchecked((byte)ChrIns.AiThinkOffsets.ForceAct);
+
+        private static byte GetLastActOffsetByte() =>
+            unchecked((byte)ChrIns.AiThinkOffsets.LastAct);
 
         public int GetCurrentAnimation() => chrInsService.GetCurrentAnimation(GetTargetChrIns());
 

@@ -44,6 +44,10 @@ namespace TarnishedTool.ViewModels
 
         private DateTime _forceActSequenceLastExecuted = DateTime.MinValue;
         private static readonly TimeSpan ForceActSequenceCooldown = TimeSpan.FromSeconds(2);
+        private int[] _managedForceActSequence = Array.Empty<int>();
+        private int _managedForceActSequenceIndex;
+        private int _managedForceActSequenceLastSeenAct;
+        private bool _isManagedForceActSequenceActive;
 
         public TargetViewModel(ITargetService targetService, IStateService stateService, IEnemyService enemyService,
             IAttackInfoService attackInfoService, HotkeyManager hotkeyManager, ISpEffectService spEffectService,
@@ -625,19 +629,18 @@ namespace TarnishedTool.ViewModels
             set
             {
                 if (!SetProperty(ref _isRepeatActEnabled, value)) return;
-
-                bool isRepeating = _targetService.IsTargetRepeating();
-
-                switch (value)
+                if (value)
                 {
-                    case true when !isRepeating:
-                        _targetService.ToggleRepeatAct(true);
-                        ForceAct = _targetService.GetLastAct();
-                        break;
-                    case false when isRepeating:
-                        _targetService.ToggleRepeatAct(false);
-                        ForceAct = 0;
-                        break;
+                    StopManagedForceActSequence();
+                    _targetService.ToggleRepeatAct(true);
+                    int lastAct = _targetService.GetLastAct();
+                    if (lastAct != 0) SyncForceAct(lastAct);
+                }
+                else
+                {
+                    _targetService.ToggleRepeatAct(false);
+                    _targetService.ForceAct(0);
+                    SyncForceAct(0);
                 }
             }
         }
@@ -651,7 +654,11 @@ namespace TarnishedTool.ViewModels
             {
                 if (!SetProperty(ref _forceAct, value)) return;
                 _targetService.ForceAct(_forceAct);
-                if (_forceAct == 0) IsRepeatActEnabled = false;
+                if (_forceAct == 0)
+                {
+                    StopManagedForceActSequence();
+                    IsRepeatActEnabled = false;
+                }
             }
         }
 
@@ -788,6 +795,43 @@ namespace TarnishedTool.ViewModels
             {
                 if (!SetProperty(ref _isDisableAllExceptTargetEnabled, value)) return;
                 _targetService.ToggleDisableAllExceptTarget(_isDisableAllExceptTargetEnabled);
+            }
+        }
+
+        private UtilityViewModel _utilityViewModel;
+        private int _actHistPrev0;
+        private int _actHistPrev1;
+        private int _lastHistAct;
+
+        public int ActHistPrev0 => _actHistPrev0;
+        public int ActHistPrev1 => _actHistPrev1;
+        public int ActHistoryGeneration { get; private set; }
+        public int ForceSeqVersion { get; private set; }
+        public bool IsForceActSequenceActive => _isManagedForceActSequenceActive;
+        public int ForceActSequenceIndex => _managedForceActSequenceIndex;
+        public int[] ForceActSequenceActs => _managedForceActSequence;
+
+        public void SetUtilityViewModel(UtilityViewModel vm) => _utilityViewModel = vm;
+
+        public void UnhookForceActSequence()
+        {
+            StopManagedForceActSequence();
+            _enemyService.UnhookForceAct();
+            ForceAct = 0;
+        }
+
+        private bool _isShowActsOverlayEnabled;
+
+        public bool IsShowActsOverlayEnabled
+        {
+            get => _isShowActsOverlayEnabled;
+            set
+            {
+                if (!SetProperty(ref _isShowActsOverlayEnabled, value)) return;
+                if (value)
+                    _utilityViewModel?.EnableActsOverlay(this);
+                else
+                    _utilityViewModel?.DisableActsOverlay();
             }
         }
 
@@ -963,6 +1007,7 @@ namespace TarnishedTool.ViewModels
         private void OnGameNotLoaded()
         {
             _gameTickService.Unsubscribe(TargetTick);
+            StopManagedForceActSequence();
             LastAct = 0;
             ForceAct = 0;
             AreOptionsEnabled = false;
@@ -1168,6 +1213,10 @@ namespace TarnishedTool.ViewModels
             nint chrIns = _targetService.GetTargetChrIns();
             if (chrIns != _currentTargetChrIns)
             {
+                _actHistPrev0 = 0;
+                _actHistPrev1 = 0;
+                _lastHistAct = 0;
+                ActHistoryGeneration = 0;
 #if DEBUG
                 uint entityId = _targetService.GetEntityId();
                 int npcThinkParamId = _targetService.GetNpcThinkParamId();
@@ -1184,17 +1233,8 @@ namespace TarnishedTool.ViewModels
                 IsNoMoveEnabled = _targetService.IsNoMoveEnabled();
                 IsNoAttackEnabled = _targetService.IsNoAttackEnabled();
 
-                int forceActValue = _targetService.GetForceAct();
-                if (forceActValue != 0)
-                {
-                    IsRepeatActEnabled = true;
-                    ForceAct = forceActValue;
-                }
-                else
-                {
-                    ForceAct = 0;
-                    IsRepeatActEnabled = false;
-                }
+                SyncRepeatAct(_targetService.IsTargetRepeating());
+                SyncForceAct(_targetService.GetForceAct());
 
                 IsFreezeHealthEnabled = _targetService.IsNoDamageEnabled();
                 _targetService.ToggleNoHeal(IsFreezeHealthEnabled);
@@ -1214,7 +1254,16 @@ namespace TarnishedTool.ViewModels
 
             CurrentHealth = _targetService.GetCurrentHp();
             MaxHealth = _targetService.GetMaxHp();
-            LastAct = _targetService.GetLastAct();
+            int rawLastAct = _targetService.GetLastAct();
+            if (rawLastAct != 0 && rawLastAct != _lastHistAct)
+            {
+                _actHistPrev0 = _actHistPrev1;
+                _actHistPrev1 = _lastHistAct;
+                _lastHistAct = rawLastAct;
+                ActHistoryGeneration++;
+            }
+            LastAct = rawLastAct;
+            UpdateManagedForceActSequence(rawLastAct);
             CurrentAnimation = _targetService.GetCurrentAnimation();
             TargetSpeed = _targetService.GetSpeed();
             CurrentPoise = _targetService.GetCurrentPoise();
@@ -1244,6 +1293,91 @@ namespace TarnishedTool.ViewModels
                 var spEffects = _spEffectService.GetActiveSpEffectList(chrIns);
                 _spEffectViewModel.RefreshEffects(spEffects);
             }
+        }
+
+        private void SyncForceAct(int forceAct) =>
+            SetProperty(ref _forceAct, forceAct, nameof(ForceAct));
+
+        private void SyncRepeatAct(bool isRepeatActEnabled) =>
+            SetProperty(ref _isRepeatActEnabled, isRepeatActEnabled, nameof(IsRepeatActEnabled));
+
+        private void StartManagedForceActSequence(int[] acts)
+        {
+            StopManagedForceActSequence();
+            _enemyService.UnhookForceAct();
+            _managedForceActSequence = acts;
+            _managedForceActSequenceIndex = 0;
+            _managedForceActSequenceLastSeenAct = _targetService.GetLastAct();
+            _isManagedForceActSequenceActive = true;
+            SkipManagedForceActSequenceCurrentAct();
+            if (!_isManagedForceActSequenceActive)
+            {
+                _targetService.ForceAct(0);
+                SyncForceAct(0);
+                ForceSeqVersion++;
+                return;
+            }
+
+            ApplyManagedForceActSequenceCurrent();
+            ForceSeqVersion++;
+        }
+
+        private void UpdateManagedForceActSequence(int rawLastAct)
+        {
+            if (!_isManagedForceActSequenceActive) return;
+
+            int currentAct = _managedForceActSequence[_managedForceActSequenceIndex];
+            _targetService.ForceAct(currentAct);
+
+            if (rawLastAct == 0 || rawLastAct == _managedForceActSequenceLastSeenAct) return;
+
+            _managedForceActSequenceLastSeenAct = rawLastAct;
+            if (rawLastAct != currentAct) return;
+
+            _managedForceActSequenceIndex++;
+
+            SkipManagedForceActSequenceCurrentAct();
+
+            if (_managedForceActSequenceIndex >= _managedForceActSequence.Length)
+            {
+                StopManagedForceActSequence();
+                _targetService.ForceAct(0);
+                SyncForceAct(0);
+                return;
+            }
+
+            ApplyManagedForceActSequenceCurrent();
+        }
+
+        private void SkipManagedForceActSequenceCurrentAct()
+        {
+            while (_managedForceActSequenceIndex < _managedForceActSequence.Length &&
+                   _managedForceActSequence[_managedForceActSequenceIndex] == _managedForceActSequenceLastSeenAct)
+            {
+                _managedForceActSequenceIndex++;
+            }
+
+            if (_managedForceActSequenceIndex >= _managedForceActSequence.Length)
+            {
+                StopManagedForceActSequence();
+            }
+        }
+
+        private void ApplyManagedForceActSequenceCurrent()
+        {
+            int act = _managedForceActSequence[_managedForceActSequenceIndex];
+            _targetService.ForceAct(act);
+            SyncForceAct(act);
+        }
+
+        private void StopManagedForceActSequence()
+        {
+            if (!_isManagedForceActSequenceActive) return;
+
+            _isManagedForceActSequenceActive = false;
+            _managedForceActSequence = Array.Empty<int>();
+            _managedForceActSequenceIndex = 0;
+            _managedForceActSequenceLastSeenAct = 0;
         }
 
         private void UpdateResistances()
@@ -1354,6 +1488,12 @@ namespace TarnishedTool.ViewModels
 
             string actSequence = ActSequence.Trim();
             string[] parts = actSequence.Split(' ');
+            if (parts.Length > 10)
+            {
+                MsgBox.Show("Sequence can contain at most 10 acts");
+                return;
+            }
+
             int[] acts = new int[parts.Length];
 
             for (int i = 0; i < parts.Length; i++)
@@ -1368,8 +1508,9 @@ namespace TarnishedTool.ViewModels
                 acts[i] = act;
             }
 
-            var npcThinkParamId = _targetService.GetNpcThinkParamId();
-            _enemyService.ForceActSequence(acts, npcThinkParamId);
+            IsRepeatActEnabled = false;
+
+            StartManagedForceActSequence(acts);
         }
 
         private void OpenDefenseWindow()

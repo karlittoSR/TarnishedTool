@@ -57,11 +57,12 @@ namespace TarnishedTool.Services
         {
             var posToSave = _positions[index];
             var playerIns = GetPlayerIns();
+            var physicsPtr = GetChrPhysicsPtr();
             posToSave.BlockId = memoryService.Read<uint>(playerIns + WorldChrMan.PlayerInsOffsets.CurrentBlockId);
-            posToSave.Coords =
-                memoryService.Read<Vector3>(playerIns + WorldChrMan.PlayerInsOffsets.CurrentMapCoords);
-            posToSave.Angle =
-                memoryService.Read<float>(playerIns + WorldChrMan.PlayerInsOffsets.CurrentMapAngle);
+            posToSave.Coords = memoryService.Read<Vector3>(playerIns + WorldChrMan.PlayerInsOffsets.CurrentMapCoords);
+            posToSave.Angle = memoryService.Read<float>(playerIns + WorldChrMan.PlayerInsOffsets.CurrentMapAngle);
+            posToSave.PhysicsAngle1 = memoryService.Read<float>(physicsPtr + (int)ChrIns.ChrPhysicsOffsets.Angle1);
+            posToSave.PhysicsAngle2 = memoryService.Read<float>(physicsPtr + (int)ChrIns.ChrPhysicsOffsets.Angle2);
         }
 
         public void RestorePos(int index)
@@ -88,8 +89,9 @@ namespace TarnishedTool.Services
                     memoryService.Write(physicsPtr + (int)ChrIns.ChrPhysicsOffsets.NoGravity, true);
 
                 memoryService.Write(coordsPtr, memoryService.Read<Vector3>(coordsPtr) + delta);
-                memoryService.Write((IntPtr)GetPlayerIns() + WorldChrMan.PlayerInsOffsets.CurrentMapAngle,
-                    savedPos.Angle);
+                memoryService.Write(GetPlayerIns() + WorldChrMan.PlayerInsOffsets.CurrentMapAngle, savedPos.Angle);
+                memoryService.Write(physicsPtr + (int)ChrIns.ChrPhysicsOffsets.Angle1, savedPos.PhysicsAngle1);
+                memoryService.Write(physicsPtr + (int)ChrIns.ChrPhysicsOffsets.Angle2, savedPos.PhysicsAngle2);
 
                 if (isLongDistance)
                 {

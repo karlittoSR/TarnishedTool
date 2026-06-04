@@ -26,7 +26,7 @@ namespace TarnishedTool.ViewModels
         private bool _wasTorrentNoDeathEnabled;
 
         private ShopSelectorWindow _shopSelectorWindow;
-        private IgtOverlayWindow _igtOverlayWindow;
+        private InfoOverlayWindow _infoOverlayWindow;
 
         private readonly IMemoryService _memoryService;
         private readonly IUtilityService _utilityService;
@@ -489,26 +489,40 @@ namespace TarnishedTool.ViewModels
             }
         }
 
+        private TargetViewModel _targetViewModel;
+
+        public void SetTargetViewModel(TargetViewModel vm) => _targetViewModel = vm;
+
+        public void EnableActsOverlay(TargetViewModel targetVm)
+        {
+            IsShowIgtEnabled = true;
+            _infoOverlayWindow?.SetActsSource(targetVm);
+        }
+
+        public void DisableActsOverlay() => _infoOverlayWindow?.SetActsSource(null);
+
         private void OpenIgtOverlay()
         {
-            if (_igtOverlayWindow != null && _igtOverlayWindow.IsVisible)
+            if (_infoOverlayWindow != null && _infoOverlayWindow.IsVisible)
             {
-                _igtOverlayWindow.Activate();
+                _infoOverlayWindow.Activate();
                 return;
             }
-            _igtOverlayWindow = new IgtOverlayWindow(_memoryService);
-            _igtOverlayWindow.Closed += (_, _) =>
+            _infoOverlayWindow = new InfoOverlayWindow(_memoryService);
+            if (_targetViewModel?.IsShowActsOverlayEnabled == true)
+                _infoOverlayWindow.SetActsSource(_targetViewModel);
+            _infoOverlayWindow.Closed += (_, _) =>
             {
-                _igtOverlayWindow = null;
+                _infoOverlayWindow = null;
                 SetProperty(ref _isShowIgtEnabled, false, nameof(IsShowIgtEnabled));
             };
-            _igtOverlayWindow.Show();
+            _infoOverlayWindow.Show();
         }
 
         private void CloseIgtOverlay()
         {
-            _igtOverlayWindow?.Close();
-            _igtOverlayWindow = null;
+            _infoOverlayWindow?.Close();
+            _infoOverlayWindow = null;
         }
 
         private bool _isDrawStablePosEnabled;
@@ -878,7 +892,8 @@ namespace TarnishedTool.ViewModels
         {
             AreOptionsEnabled = true;
             GameSpeed = _utilityService.GetSpeed();
-            Fps = _utilityService.GetFps();
+            _fps = _utilityService.GetFps();
+            OnPropertyChanged(nameof(Fps));
             if (IsDungeonWarpEnabled)
             {
                 var playerIns = _playerService.GetPlayerIns();

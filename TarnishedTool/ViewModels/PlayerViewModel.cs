@@ -767,6 +767,7 @@ namespace TarnishedTool.ViewModels
             IsNoRollEnabled = false;
             IsFpRegenEnabled = false;
             IsHotEnabled = false;
+            IsSetRfbsOnLoadEnabled = false;
             PlayerSpeed = DefaultSpeed;
         }
 
