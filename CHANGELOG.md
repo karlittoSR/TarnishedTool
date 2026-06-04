@@ -9,6 +9,7 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 - Hotkey buttons now wrap to a second line when they overflow, keeping all controls visible without clipping.
+- Camera angle is now correctly restored when loading a saved character position.
 
 
 ## [v1.1.3] - 2024 (hotfix)

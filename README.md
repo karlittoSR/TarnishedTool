@@ -21,6 +21,7 @@
 
 ### Fixed
 - Hotkey buttons now wrap to a second line when they overflow, keeping all controls visible without clipping.
+- Camera angle is now correctly restored when loading a saved character position.
 
 ### Previous work (v1.1.3)
 - Fixed: Closing the program now fully resets ALL toggles and uninstalls hooks.
@@ -63,6 +64,7 @@ A short summary of the notable feature work and bugfixes added on top of the ori
   - Added: Import hotkey bindings from the Elden Ring Practice Tool in one click.
   - Added: Acts Overlay for target act history and Force Acts sequence progress.
   - Fixed: Hotkey buttons wrap to a second line when they overflow — no more clipped controls.
+  - Fixed: Camera angle is now correctly restored when loading a saved character position.
 
 - v1.1.3 (hotfix)
   - Fixed: Closing the program now fully resets ALL toggles (Target, Travel, Player, Utility) and uninstalls hooks — ensures the game returns to a clean vanilla state.
