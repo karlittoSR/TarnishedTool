@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v1.1.5] - 2026-06-04
+
+### Added
+- **Acts Overlay hotkey** — bind a key to toggle the Acts Overlay directly from the Settings tab, without touching the Target tab. Fully retrocompatible: existing settings files default the binding to unbound.
+
 ## [v1.1.4] - 2026-06-04
 
 ### Added

@@ -37,6 +37,7 @@ This fork focuses on reliability and workflow improvements for speedrunners: saf
 * Toggle **Show Acts Overlay** in the Target tab to show the locked-on target's recent act history in a draggable transparent overlay.
 * During Force Acts sequences, the overlay shows the configured act chain and highlights the act currently observed from the boss.
 * The overlay is display-only and does not change Repeat Last Act or Force Act state.
+* A **hotkey binding** for the Acts Overlay toggle is available in the Settings tab.
 
 ### Other Additions
 * **Import from Practice Tool** — import hotkey bindings directly from the Elden Ring Practice Tool, mapping compatible bindings in one click.

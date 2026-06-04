@@ -155,6 +155,7 @@ public class SettingsViewModel : BaseViewModel
                 new("Show DPS Overlay", HotkeyActions.ShowDps),
                 new("Open Defenses", HotkeyActions.ShowDefenses),
                 new("Open Special Effects", HotkeyActions.ShowTargetSpEffects),
+                new("Show Acts Overlay", HotkeyActions.ShowActsOverlay),
                 new("No Move", HotkeyActions.TargetNoMove),
                 new("No Attack", HotkeyActions.TargetNoAttack),
                 new("Force Act Sequence", HotkeyActions.ForceActSequence),

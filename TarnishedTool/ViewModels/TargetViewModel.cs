@@ -1084,6 +1084,8 @@ namespace TarnishedTool.ViewModels
                 () => { ExecuteWindowAction(() => IsShowDefensesEnabled = !IsShowDefensesEnabled); _notificationService?.ShowNotification(HotkeyActions.ShowDefenses, IsShowDefensesEnabled); });
             _hotkeyManager.RegisterAction(HotkeyActions.ShowTargetSpEffects,
                 () => { ExecuteWindowAction(() => IsShowSpEffectEnabled = !IsShowSpEffectEnabled); _notificationService?.ShowNotification(HotkeyActions.ShowTargetSpEffects, IsShowSpEffectEnabled); });
+            _hotkeyManager.RegisterAction(HotkeyActions.ShowActsOverlay,
+                () => { ExecuteWindowAction(() => IsShowActsOverlayEnabled = !IsShowActsOverlayEnabled); _notificationService?.ShowNotification(HotkeyActions.ShowActsOverlay, IsShowActsOverlayEnabled); });
             _hotkeyManager.RegisterAction(HotkeyActions.TargetNoMove,
                 () => { ExecuteTargetAction(() => IsNoMoveEnabled = !IsNoMoveEnabled); _notificationService?.ShowNotification(HotkeyActions.TargetNoMove, IsNoMoveEnabled); });
             _hotkeyManager.RegisterAction(HotkeyActions.TargetNoAttack,

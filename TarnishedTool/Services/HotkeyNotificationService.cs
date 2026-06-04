@@ -119,6 +119,7 @@ namespace TarnishedTool.Services
                 HotkeyActions.TargetTargetingView => "Targeting View",
                 HotkeyActions.ShowAttackInfo => "Show Attack Info",
                 HotkeyActions.ShowTargetSpEffects => "Show Active Special Effects",
+                HotkeyActions.ShowActsOverlay => "Show Acts Overlay",
                 HotkeyActions.TargetNoMove => "No Move",
                 HotkeyActions.TargetNoAttack => "No Attack",
                 HotkeyActions.AiInfo => "Show AI Info",

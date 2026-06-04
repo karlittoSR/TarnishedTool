@@ -61,6 +61,7 @@ public enum HotkeyActions
     ShowDps,
     ShowDefenses,
     ShowTargetSpEffects,
+    ShowActsOverlay,
     TargetNoMove,
     TargetNoAttack,
     ForceActSequence,
