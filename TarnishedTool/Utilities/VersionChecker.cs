@@ -138,7 +138,7 @@ public static class VersionChecker
 
             System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
             {
-                FileName = "https://github.com/borgCode/TarnishedTool/releases/latest",
+                FileName = "https://github.com/karlittoSR/TarnishedTool/releases/latest",
                 UseShellExecute = true
             });
             updateWindow.Close();
