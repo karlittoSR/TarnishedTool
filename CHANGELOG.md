@@ -2,15 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
-## [v1.1.5] - 2026-06-04
-
-### Added
-- **Acts Overlay hotkey** — bind a key to toggle the Acts Overlay directly from the Settings tab, without touching the Target tab. Fully retrocompatible: existing settings files default the binding to unbound.
-
 ## [v1.1.4] - 2026-06-04
 
 ### Added
 - Import hotkey bindings directly from the Elden Ring Practice Tool — maps compatible bindings in one click.
+- **Acts Overlay hotkey** — bind a key to toggle the Acts Overlay directly from the Settings tab. Retrocompatible: existing settings files default the binding to unbound.
 
 ### Fixed
 - Hotkey buttons now wrap to a second line when they overflow, keeping all controls visible without clipping.
