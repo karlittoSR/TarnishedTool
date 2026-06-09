@@ -51,7 +51,13 @@ public class HotkeyManager
             {
                 if (_actions.TryGetValue(actionId, out var action))
                 {
-                    Application.Current.Dispatcher.BeginInvoke(action);
+                    // Capture action locally; abort if detached by the time the item runs.
+                    var captured = action;
+                    Application.Current.Dispatcher.BeginInvoke(() =>
+                    {
+                        if (!_memoryService.IsAttached) return;
+                        captured();
+                    });
                 }
             }
 

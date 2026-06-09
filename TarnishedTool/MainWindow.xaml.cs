@@ -27,6 +27,7 @@ namespace TarnishedTool
         private readonly IDlcService _dlcService;
         private readonly AoBScanner _aobScanner;
         private HookManager _hookManager;
+        private HotkeyManager _hotkeyManager;
 
         private PlayerViewModel _playerViewModel;
         private EnemyViewModel _enemyViewModel;
@@ -55,7 +56,8 @@ namespace TarnishedTool
             _stateService = new StateService(_memoryService);
 
             _hookManager = new HookManager(_memoryService, _stateService);
-            var hotkeyManager = new HotkeyManager(_memoryService);
+            _hotkeyManager = new HotkeyManager(_memoryService);
+            var hotkeyManager = _hotkeyManager;
 
             IActionRequestService actionRequestService = new ActionRequestService(_memoryService, _hookManager);
             IParamService paramService = new ParamService(_memoryService);
@@ -310,6 +312,10 @@ namespace TarnishedTool
             {
                 if (_loaded)
                 {
+                    // Stop the timer and keyboard hook before resetting so no pending
+                    // BeginInvoke actions can re-enable features after our reset completes.
+                    _gameLoadedTimer.Stop();
+                    _hotkeyManager.Stop();
                     DetachFromGame();
                 }
                 else
@@ -362,60 +368,56 @@ namespace TarnishedTool
 
         private void DetachFromGame()
         {
+            // Reset each ViewModel individually so a failure in one doesn't prevent the others.
+            // Only write vanilla values back to memory when the game world is loaded (player pointer valid).
+            // On the main menu after a quitout the pointers are null and writing would crash.
+            if (_loaded)
+            {
+                TryReset(_playerViewModel.ResetToggles);
+                TryReset(_enemyViewModel.ResetToggles);
+                TryReset(_utilityViewModel.ResetToggles);
+                TryReset(_targetViewModel.ResetToggles);
+                TryReset(_travelViewModel.ResetToggles);
+            }
+
+            try { _hookManager.UninstallAllHooks(); } catch { }
+
             try
             {
-                // Only write vanilla values back to memory when the game world is loaded (player pointer valid).
-                // On the main menu after a quitout the pointers are null and writing would crash.
-                if (_loaded)
-                {
-                    _playerViewModel.ResetToggles();
-                    _enemyViewModel.ResetToggles();
-                    _utilityViewModel.ResetToggles();
-                    _targetViewModel.ResetToggles();
-                    _travelViewModel.ResetToggles();
-                }
-
-                // Uninstall all hooks to restore game code to vanilla state
-                _hookManager.UninstallAllHooks();
-
-                // Free the code cave memory
                 if (CodeCaveOffsets.Base != IntPtr.Zero)
                 {
                     _memoryService.FreeMem(CodeCaveOffsets.Base);
                     CodeCaveOffsets.Base = IntPtr.Zero;
                 }
-
-                // Manually detach and prevent auto-reattachment
-                _memoryService.ManualDetach();
-
-                // Always reset UI toggles so checkboxes reflect vanilla state,
-                // even when memory writes were skipped (e.g. main menu after quitout).
-                if (!_loaded)
-                {
-                    _playerViewModel.ResetToggles();
-                    _enemyViewModel.ResetToggles();
-                    _utilityViewModel.ResetToggles();
-                    _targetViewModel.ResetToggles();
-                    _travelViewModel.ResetToggles();
-                }
-
-                // Reset the attached state flags
-                _hasAllocatedMemory = false;
-                _appliedOneTimeFeatures = false;
-                _hasPublishedLoaded = false;
-                _hasPublishedFadedIn = false;
-                _hasCheckedPatch = false;
-                _loaded = false;
-                _attachedTime = null;
             }
-            catch (Exception ex)
+            catch { }
+
+            _memoryService.ManualDetach();
+
+            // Always reset UI toggles so checkboxes reflect vanilla state,
+            // even when memory writes were skipped (e.g. main menu after quitout).
+            if (!_loaded)
             {
-                MessageBox.Show(
-                    $"Error during detach: {ex.Message}",
-                    "Detach Error",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Error);
+                TryReset(_playerViewModel.ResetToggles);
+                TryReset(_enemyViewModel.ResetToggles);
+                TryReset(_utilityViewModel.ResetToggles);
+                TryReset(_targetViewModel.ResetToggles);
+                TryReset(_travelViewModel.ResetToggles);
             }
+
+            _hasAllocatedMemory = false;
+            _appliedOneTimeFeatures = false;
+            _hasPublishedLoaded = false;
+            _hasPublishedFadedIn = false;
+            _hasCheckedPatch = false;
+            _loaded = false;
+            _attachedTime = null;
+        }
+
+        private static void TryReset(Action reset)
+        {
+            try { reset(); }
+            catch { }
         }
 
         private void CheckUpdate_Click(object sender, RoutedEventArgs e) =>
