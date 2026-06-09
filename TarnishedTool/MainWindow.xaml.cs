@@ -306,6 +306,26 @@ namespace TarnishedTool
 
         private void MainWindow_Closing(object sender, CancelEventArgs e)
         {
+            if (_memoryService.IsAttached)
+            {
+                if (_loaded)
+                {
+                    DetachFromGame();
+                }
+                else
+                {
+                    // On the main menu after a quitout, memory pointers are null so patches
+                    // cannot be reversed. Block close and ask the user to go back in-game first.
+                    e.Cancel = true;
+                    MsgBox.Show(
+                        "The game is currently on the main menu.\n\n" +
+                        "Active patches cannot be reversed from the main menu. " +
+                        "Please load back into the game and use the Detach button to restore a clean vanilla state before closing.",
+                        "Detach Required Before Closing");
+                    return;
+                }
+            }
+
             var bounds = WindowState == WindowState.Normal
                 ? new Rect(Left, Top, ActualWidth, ActualHeight)
                 : RestoreBounds;
@@ -337,7 +357,11 @@ namespace TarnishedTool
         private void Detach_Click(object sender, RoutedEventArgs e)
         {
             if (!_memoryService.IsAttached) return;
+            DetachFromGame();
+        }
 
+        private void DetachFromGame()
+        {
             try
             {
                 // Only write vanilla values back to memory when the game world is loaded (player pointer valid).

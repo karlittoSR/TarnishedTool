@@ -777,7 +777,7 @@
                                 Command="{Binding ForActSequenceCommand}" Height="32" Margin="10,0,0,0" />
                         <Border Background="#3498db" CornerRadius="10" Width="12" Height="12" Margin="5,0,0,0"
                                 VerticalAlignment="Center"
-                                ToolTip="Enter a sequence of acts separated by spaces, max 10 acts&#x0A;Not entirely consistent but should work most of the time if you&#x0A;use a keybind and try to time the attack as the enemy is is finishing another move"
+                                ToolTip="Enter one or a sequence of acts separated by spaces, max 10 &#x0A;Attach a keybind to this feature so you can activate it easily during a fight &#x0A; Check Show Acts Overlay box to see the sequence of acts you have entered"
                                 ToolTipService.InitialShowDelay="100">
                             <TextBlock Text="i" Foreground="White" HorizontalAlignment="Center"
                                        VerticalAlignment="Center" FontWeight="Bold" FontSize="10" />
@@ -825,6 +825,13 @@
                                   Margin="10,6,0,0"
                                   Foreground="{StaticResource TextBrush}"
                                   IsChecked="{Binding IsShowActsOverlayEnabled}" />
+                        <Border Background="#3498db" CornerRadius="10" Width="12" Height="12" Margin="5,6,0,0"
+                                VerticalAlignment="Center"
+                                ToolTip="Shows the enemy's current act and the two previous ones.&#x0A;When a Force Acts sequence is active, the full sequence is also displayed."
+                                ToolTipService.InitialShowDelay="100">
+                            <TextBlock Text="i" Foreground="White" HorizontalAlignment="Center"
+                                       VerticalAlignment="Center" FontWeight="Bold" FontSize="10" />
+                        </Border>
                     </StackPanel>
                 </StackPanel>
             </StackPanel>
