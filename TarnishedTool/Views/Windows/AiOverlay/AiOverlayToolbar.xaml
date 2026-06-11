@@ -1,6 +1,7 @@
 ﻿<Window x:Class="TarnishedTool.Views.Windows.AiOverlay.AiOverlayToolbar"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="AI Toolbar"
         Height="Auto" Width="Auto"
         SizeToContent="WidthAndHeight"
         AllowsTransparency="True"

@@ -5,6 +5,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:converters="clr-namespace:TarnishedTool.Converters"
         mc:Ignorable="d"
+        Title="Resistances"
         Width="180"
         SizeToContent="WidthAndHeight"
         AllowsTransparency="True"
