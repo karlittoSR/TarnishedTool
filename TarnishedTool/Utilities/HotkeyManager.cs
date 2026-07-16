@@ -5,6 +5,7 @@ using System.Windows;
 using H.Hooks;
 using TarnishedTool.Enums;
 using TarnishedTool.Interfaces;
+using TarnishedTool.Memory;
 
 namespace TarnishedTool.Utilities;
 
@@ -56,6 +57,11 @@ public class HotkeyManager
                     Application.Current.Dispatcher.BeginInvoke(() =>
                     {
                         if (!_memoryService.IsAttached) return;
+                        // Right after (re)attaching there is a ~2s window where the code cave
+                        // is not allocated yet. Running a feature then would install hooks that
+                        // jump to invalid memory and crash the game instantly, so block hotkeys
+                        // until initialization is complete.
+                        if (CodeCaveOffsets.Base == IntPtr.Zero) return;
                         captured();
                     });
                 }

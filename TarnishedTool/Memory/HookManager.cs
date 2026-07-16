@@ -27,6 +27,11 @@ namespace TarnishedTool.Memory
 
         public void InstallHook(long codeLoc, long origin, byte[] originalBytes)
         {
+            // Never install a hook while the code cave is unallocated (e.g. the ~2s window
+            // right after attaching). The jmp written into game code would target invalid
+            // memory and crash the game the moment it executes.
+            if (CodeCaveOffsets.Base == IntPtr.Zero) return;
+
             byte[] hookBytes = GetHookBytes(originalBytes.Length, codeLoc, origin);
             _memoryService.WriteBytes((IntPtr)origin, hookBytes);
             _hookRegistry[codeLoc] = new HookData

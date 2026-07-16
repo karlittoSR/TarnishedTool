@@ -28,6 +28,7 @@ namespace TarnishedTool
         private readonly AoBScanner _aobScanner;
         private HookManager _hookManager;
         private HotkeyManager _hotkeyManager;
+        private IReminderService _reminderService;
 
         private PlayerViewModel _playerViewModel;
         private EnemyViewModel _enemyViewModel;
@@ -62,6 +63,7 @@ namespace TarnishedTool
             IActionRequestService actionRequestService = new ActionRequestService(_memoryService, _hookManager);
             IParamService paramService = new ParamService(_memoryService);
             IReminderService reminderService = new ReminderService(_memoryService, _hookManager, _stateService);
+            _reminderService = reminderService;
             IChrInsService chrInsService = new ChrInsService(_memoryService);
             ITravelService travelService = new TravelService(_memoryService, _hookManager);
             IPlayerService playerService =
@@ -288,6 +290,10 @@ namespace TarnishedTool
                 _appliedOneTimeFeatures = false;
                 _hasPublishedLoaded = false;
                 _hasPublishedFadedIn = false;
+                // The game process is gone, so the code cave address is no longer valid.
+                // Clear it so nothing (hotkeys, toggles) can use the stale address after
+                // the game is relaunched but before a new cave is allocated.
+                CodeCaveOffsets.Base = IntPtr.Zero;
                 _stateService.Publish(State.Detached);
                 IsAttachedText.Text = "Not attached";
                 IsAttachedText.Foreground = (SolidColorBrush)Application.Current.Resources["NotAttachedBrush"];
@@ -379,6 +385,11 @@ namespace TarnishedTool
                 TryReset(_targetViewModel.ResetToggles);
                 TryReset(_travelViewModel.ResetToggles);
             }
+
+            // Restore the loading-screen title FMG entry before the handle is closed,
+            // otherwise the reminder text keeps appearing on random loading screens
+            // until the game is restarted.
+            try { _reminderService.RestoreReminder(); } catch { }
 
             try { _hookManager.UninstallAllHooks(); } catch { }
 

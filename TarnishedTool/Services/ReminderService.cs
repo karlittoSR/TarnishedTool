@@ -13,9 +13,10 @@ public class ReminderService : IReminderService
 {
     private const uint MessageCategory = 205;
     private const int ReminderEntryIndex = 3;
-    private const string ReminderText = "TarnishedTool - Speedrun Edition";
+    private const string ReminderText = "Tarnished Tool - Speedrun Edition";
 
     private bool _hasDoneReminder;
+    private byte[] _originalBytes;
     private readonly IMemoryService _memoryService;
     private readonly HookManager _hookManager;
 
@@ -46,8 +47,35 @@ public class ReminderService : IReminderService
 
         // +2 to include the UTF-16LE null terminator (\0\0), preventing the game from reading
         // past our string and concatenating leftover FMG text.
-        _memoryService.WriteString(fmg + offset, ReminderText, ReminderText.Length * 2 + 2);
+        var byteCount = ReminderText.Length * 2 + 2;
+
+        // Snapshot the original hint bytes so RestoreReminder can undo the overwrite on detach.
+        // The FMG lives in game memory for the whole process lifetime, so without this the
+        // reminder text would keep showing up on random loading screens after detaching.
+        _originalBytes = _memoryService.ReadBytes(fmg + offset, byteCount);
+
+        _memoryService.WriteString(fmg + offset, ReminderText, byteCount);
         _hasDoneReminder = true;
+    }
+
+    public void RestoreReminder()
+    {
+        if (!_hasDoneReminder || _originalBytes == null) return;
+
+        var (fmg, stringTable, count) = GetFmgData(0, MessageCategory);
+        if (fmg == 0 || ReminderEntryIndex >= count) return;
+
+        var offset = _memoryService.Read<nint>(stringTable + ReminderEntryIndex * 8);
+        if (offset == 0) return;
+
+        // Only write the snapshot back if the entry still holds our text, so a reloaded
+        // FMG (or a changed pointer) is never clobbered with stale bytes.
+        var current = _memoryService.ReadString(fmg + offset, ReminderText.Length * 2 + 2);
+        if (current != ReminderText) return;
+
+        _memoryService.WriteBytes(fmg + offset, _originalBytes);
+        _originalBytes = null;
+        _hasDoneReminder = false;
     }
 
     private (nint fmg, nint stringTable, int count) GetFmgData(uint version, uint category)
