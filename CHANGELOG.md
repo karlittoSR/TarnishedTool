@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v1.1.5] - 2026-07-16
+
+### Fixed
+- **Loading screen title now properly restored on detach.** The tool saves the original hint text before replacing it with the reminder title and writes it back when detaching — previously one hint slot kept showing "Tarnished Tool - Speedrun Edition" on random loading screens until the game was restarted.
+- **Fixed instant game crash when pressing a hotkey right after attaching.** During the ~2 seconds after (re)attach the tool's code cave is not allocated yet; triggering a feature then (e.g. noclip) installed a hook jumping to invalid memory. Hotkeys and hook installs are now blocked until initialization completes.
+- Stale code cave address is now cleared when the game process exits, preventing the same crash after relaunching the game.
+
+
 ## [v1.1.4] - 2026-06-04
 
 ### Added
