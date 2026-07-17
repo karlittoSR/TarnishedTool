@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v1.2.0] - 2026-07-17
+
+### Added
+- **Golden Erdtree button** — new event trigger to burn the Erdtree, integrated from upstream ([#116](https://github.com/borgCode/TarnishedTool/pull/116)).
+- **Refresh from storage on travel and boss revive rest** — travel and boss revive now re-read state from storage so restored positions and revive lists stay accurate, integrated from upstream ([#121](https://github.com/borgCode/TarnishedTool/pull/121)).
+
+### Fixed
+- **Hook registry is now cleared on detach** — prevents stale hook entries from carrying over between attach sessions, integrated from upstream ([#118](https://github.com/borgCode/TarnishedTool/pull/118)).
+
 ## [v1.1.5] - 2026-07-16
 
 ### Fixed
