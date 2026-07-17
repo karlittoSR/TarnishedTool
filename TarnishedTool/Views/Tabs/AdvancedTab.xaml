@@ -256,8 +256,13 @@
                             Height="12"
                             Margin="10,0,0,0"
                             VerticalAlignment="Center"
-                            ToolTip="Time a run segment (a &quot;line&quot;) from a fixed start point to an end point using in-game time, then compare multiple attempts to find your fastest — no LiveSplit needed. Set a start and end, restore to the start, and the timer runs automatically from when you leave the start until you reach the end."
                             ToolTipService.InitialShowDelay="100">
+                        <Border.ToolTip>
+                            <ToolTip MaxWidth="300">
+                                <TextBlock TextWrapping="Wrap"
+                                           Text="Time a run segment (a &quot;line&quot;) from a fixed start point to an end point using in-game time, then compare multiple attempts to find your fastest — no LiveSplit needed. Set a start and end, restore to the start, and the timer runs automatically from when you leave the start until you reach the end." />
+                            </ToolTip>
+                        </Border.ToolTip>
                         <TextBlock Text="i"
                                    Foreground="White"
                                    HorizontalAlignment="Center"
