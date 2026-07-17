@@ -370,6 +370,8 @@
         <Compile Include="ViewModels\ChrInsEntry.cs" />
         <Compile Include="ViewModels\ChrInsWindowViewModel.cs" />
         <Compile Include="ViewModels\LineComparisonViewModel.cs" />
+        <Compile Include="Models\LineComparisonAttempt.cs" />
+        <Compile Include="Utilities\TimeFormatter.cs" />
         <Compile Include="ViewModels\AttackInfoViewModel.cs" />
         <Compile Include="ViewModels\BaseViewModel.cs" />
         <Compile Include="ViewModels\CreateCustomWarpViewModel.cs" />

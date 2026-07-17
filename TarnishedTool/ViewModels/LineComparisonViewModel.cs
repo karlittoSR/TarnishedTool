@@ -1,7 +1,11 @@
 //
 
 using System;
+using System.Collections.ObjectModel;
+using System.Linq;
 using System.Numerics;
+using System.Text;
+using System.Windows;
 using System.Windows.Input;
 using TarnishedTool.Core;
 using TarnishedTool.Interfaces;
@@ -17,11 +21,15 @@ public class LineComparisonViewModel : BaseViewModel
 
     private enum Phase { Idle, Armed, AtStart, Running, Finished }
 
+    private const int MaxAttempts = 10;
+    private const int MaxNameLength = 44;
+
     private Phase _phase = Phase.Idle;
     private Position _start;
     private Position _end;
     private uint _startIgt;
     private bool _subscribed;
+    private int _attemptCounter;
 
     public LineComparisonViewModel(IGameTickService gameTickService, IPlayerService playerService)
     {
@@ -32,6 +40,8 @@ public class LineComparisonViewModel : BaseViewModel
         SetEndCommand = new DelegateCommand(SetEnd);
         RestoreToStartCommand = new DelegateCommand(RestoreToStart);
         ResetCommand = new DelegateCommand(Reset);
+        ClearResultsCommand = new DelegateCommand(ClearResults);
+        CopyResultsCommand = new DelegateCommand(CopyResults);
     }
 
     #region Commands
@@ -40,8 +50,12 @@ public class LineComparisonViewModel : BaseViewModel
     public ICommand SetEndCommand { get; }
     public ICommand RestoreToStartCommand { get; }
     public ICommand ResetCommand { get; }
+    public ICommand ClearResultsCommand { get; }
+    public ICommand CopyResultsCommand { get; }
 
     #endregion
+
+    public ObservableCollection<LineComparisonAttempt> Attempts { get; } = new();
 
     #region Properties
 
@@ -87,11 +101,11 @@ public class LineComparisonViewModel : BaseViewModel
         set => SetProperty(ref _liveTimeText, value);
     }
 
-    private string _lastResultText = "--:--.---";
-    public string LastResultText
+    private string _nextAttemptName = "";
+    public string NextAttemptName
     {
-        get => _lastResultText;
-        set => SetProperty(ref _lastResultText, value);
+        get => _nextAttemptName;
+        set => SetProperty(ref _nextAttemptName, value);
     }
 
     #endregion
@@ -140,6 +154,56 @@ public class LineComparisonViewModel : BaseViewModel
     }
 
     private void Reset() => ReArm();
+
+    private void ClearResults()
+    {
+        Attempts.Clear();
+        _attemptCounter = 0;
+    }
+
+    private void CopyResults()
+    {
+        if (Attempts.Count == 0) return;
+        var sb = new StringBuilder();
+        sb.AppendLine("#\tName\tResult\tDelta");
+        foreach (var a in Attempts)
+        {
+            // Strip the leading '+' so spreadsheets don't read the delta as a formula.
+            var delta = a.DeltaText.TrimStart('+');
+            sb.AppendLine($"{a.Number}\t{a.Name}\t{a.ResultText}\t{delta}");
+        }
+        try { Clipboard.SetText(sb.ToString()); } catch { }
+    }
+
+    private void RecordAttempt(uint result)
+    {
+        var number = ++_attemptCounter;
+        var name = string.IsNullOrWhiteSpace(NextAttemptName) ? $"Attempt {number}" : NextAttemptName.Trim();
+        if (name.Length > MaxNameLength) name = name.Substring(0, MaxNameLength);
+
+        Attempts.Add(new LineComparisonAttempt(number, name, result));
+
+        // Keep only the best MaxAttempts rows: when full, drop the slowest.
+        while (Attempts.Count > MaxAttempts)
+        {
+            var worst = Attempts.OrderByDescending(a => a.ResultMs).First();
+            Attempts.Remove(worst);
+        }
+
+        NextAttemptName = "";
+        RecomputeDeltas();
+    }
+
+    private void RecomputeDeltas()
+    {
+        if (Attempts.Count == 0) return;
+        var bestMs = Attempts.Min(a => a.ResultMs);
+        foreach (var a in Attempts)
+        {
+            a.IsBest = a.ResultMs == bestMs;
+            a.DeltaText = a.IsBest ? "—" : TimeFormatter.SignedDelta((long)a.ResultMs - bestMs);
+        }
+    }
 
     private void ReArm()
     {
@@ -202,7 +266,7 @@ public class LineComparisonViewModel : BaseViewModel
                         _phase = Phase.Finished;
                         PhaseText = "Finished";
                         LiveTimeText = FormatMs(result);
-                        LastResultText = FormatMs(result);
+                        RecordAttempt(result);
                     }
                     break;
             }
@@ -235,9 +299,5 @@ public class LineComparisonViewModel : BaseViewModel
         return $"m{area:X2}_{block:X2}_{region:X2}_{size:X2}  ({p.Coords.X:F1}, {p.Coords.Y:F1}, {p.Coords.Z:F1})";
     }
 
-    private static string FormatMs(uint ms)
-    {
-        var ts = TimeSpan.FromMilliseconds(ms);
-        return $"{(int)ts.TotalMinutes:D2}:{ts.Seconds:D2}.{ts.Milliseconds:D3}";
-    }
+    private static string FormatMs(uint ms) => TimeFormatter.Mmssmmm(ms);
 }

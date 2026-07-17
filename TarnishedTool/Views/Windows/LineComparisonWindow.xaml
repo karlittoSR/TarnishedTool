@@ -9,7 +9,7 @@
                        Style="{StaticResource DefaultWindowStyle}"
                        WindowStyle="None"
                        AllowsTransparency="True"
-                       Title="Line Comparison" Height="360" Width="460">
+                       Title="Line Comparison" Height="600" Width="500">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="30" />
@@ -30,10 +30,19 @@
             </CheckBox>
         </Grid>
 
-        <StackPanel Grid.Row="2" Margin="12,4,12,12">
+        <Grid Grid.Row="2" Margin="12,4,12,12">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
 
             <!-- Start -->
-            <Border BorderThickness="1" BorderBrush="#333" CornerRadius="3" Padding="8" Margin="0,0,0,8">
+            <Border Grid.Row="0" BorderThickness="1" BorderBrush="#333" CornerRadius="3" Padding="8" Margin="0,0,0,8">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto" />
@@ -52,7 +61,7 @@
             </Border>
 
             <!-- End -->
-            <Border BorderThickness="1" BorderBrush="#333" CornerRadius="3" Padding="8" Margin="0,0,0,8">
+            <Border Grid.Row="1" BorderThickness="1" BorderBrush="#333" CornerRadius="3" Padding="8" Margin="0,0,0,8">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto" />
@@ -71,7 +80,7 @@
             </Border>
 
             <!-- Controls -->
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,4,0,10">
+            <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,2,0,8">
                 <Button Content="Restore to Start" Width="130" Height="30" Margin="0,0,10,0"
                         Command="{Binding RestoreToStartCommand}" />
                 <Button Content="Reset" Width="90" Height="30"
@@ -79,14 +88,72 @@
             </StackPanel>
 
             <!-- Live timer + status -->
-            <TextBlock Text="{Binding LiveTimeText}" FontSize="34" FontWeight="Bold"
-                       HorizontalAlignment="Center" />
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,6,0,0">
-                <TextBlock Text="Status: " />
-                <TextBlock Text="{Binding PhaseText}" FontWeight="SemiBold" />
-                <TextBlock Text="   Last result: " Margin="10,0,0,0" />
-                <TextBlock Text="{Binding LastResultText}" FontWeight="SemiBold" />
+            <StackPanel Grid.Row="3">
+                <TextBlock Text="{Binding LiveTimeText}" FontSize="34" FontWeight="Bold"
+                           HorizontalAlignment="Center" />
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,2,0,0">
+                    <TextBlock Text="Status: " />
+                    <TextBlock Text="{Binding PhaseText}" FontWeight="SemiBold" />
+                </StackPanel>
             </StackPanel>
-        </StackPanel>
+
+            <!-- Next attempt name -->
+            <StackPanel Grid.Row="4" Orientation="Horizontal" Margin="0,10,0,6" VerticalAlignment="Center">
+                <TextBlock Text="Next attempt name:" VerticalAlignment="Center" Margin="0,0,8,0" />
+                <TextBox Width="220" VerticalContentAlignment="Center" MaxLength="44"
+                         Text="{Binding NextAttemptName, UpdateSourceTrigger=PropertyChanged}" />
+            </StackPanel>
+
+            <!-- Results table -->
+            <DataGrid Grid.Row="5"
+                      ItemsSource="{Binding Attempts}"
+                      AutoGenerateColumns="False"
+                      CanUserAddRows="False"
+                      CanUserDeleteRows="False"
+                      CanUserResizeRows="False"
+                      HeadersVisibility="Column"
+                      GridLinesVisibility="Horizontal"
+                      SelectionMode="Single">
+                <DataGrid.RowStyle>
+                    <Style TargetType="DataGridRow">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsBest}" Value="True">
+                                <Setter Property="FontWeight" Value="Bold" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </DataGrid.RowStyle>
+                <DataGrid.CellStyle>
+                    <Style TargetType="DataGridCell" BasedOn="{StaticResource {x:Type DataGridCell}}">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsBest}" Value="True">
+                                <Setter Property="Foreground" Value="Gold" />
+                                <Setter Property="FontWeight" Value="Bold" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </DataGrid.CellStyle>
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="#" Binding="{Binding Number}" IsReadOnly="True" Width="40" />
+                    <DataGridTextColumn Header="Name" Binding="{Binding Name, UpdateSourceTrigger=LostFocus}" Width="*">
+                        <DataGridTextColumn.EditingElementStyle>
+                            <Style TargetType="TextBox">
+                                <Setter Property="MaxLength" Value="44" />
+                            </Style>
+                        </DataGridTextColumn.EditingElementStyle>
+                    </DataGridTextColumn>
+                    <DataGridTextColumn Header="Result" Binding="{Binding ResultText}" IsReadOnly="True" Width="110" />
+                    <DataGridTextColumn Header="Delta" Binding="{Binding DeltaText}" IsReadOnly="True" Width="90" />
+                </DataGrid.Columns>
+            </DataGrid>
+
+            <!-- Table actions -->
+            <StackPanel Grid.Row="6" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,8,0,0">
+                <Button Content="Copy" Width="80" Height="26" Margin="0,0,8,0"
+                        Command="{Binding CopyResultsCommand}" />
+                <Button Content="Clear" Width="80" Height="26"
+                        Command="{Binding ClearResultsCommand}" />
+            </StackPanel>
+        </Grid>
     </Grid>
 </windows:TopmostWindow>
