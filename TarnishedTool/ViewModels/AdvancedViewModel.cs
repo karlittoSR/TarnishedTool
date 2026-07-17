@@ -35,6 +35,9 @@ public class AdvancedViewModel : BaseViewModel
     private readonly ChrInsWindowViewModel _chrInsWindowViewModel;
     private ChrInsWindow _chrInsWindow;
 
+    private readonly LineComparisonViewModel _lineComparisonViewModel;
+    private LineComparisonWindow _lineComparisonWindow;
+
     private ParamEditorWindow _paramEditorWindow;
 
     private readonly IPlayerService _playerService;
@@ -71,11 +74,13 @@ public class AdvancedViewModel : BaseViewModel
         AboutSpEffectsCommand = new DelegateCommand(ShowAboutSpEffects);
         OpenAiWindowCommand = new DelegateCommand(OpenAiWindow);
         InjectScriptCommand = new DelegateCommand(InjectScript);
+        OpenLineComparisonCommand = new DelegateCommand(OpenLineComparison);
 
         SelectedEquipType = EquipTypes[0].Value;
 
         _paramEditorViewModel = new ParamEditorViewModel(paramRepository, paramService, reminderService);
         _chrInsWindowViewModel = new ChrInsWindowViewModel(stateService, gameTickService, playerService, chrInsService, aiWindowService);
+        _lineComparisonViewModel = new LineComparisonViewModel(gameTickService, playerService);
     }
 
     
@@ -88,6 +93,7 @@ public class AdvancedViewModel : BaseViewModel
     public ICommand AboutSpEffectsCommand { get; set; }
     public ICommand OpenAiWindowCommand { get; set; }
     public ICommand InjectScriptCommand { get; set; }
+    public ICommand OpenLineComparisonCommand { get; set; }
 
     #endregion
 
@@ -313,6 +319,31 @@ public class AdvancedViewModel : BaseViewModel
         _chrInsWindow.Focus();
     }
     
+    private void OpenLineComparison()
+    {
+        if (_lineComparisonWindow != null && _lineComparisonWindow.IsVisible)
+        {
+            _lineComparisonWindow.Activate();
+            return;
+        }
+
+        _lineComparisonWindow = new LineComparisonWindow
+        {
+            DataContext = _lineComparisonViewModel
+        };
+        _lineComparisonWindow.Closed += (s, e) =>
+        {
+            _lineComparisonWindow = null;
+            _lineComparisonViewModel.NotifyWindowClosed();
+        };
+
+        _lineComparisonWindow.Show();
+        _lineComparisonViewModel.NotifyWindowOpen();
+
+        _lineComparisonWindow.Activate();
+        _lineComparisonWindow.Focus();
+    }
+
     private void InjectScript()
     {
         var dialog = new Microsoft.Win32.OpenFileDialog

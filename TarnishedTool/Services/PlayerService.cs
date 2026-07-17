@@ -56,18 +56,37 @@ namespace TarnishedTool.Services
         public void SavePos(int index)
         {
             var posToSave = _positions[index];
-            var playerIns = GetPlayerIns();
-            var physicsPtr = GetChrPhysicsPtr();
-            posToSave.BlockId = memoryService.Read<uint>(playerIns + WorldChrMan.PlayerInsOffsets.CurrentBlockId);
-            posToSave.Coords = memoryService.Read<Vector3>(playerIns + WorldChrMan.PlayerInsOffsets.CurrentMapCoords);
-            posToSave.Angle = memoryService.Read<float>(playerIns + WorldChrMan.PlayerInsOffsets.CurrentMapAngle);
-            posToSave.PhysicsAngle1 = memoryService.Read<float>(physicsPtr + (int)ChrIns.ChrPhysicsOffsets.Angle1);
-            posToSave.PhysicsAngle2 = memoryService.Read<float>(physicsPtr + (int)ChrIns.ChrPhysicsOffsets.Angle2);
+            var captured = CapturePosition();
+            posToSave.BlockId = captured.BlockId;
+            posToSave.Coords = captured.Coords;
+            posToSave.Angle = captured.Angle;
+            posToSave.PhysicsAngle1 = captured.PhysicsAngle1;
+            posToSave.PhysicsAngle2 = captured.PhysicsAngle2;
         }
 
-        public void RestorePos(int index)
+        public Position CapturePosition()
         {
-            var savedPos = _positions[index];
+            var playerIns = GetPlayerIns();
+            var physicsPtr = GetChrPhysicsPtr();
+            var blockId = memoryService.Read<uint>(playerIns + WorldChrMan.PlayerInsOffsets.CurrentBlockId);
+            var coords = memoryService.Read<Vector3>(playerIns + WorldChrMan.PlayerInsOffsets.CurrentMapCoords);
+            var angle = memoryService.Read<float>(playerIns + WorldChrMan.PlayerInsOffsets.CurrentMapAngle);
+            var physicsAngle1 = memoryService.Read<float>(physicsPtr + (int)ChrIns.ChrPhysicsOffsets.Angle1);
+            var physicsAngle2 = memoryService.Read<float>(physicsPtr + (int)ChrIns.ChrPhysicsOffsets.Angle2);
+            return new Position(blockId, coords, angle, physicsAngle1, physicsAngle2);
+        }
+
+        public uint GetIgt()
+        {
+            var gameDataMan = memoryService.Read<nint>(GameDataMan.Base);
+            if (gameDataMan == 0) return 0;
+            return memoryService.Read<uint>(gameDataMan + GameDataMan.Igt);
+        }
+
+        public void RestorePos(int index) => RestorePos(_positions[index]);
+
+        public void RestorePos(Position savedPos)
+        {
             var currentPos = GetPlayerPosition();
 
             uint currentArea = (currentPos.BlockId >> 24) & 0xFF;

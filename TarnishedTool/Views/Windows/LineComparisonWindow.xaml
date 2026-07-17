@@ -1,0 +1,92 @@
+<windows:TopmostWindow x:Class="TarnishedTool.Views.Windows.LineComparisonWindow"
+                       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                       xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+                       xmlns:controls="clr-namespace:TarnishedTool.Controls"
+                       xmlns:windows="clr-namespace:TarnishedTool.Views.Windows"
+                       mc:Ignorable="d"
+                       Style="{StaticResource DefaultWindowStyle}"
+                       WindowStyle="None"
+                       AllowsTransparency="True"
+                       Title="Line Comparison" Height="360" Width="460">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="30" />
+            <RowDefinition Height="30" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <controls:TitleBar Grid.Row="0" Title="Line Comparison" />
+
+        <Grid Grid.Row="1">
+            <CheckBox x:Name="AlwaysOnTopCheckBox"
+                      HorizontalAlignment="Right"
+                      VerticalAlignment="Center"
+                      Margin="0,0,10,0"
+                      Checked="AlwaysOnTopCheckBox_Checked"
+                      Unchecked="AlwaysOnTopCheckBox_Unchecked">
+                Always on Top
+            </CheckBox>
+        </Grid>
+
+        <StackPanel Grid.Row="2" Margin="12,4,12,12">
+
+            <!-- Start -->
+            <Border BorderThickness="1" BorderBrush="#333" CornerRadius="3" Padding="8" Margin="0,0,0,8">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <Button Grid.Column="0" Content="Set Start" Width="90" Height="28"
+                            Command="{Binding SetStartCommand}" />
+                    <TextBlock Grid.Column="1" Text="{Binding StartText}" VerticalAlignment="Center"
+                               Margin="10,0,0,0" TextTrimming="CharacterEllipsis" />
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                        <TextBlock Text="Radius" VerticalAlignment="Center" Margin="0,0,5,0" />
+                        <TextBox Width="45" Text="{Binding StartRadius}" VerticalContentAlignment="Center" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- End -->
+            <Border BorderThickness="1" BorderBrush="#333" CornerRadius="3" Padding="8" Margin="0,0,0,8">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <Button Grid.Column="0" Content="Set End" Width="90" Height="28"
+                            Command="{Binding SetEndCommand}" />
+                    <TextBlock Grid.Column="1" Text="{Binding EndText}" VerticalAlignment="Center"
+                               Margin="10,0,0,0" TextTrimming="CharacterEllipsis" />
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                        <TextBlock Text="Radius" VerticalAlignment="Center" Margin="0,0,5,0" />
+                        <TextBox Width="45" Text="{Binding EndRadius}" VerticalContentAlignment="Center" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- Controls -->
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,4,0,10">
+                <Button Content="Restore to Start" Width="130" Height="30" Margin="0,0,10,0"
+                        Command="{Binding RestoreToStartCommand}" />
+                <Button Content="Reset" Width="90" Height="30"
+                        Command="{Binding ResetCommand}" />
+            </StackPanel>
+
+            <!-- Live timer + status -->
+            <TextBlock Text="{Binding LiveTimeText}" FontSize="34" FontWeight="Bold"
+                       HorizontalAlignment="Center" />
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,6,0,0">
+                <TextBlock Text="Status: " />
+                <TextBlock Text="{Binding PhaseText}" FontWeight="SemiBold" />
+                <TextBlock Text="   Last result: " Margin="10,0,0,0" />
+                <TextBlock Text="{Binding LastResultText}" FontWeight="SemiBold" />
+            </StackPanel>
+        </StackPanel>
+    </Grid>
+</windows:TopmostWindow>
