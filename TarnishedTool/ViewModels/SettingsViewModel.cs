@@ -272,6 +272,10 @@ public class SettingsViewModel : BaseViewModel
                 new("Open Param Patcher", HotkeyActions.OpenParamPatcher),
                 new("Open Characters List", HotkeyActions.OpenCharactersList),
                 new("Inject AI Script", HotkeyActions.InjectAiScript),
+                new("Open Line Comparison", HotkeyActions.OpenLineComparison),
+                new("Set Line Start", HotkeyActions.SetLineStart),
+                new("Set Line End", HotkeyActions.SetLineEnd),
+                new("Restore to Line Start", HotkeyActions.RestoreLineStart),
             ],
         };
 

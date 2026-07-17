@@ -8,6 +8,7 @@ using System.Text;
 using System.Windows;
 using System.Windows.Input;
 using TarnishedTool.Core;
+using TarnishedTool.Enums;
 using TarnishedTool.Interfaces;
 using TarnishedTool.Models;
 using TarnishedTool.Utilities;
@@ -23,6 +24,7 @@ public class LineComparisonViewModel : BaseViewModel
 
     private const int MaxAttempts = 10;
     private const int MaxNameLength = 44;
+    private const float MinRadius = 0.1f;
 
     private Phase _phase = Phase.Idle;
     private Position _start;
@@ -31,7 +33,11 @@ public class LineComparisonViewModel : BaseViewModel
     private bool _subscribed;
     private int _attemptCounter;
 
-    public LineComparisonViewModel(IGameTickService gameTickService, IPlayerService playerService)
+    // Raised when a recorded attempt beats the previous best (never on the first attempt).
+    public event Action NewBest;
+
+    public LineComparisonViewModel(IGameTickService gameTickService, IPlayerService playerService,
+        IStateService stateService)
     {
         _gameTickService = gameTickService;
         _playerService = playerService;
@@ -39,9 +45,14 @@ public class LineComparisonViewModel : BaseViewModel
         SetStartCommand = new DelegateCommand(SetStart);
         SetEndCommand = new DelegateCommand(SetEnd);
         RestoreToStartCommand = new DelegateCommand(RestoreToStart);
-        ResetCommand = new DelegateCommand(Reset);
         ClearResultsCommand = new DelegateCommand(ClearResults);
         CopyResultsCommand = new DelegateCommand(CopyResults);
+        RemoveSelectedCommand = new DelegateCommand(RemoveSelected);
+
+        Attempts.CollectionChanged += (_, _) => RecomputeDeltas();
+
+        stateService.Subscribe(State.Loaded, () => CanOperate = true);
+        stateService.Subscribe(State.NotLoaded, () => CanOperate = false);
     }
 
     #region Commands
@@ -49,9 +60,9 @@ public class LineComparisonViewModel : BaseViewModel
     public ICommand SetStartCommand { get; }
     public ICommand SetEndCommand { get; }
     public ICommand RestoreToStartCommand { get; }
-    public ICommand ResetCommand { get; }
     public ICommand ClearResultsCommand { get; }
     public ICommand CopyResultsCommand { get; }
+    public ICommand RemoveSelectedCommand { get; }
 
     #endregion
 
@@ -59,18 +70,25 @@ public class LineComparisonViewModel : BaseViewModel
 
     #region Properties
 
-    private float _startRadius = 0.75f;
+    private bool _canOperate;
+    public bool CanOperate
+    {
+        get => _canOperate;
+        set => SetProperty(ref _canOperate, value);
+    }
+
+    private float _startRadius = 1f;
     public float StartRadius
     {
         get => _startRadius;
-        set => SetProperty(ref _startRadius, value);
+        set => SetProperty(ref _startRadius, value < MinRadius ? MinRadius : value);
     }
 
-    private float _endRadius = 2f;
+    private float _endRadius = 3f;
     public float EndRadius
     {
         get => _endRadius;
-        set => SetProperty(ref _endRadius, value);
+        set => SetProperty(ref _endRadius, value < MinRadius ? MinRadius : value);
     }
 
     private string _startText = "Not set";
@@ -108,6 +126,13 @@ public class LineComparisonViewModel : BaseViewModel
         set => SetProperty(ref _nextAttemptName, value);
     }
 
+    private LineComparisonAttempt _selectedAttempt;
+    public LineComparisonAttempt SelectedAttempt
+    {
+        get => _selectedAttempt;
+        set => SetProperty(ref _selectedAttempt, value);
+    }
+
     #endregion
 
     public void NotifyWindowOpen()
@@ -124,7 +149,7 @@ public class LineComparisonViewModel : BaseViewModel
         _subscribed = false;
     }
 
-    private void SetStart()
+    public void SetStart()
     {
         try
         {
@@ -135,7 +160,7 @@ public class LineComparisonViewModel : BaseViewModel
         catch { }
     }
 
-    private void SetEnd()
+    public void SetEnd()
     {
         try
         {
@@ -146,19 +171,23 @@ public class LineComparisonViewModel : BaseViewModel
         catch { }
     }
 
-    private void RestoreToStart()
+    public void RestoreToStart()
     {
         if (_start == null) return;
         try { _playerService.RestorePos(_start); } catch { }
         ReArm();
     }
 
-    private void Reset() => ReArm();
-
     private void ClearResults()
     {
         Attempts.Clear();
         _attemptCounter = 0;
+    }
+
+    private void RemoveSelected()
+    {
+        if (SelectedAttempt != null)
+            Attempts.Remove(SelectedAttempt);
     }
 
     private void CopyResults()
@@ -177,6 +206,10 @@ public class LineComparisonViewModel : BaseViewModel
 
     private void RecordAttempt(uint result)
     {
+        // Capture the previous best before adding, to detect a new record.
+        var hadAttempts = Attempts.Count > 0;
+        var prevBest = hadAttempts ? Attempts.Min(a => a.ResultMs) : uint.MaxValue;
+
         var number = ++_attemptCounter;
         var name = string.IsNullOrWhiteSpace(NextAttemptName) ? $"Attempt {number}" : NextAttemptName.Trim();
         if (name.Length > MaxNameLength) name = name.Substring(0, MaxNameLength);
@@ -191,7 +224,11 @@ public class LineComparisonViewModel : BaseViewModel
         }
 
         NextAttemptName = "";
-        RecomputeDeltas();
+        // Deltas/best recomputed via Attempts.CollectionChanged.
+
+        // Flash only on a genuine improvement — never on the first attempt.
+        if (hadAttempts && result < prevBest)
+            NewBest?.Invoke();
     }
 
     private void RecomputeDeltas()
@@ -243,7 +280,9 @@ public class LineComparisonViewModel : BaseViewModel
                 case Phase.AtStart:
                     if (Distance(current, _start) > StartRadius)
                     {
-                        _startIgt = _playerService.GetIgt();
+                        var startIgt = _playerService.GetIgt();
+                        if (startIgt == 0) break; // transient read — don't start on a bad baseline
+                        _startIgt = startIgt;
                         _phase = Phase.Running;
                         PhaseText = "Running";
                     }
@@ -251,6 +290,7 @@ public class LineComparisonViewModel : BaseViewModel
 
                 case Phase.Running:
                     var igt = _playerService.GetIgt();
+                    if (igt == 0) break; // transient read — skip this tick
                     if (igt < _startIgt)
                     {
                         // IGT went backwards (save reload) — abort the attempt.

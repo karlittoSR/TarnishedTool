@@ -17,6 +17,14 @@
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
+        <!-- Subtle gold flash on a new best (animated from code-behind) -->
+        <Border x:Name="GoldFlash"
+                Grid.Row="0" Grid.RowSpan="3"
+                Background="Gold"
+                Opacity="0"
+                IsHitTestVisible="False"
+                Panel.ZIndex="100" />
+
         <controls:TitleBar Grid.Row="0" Title="Line Comparison" />
 
         <Grid Grid.Row="1">
@@ -50,6 +58,7 @@
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
                     <Button Grid.Column="0" Content="Set Start" Width="90" Height="28"
+                            IsEnabled="{Binding CanOperate}"
                             Command="{Binding SetStartCommand}" />
                     <TextBlock Grid.Column="1" Text="{Binding StartText}" VerticalAlignment="Center"
                                Margin="10,0,0,0" TextTrimming="CharacterEllipsis" />
@@ -69,6 +78,7 @@
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
                     <Button Grid.Column="0" Content="Set End" Width="90" Height="28"
+                            IsEnabled="{Binding CanOperate}"
                             Command="{Binding SetEndCommand}" />
                     <TextBlock Grid.Column="1" Text="{Binding EndText}" VerticalAlignment="Center"
                                Margin="10,0,0,0" TextTrimming="CharacterEllipsis" />
@@ -81,10 +91,9 @@
 
             <!-- Controls -->
             <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,2,0,8">
-                <Button Content="Restore to Start" Width="130" Height="30" Margin="0,0,10,0"
+                <Button Content="Restore to Start" Width="150" Height="30"
+                        IsEnabled="{Binding CanOperate}"
                         Command="{Binding RestoreToStartCommand}" />
-                <Button Content="Reset" Width="90" Height="30"
-                        Command="{Binding ResetCommand}" />
             </StackPanel>
 
             <!-- Live timer + status -->
@@ -107,9 +116,10 @@
             <!-- Results table -->
             <DataGrid Grid.Row="5"
                       ItemsSource="{Binding Attempts}"
+                      SelectedItem="{Binding SelectedAttempt, Mode=TwoWay}"
                       AutoGenerateColumns="False"
                       CanUserAddRows="False"
-                      CanUserDeleteRows="False"
+                      CanUserDeleteRows="True"
                       CanUserResizeRows="False"
                       HeadersVisibility="Column"
                       GridLinesVisibility="Horizontal"
@@ -149,6 +159,8 @@
 
             <!-- Table actions -->
             <StackPanel Grid.Row="6" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,8,0,0">
+                <Button Content="Remove Selected" Width="120" Height="26" Margin="0,0,8,0"
+                        Command="{Binding RemoveSelectedCommand}" />
                 <Button Content="Copy" Width="80" Height="26" Margin="0,0,8,0"
                         Command="{Binding CopyResultsCommand}" />
                 <Button Content="Clear" Width="80" Height="26"

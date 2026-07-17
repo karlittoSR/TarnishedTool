@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 ## [v1.2.0] - 2026-07-17
 
 ### Added
+- **Line Comparison** — a new tool (Advanced tab) to time a run segment from a fixed start point to a flagged end point using in-game time, with no LiveSplit needed. Set a start and end (each with its own radius), restore to the start, and the timer runs automatically from when you leave the start until you reach the end. Attempts are collected in a stay-on-top window with a live timer, editable names, delta-vs-best, and the fastest highlighted gold (with a subtle gold flash on a new record). Keeps the best 10 attempts and can be driven entirely by hotkeys (open, set start, set end, restore to start).
 - **Golden Erdtree button** — new event trigger to burn the Erdtree, integrated from upstream ([#116](https://github.com/borgCode/TarnishedTool/pull/116)).
 - **Refresh from storage on travel and boss revive rest** — travel and boss revive now re-read state from storage so restored positions and revive lists stay accurate, integrated from upstream ([#121](https://github.com/borgCode/TarnishedTool/pull/121)).
 

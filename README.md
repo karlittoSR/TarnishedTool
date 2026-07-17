@@ -39,6 +39,12 @@ This fork focuses on reliability and workflow improvements for speedrunners: saf
 * The overlay is display-only and does not change Repeat Last Act or Force Act state.
 * A **hotkey binding** for the Acts Overlay toggle is available in the Settings tab.
 
+### Line Comparison
+* Open **Initialize Line Comparison** in the Advanced tab to time a run segment (a "line") from a fixed start point to an end point using **in-game time** — no LiveSplit needed.
+* Set a **start** and an **end** (each with its own trigger radius), restore to the start, and the timer starts automatically the moment you leave the start and stops when you reach the end.
+* Attempts are collected in a draggable, **stay-on-top** window (OBS-friendly) with a live timer, **editable names**, **delta vs. best**, and the fastest attempt highlighted **gold** — with a subtle gold flash on a new record.
+* Keeps your best 10 attempts, and everything can be driven by **hotkeys** (open window, set start, set end, restore to start) from the Settings tab.
+
 ### Other Additions
 * **Import from Practice Tool** — import hotkey bindings directly from the Elden Ring Practice Tool, mapping compatible bindings in one click.
 * **Change Runes** — set your exact rune count directly (clamped to valid game range).

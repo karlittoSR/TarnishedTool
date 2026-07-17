@@ -89,6 +89,9 @@ public class SettingsManager
     public double AiWindowWindowLeft { get; set; }
     public double AiWindowWindowTop { get; set; }
     public bool AiWindowAlwaysOnTop { get; set; }
+    public double LineComparisonWindowLeft { get; set; }
+    public double LineComparisonWindowTop { get; set; }
+    public bool LineComparisonAlwaysOnTop { get; set; }
     public double AiOverlayToolbarLeft { get; set; }
     public double AiOverlayToolbarTop { get; set; }
 

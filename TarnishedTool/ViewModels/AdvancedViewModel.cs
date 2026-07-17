@@ -80,7 +80,7 @@ public class AdvancedViewModel : BaseViewModel
 
         _paramEditorViewModel = new ParamEditorViewModel(paramRepository, paramService, reminderService);
         _chrInsWindowViewModel = new ChrInsWindowViewModel(stateService, gameTickService, playerService, chrInsService, aiWindowService);
-        _lineComparisonViewModel = new LineComparisonViewModel(gameTickService, playerService);
+        _lineComparisonViewModel = new LineComparisonViewModel(gameTickService, playerService, stateService);
     }
 
     
@@ -189,7 +189,10 @@ public class AdvancedViewModel : BaseViewModel
         _hotkeyManager.RegisterAction(HotkeyActions.OpenCharactersList, () => { SafeExecute(OpenAiWindow); _notificationService?.ShowNotification(HotkeyActions.OpenCharactersList); });
         _hotkeyManager.RegisterAction(HotkeyActions.InjectAiScript, () => { SafeExecute(InjectScript); _notificationService?.ShowNotification(HotkeyActions.InjectAiScript); });
 
-
+        _hotkeyManager.RegisterAction(HotkeyActions.OpenLineComparison, () => { SafeExecute(OpenLineComparison); _notificationService?.ShowNotification(HotkeyActions.OpenLineComparison); });
+        _hotkeyManager.RegisterAction(HotkeyActions.SetLineStart, () => { SafeExecute(() => _lineComparisonViewModel.SetStart()); _notificationService?.ShowNotification(HotkeyActions.SetLineStart); });
+        _hotkeyManager.RegisterAction(HotkeyActions.SetLineEnd, () => { SafeExecute(() => _lineComparisonViewModel.SetEnd()); _notificationService?.ShowNotification(HotkeyActions.SetLineEnd); });
+        _hotkeyManager.RegisterAction(HotkeyActions.RestoreLineStart, () => { SafeExecute(() => _lineComparisonViewModel.RestoreToStart()); _notificationService?.ShowNotification(HotkeyActions.RestoreLineStart); });
     }
 
     private void SafeExecute(Action action)
