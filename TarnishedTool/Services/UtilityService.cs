@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Numerics;
+using System.Threading.Tasks;
 using TarnishedTool.Enums;
 using TarnishedTool.Interfaces;
 using TarnishedTool.Memory;
@@ -12,12 +13,28 @@ namespace TarnishedTool.Services
         : IUtilityService
     {
         public const float DefaultNoClipSpeedScale = 0.2f;
-        
-        public void Quitout() =>
-        memoryService.Write(memoryService.Read<nint>(GameMan.Base) + GameMan.ShouldQuitout, (byte)1);
 
-        public void ForceSave() =>
-            memoryService.Write(memoryService.Read<nint>(GameMan.Base) + GameMan.ForceSave, (byte)1);
+        public void Quitout() => RunAfterTeleportCooldown(() =>
+            memoryService.Write(memoryService.Read<nint>(GameMan.Base) + GameMan.ShouldQuitout, (byte)1));
+
+        public void ForceSave() => RunAfterTeleportCooldown(() =>
+            memoryService.Write(memoryService.Read<nint>(GameMan.Base) + GameMan.ForceSave, (byte)1));
+
+        // A save/quit issued in the same frame as a teleport races the game's
+        // still-settling teleport and crashes. Defer briefly if one just happened.
+        private static void RunAfterTeleportCooldown(Action action)
+        {
+            var since = TeleportGuard.MsSinceTeleport();
+            if (since < TeleportGuard.CooldownMs)
+            {
+                var wait = (int)(TeleportGuard.CooldownMs - since);
+                _ = Task.Run(async () => { await Task.Delay(wait); action(); });
+            }
+            else
+            {
+                action();
+            }
+        }
 
         public void TriggerNewNgCycle() =>
             memoryService.Write(memoryService.Read<nint>(GameMan.Base) + GameMan.ShouldStartNewGame, (byte)1);

@@ -92,6 +92,9 @@ public class SettingsManager
     public double LineComparisonWindowLeft { get; set; }
     public double LineComparisonWindowTop { get; set; }
     public bool LineComparisonAlwaysOnTop { get; set; }
+    public double SavedLinesWindowLeft { get; set; }
+    public double SavedLinesWindowTop { get; set; }
+    public bool SavedLinesAlwaysOnTop { get; set; }
     public double AiOverlayToolbarLeft { get; set; }
     public double AiOverlayToolbarTop { get; set; }
 

@@ -91,9 +91,16 @@
 
             <!-- Controls -->
             <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,2,0,8">
-                <Button Content="Restore to Start" Width="150" Height="30"
+                <Button Content="Export position" Width="110" Height="30" Margin="0,0,6,0"
+                        IsEnabled="{Binding CanExport}"
+                        Command="{Binding ExportPositionsCommand}" />
+                <Button Content="Restore to Start" Width="140" Height="30" Margin="0,0,6,0"
                         IsEnabled="{Binding CanOperate}"
                         Command="{Binding RestoreToStartCommand}" />
+                <Button Content="Import position" Width="110" Height="30" Margin="0,0,6,0"
+                        Command="{Binding ImportPositionsCommand}" />
+                <Button Content="List" Width="55" Height="30"
+                        Command="{Binding OpenSavedLinesCommand}" />
             </StackPanel>
 
             <!-- Live timer + status -->
@@ -103,7 +110,14 @@
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,2,0,0">
                     <TextBlock Text="Status: " />
                     <TextBlock Text="{Binding PhaseText}" FontWeight="SemiBold" />
+                    <TextBlock Text="{Binding TargetPbText}" Foreground="Gold" FontWeight="SemiBold" Margin="14,0,0,0" />
                 </StackPanel>
+                <TextBlock Text="{Binding FeedbackText}"
+                           Foreground="White"
+                           FontStyle="Italic"
+                           HorizontalAlignment="Center"
+                           Height="16"
+                           Margin="0,2,0,0" />
             </StackPanel>
 
             <!-- Next attempt name -->

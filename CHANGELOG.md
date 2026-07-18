@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v1.2.1] - 2026-07-18
+
+### Added
+- **Line sharing (Export / Import position).** Export a line's start and end (full precision — position, orientation and both trigger radii) to a shareable code, and import a code from anyone to train the exact same line. The results **Copy** also embeds an importable code alongside the readable positions.
+- **Saved Lines library.** A **List** button opens a manager window to save named lines (bosses/segments you train often) and load them in one click (or double-click). Each saved line keeps its **personal best (gold)**, shown in the list; loading a line seeds that PB as "Attempt 1" (a target to beat) and displays it in the main window. The PB **updates automatically** whenever you beat it. Stored in `%AppData%\TarnishedTool\lines.txt` (portable, shareable).
+- Brief on-screen confirmations when positions/results are copied or a line is imported.
+
+### Fixed
+- **Crash when teleporting then immediately quitting out.** Restoring a position (or warping) then force-quitting in the same instant raced the game's still-settling teleport; quit/save now briefly defer when a teleport just happened, and the delayed no-gravity reset re-resolves its pointer instead of writing a freed one.
+
 ## [v1.2.0] - 2026-07-17
 
 ### Added

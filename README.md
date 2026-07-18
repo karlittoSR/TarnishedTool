@@ -44,6 +44,8 @@ This fork focuses on reliability and workflow improvements for speedrunners: saf
 * Set a **start** and an **end** (each with its own trigger radius), restore to the start, and the timer starts automatically the moment you leave the start and stops when you reach the end.
 * Attempts are collected in a draggable, **stay-on-top** window (OBS-friendly) with a live timer, **editable names**, **delta vs. best**, and the fastest attempt highlighted **gold** — with a subtle gold flash on a new record.
 * Keeps your best 10 attempts, and everything can be driven by **hotkeys** (open window, set start, set end, restore to start) from the Settings tab.
+* **Share lines** — **Export / Import position** turns a line's start and end (full precision, orientation and radii included) into a shareable code, so runners can trade lines and race the exact same segment.
+* **Saved Lines library** — the **List** button opens a manager to save named lines (bosses/segments you train often) and load them in one click. Each saved line keeps its **personal best**, seeds it as a target to beat when loaded, and updates it automatically when you beat it.
 
 ### Other Additions
 * **Import from Practice Tool** — import hotkey bindings directly from the Elden Ring Practice Tool, mapping compatible bindings in one click.

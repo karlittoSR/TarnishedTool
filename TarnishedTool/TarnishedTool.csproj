@@ -370,8 +370,13 @@
         <Compile Include="ViewModels\ChrInsEntry.cs" />
         <Compile Include="ViewModels\ChrInsWindowViewModel.cs" />
         <Compile Include="ViewModels\LineComparisonViewModel.cs" />
+        <Compile Include="ViewModels\SavedLinesViewModel.cs" />
         <Compile Include="Models\LineComparisonAttempt.cs" />
+        <Compile Include="Models\SavedLine.cs" />
         <Compile Include="Utilities\TimeFormatter.cs" />
+        <Compile Include="Utilities\TeleportGuard.cs" />
+        <Compile Include="Utilities\LineShareCodec.cs" />
+        <Compile Include="Utilities\SavedLinesStore.cs" />
         <Compile Include="ViewModels\AttackInfoViewModel.cs" />
         <Compile Include="ViewModels\BaseViewModel.cs" />
         <Compile Include="ViewModels\CreateCustomWarpViewModel.cs" />
@@ -464,6 +469,9 @@
         </Compile>
         <Compile Include="Views\Windows\LineComparisonWindow.xaml.cs">
           <DependentUpon>LineComparisonWindow.xaml</DependentUpon>
+        </Compile>
+        <Compile Include="Views\Windows\SavedLinesWindow.xaml.cs">
+          <DependentUpon>SavedLinesWindow.xaml</DependentUpon>
         </Compile>
         <Compile Include="Views\Windows\AttackInfoWindow.xaml.cs">
           <DependentUpon>AttackInfoWindow.xaml</DependentUpon>
@@ -623,6 +631,10 @@
             <SubType>Designer</SubType>
         </Page>
         <Page Include="Views\Windows\LineComparisonWindow.xaml">
+            <Generator>MSBuild:Compile</Generator>
+            <SubType>Designer</SubType>
+        </Page>
+        <Page Include="Views\Windows\SavedLinesWindow.xaml">
             <Generator>MSBuild:Compile</Generator>
             <SubType>Designer</SubType>
         </Page>

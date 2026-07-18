@@ -113,19 +113,33 @@ namespace TarnishedTool.Services
                 memoryService.Write(physicsPtr + (int)ChrIns.ChrPhysicsOffsets.Angle2, savedPos.PhysicsAngle2);
 
                 if (isLongDistance)
-                {
-                    _ = Task.Run(async () =>
-                    {
-                        await Task.Delay(1000);
-                        memoryService.Write(physicsPtr + (int)ChrIns.ChrPhysicsOffsets.NoGravity, false);
-                    });
-                }
+                    ScheduleNoGravityReset(isRiding);
             }
 
             else
             {
                 _ = Task.Run(() => travelService.WarpToBlockId(savedPos));
             }
+
+            TeleportGuard.MarkTeleport();
+        }
+
+        // Re-enables gravity 1s after a long teleport. Re-resolves the physics
+        // pointer fresh — the one captured at teleport time may have been freed
+        // (e.g. by a quitout) during the delay, so writing it would corrupt memory.
+        private void ScheduleNoGravityReset(bool isRiding)
+        {
+            _ = Task.Run(async () =>
+            {
+                await Task.Delay(1000);
+                try
+                {
+                    var physicsPtr = isRiding ? GetTorrentPhysicsPtr() : GetChrPhysicsPtr();
+                    if (physicsPtr != IntPtr.Zero)
+                        memoryService.Write(physicsPtr + (int)ChrIns.ChrPhysicsOffsets.NoGravity, false);
+                }
+                catch { }
+            });
         }
 
         public void MoveToPosition(Position targetPosition)
@@ -171,16 +185,14 @@ namespace TarnishedTool.Services
             memoryService.Write(playerIns + WorldChrMan.PlayerInsOffsets.CurrentMapAngle,
                 targetPosition.Angle);
 
-            _ = Task.Run(async () =>
-            {
-                await Task.Delay(1000);
-                memoryService.Write(physicsPtr + (int)ChrIns.ChrPhysicsOffsets.NoGravity, false);
-            });
+            ScheduleNoGravityReset(isRiding);
 
             ToggleDebugFlag(ChrDbgFlags.PlayerNoDeath, wasPlayerNoDeathEnabled);
             chrInsService.ToggleNoDamage(playerIns, wasPlayerNoDamageEnabled);
             chrInsService.ToggleNoDeath(torrentIns, wasTorrentNoDeathEnabled);
             chrInsService.ToggleNoDamage(torrentIns, wasTorrentNoDamageEnabled);
+
+            TeleportGuard.MarkTeleport();
         }
 
         private bool IsChrDbgFlagEnabled(int offset) => memoryService.Read<byte>(ChrDbgFlags.Base + offset) == 1;
