@@ -651,6 +651,36 @@ namespace TarnishedTool.Memory
 
             public const int PlayerGameData = 0x8;
 
+            // Offset from PlayerGameData to the EquipInventoryData used by the
+            // equip/find-inventory-id game functions. Equip POC — validate per
+            // version (sourced from an older ER build).
+            public const int EquipInventoryData = 0x408;
+
+            // ChrAsm equipped-item id array (int32 per slot, -1 = empty). The slot
+            // index matches the equip-function slot id, so capture/re-apply are
+            // symmetric. Layout (bare param ids, no category prefix):
+            //   0-5   weapons  L1,R1,L2,R2,L3,R3
+            //   6-11  ammo     Arrow1,Bolt1,Arrow2,Bolt2,Arrow3,Bolt3
+            //   12-15 armor    Head,Chest,Arms,Legs
+            //   16    Hair
+            //   17-21 talismans 1-5
+            // Derived on v1.07 (ChrAsm at PGD+0x328, array at ChrAsm+0x74).
+            // PlayerGameData layout is treated as version-stable here, same as the
+            // stat offsets above.
+            public const int ChrAsmEquippedList = 0x39C;
+            public const int EquipSlotCount = 22;
+
+            // ChrAsm control block (base = PGD + 0x328): grip + active-armament
+            // selection. Needed to restore two-handing and which weapon is active.
+            public const int ChrAsmArmStyle = 0x328;      // byte: one-hand / two-hand grip
+            public const int ChrAsmWepSlotSel = 0x32C;    // 6 x int32: L, R, LArrow, RArrow, LBolt, RBolt
+            public const int WepSlotSelCount = 6;
+
+            // Number of unlocked talisman slots (0-4). Gates which talisman equip
+            // slots (17-20) are valid, so a snapshot must restore it before
+            // equipping talismans.
+            public const int TalismanPouchCount = 0xC6;   // byte
+
             public static int TorrentHandle => Version switch
             {
                 Version1_2_0 or Version1_2_1 or Version1_2_2 or Version1_2_3 or Version1_3_0 or Version1_3_1
@@ -921,6 +951,10 @@ namespace TarnishedTool.Memory
             public static long LocalToMapCoords;
             public static long LuaDoString;
             public static long RefreshFromStorage;
+
+            // Equip POC — resolved by AOB (see Pattern.EquipItem / Pattern.GetInventoryId).
+            public static long EquipItem;
+            public static long GetInventoryId;
         }
 
         public static class Patches

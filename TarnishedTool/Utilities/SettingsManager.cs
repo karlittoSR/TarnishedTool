@@ -95,6 +95,7 @@ public class SettingsManager
     public double SavedLinesWindowLeft { get; set; }
     public double SavedLinesWindowTop { get; set; }
     public bool SavedLinesAlwaysOnTop { get; set; }
+    public bool ResetZoneOnRestore { get; set; }
     public double AiOverlayToolbarLeft { get; set; }
     public double AiOverlayToolbarTop { get; set; }
 

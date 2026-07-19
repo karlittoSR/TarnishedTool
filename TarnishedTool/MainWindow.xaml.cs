@@ -77,6 +77,8 @@ namespace TarnishedTool
             ISettingsService settingsService = new SettingsService(_memoryService);
             IEzStateService ezStateService = new EzStateService(_memoryService);
             IItemService itemService = new ItemService(_memoryService);
+            IEquipService equipService = new EquipService(_memoryService, itemService);
+            ICharacterSnapshotService characterSnapshotService = new CharacterSnapshotService(equipService, playerService);
             ISpEffectService spEffectService = new SpEffectService(_memoryService, reminderService);
             IEmevdService emevdService = new EmevdService(_memoryService);
             IFlaskService flaskService = new FlaskService(ezStateService, _memoryService);
@@ -146,8 +148,14 @@ namespace TarnishedTool
                 itemService, _stateService,
                 paramService, paramRepository, spEffectService, playerService,
                 hotkeyManager, gameTickService, reminderService, aiService,
-                utilityService, chrInsService, aiWindowService, hotkeyNotificationService
+                utilityService, chrInsService, aiWindowService, hotkeyNotificationService,
+                equipService, characterSnapshotService
             );
+
+            // Wire the Line Comparison "Reset zone on Restore to Start" toggle to the
+            // proven in-place boss-revive + area-reload + rest logic.
+            advancedViewModel.LineComparison.SetZoneResetAction(enemyViewModel.ResetZoneInPlace);
+            advancedViewModel.LineComparison.SetRestAction(enemyViewModel.RestAndRefresh);
 
             var activateOnLaunchManager = new ActivateOnLaunchManager();
             
@@ -237,6 +245,10 @@ namespace TarnishedTool
                     {
                         _aobScanner.DoFallbackScan();
                     }
+
+                    // Equip POC: AOB-scanned on every version (the version offset
+                    // tables don't carry these functions), so it stays version-proof.
+                    _aobScanner.ScanEquipFunctions();
 
 #if DEBUG
                     Console.WriteLine($@"Base: 0x{(long)_memoryService.BaseAddress:X}");

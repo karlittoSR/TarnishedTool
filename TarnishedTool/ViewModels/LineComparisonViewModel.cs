@@ -5,6 +5,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Numerics;
 using System.Text;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Threading;
@@ -21,6 +22,28 @@ public class LineComparisonViewModel : BaseViewModel
 {
     private readonly IGameTickService _gameTickService;
     private readonly IPlayerService _playerService;
+    private readonly ICharacterSnapshotService _characterSnapshotService;
+
+    // Resets the current zone (revive bosses, reset mobs, refill flasks). Wired from
+    // MainWindow to EnemyViewModel.ResetZoneInPlace so this VM stays decoupled from
+    // the enemy/revive machinery. Takes the start position (a boss reset warps there
+    // to safely unload the live boss) and returns true if it triggered a warp/reload
+    // — the timer then waits for the reload, snaps the start position and applies
+    // char once it finishes.
+    private Func<Position, bool> _resetZoneAction;
+    public void SetZoneResetAction(Func<Position, bool> action) => _resetZoneAction = action;
+
+    private Action _restAction;
+    public void SetRestAction(Action action) => _restAction = action;
+
+    // A reset (which may warp/reload) is running on a background thread. The phase
+    // machine is suppressed until it finishes, then the Tick re-arms cleanly (player
+    // back at the start, clock 0). _reArmPending is set by the background task so the
+    // re-arm runs on the game-tick thread.
+    private bool _resetInProgress;
+    private bool _reArmPending;
+    private DateTime _resetStart;
+    private static readonly TimeSpan ResetTimeout = TimeSpan.FromSeconds(20);
 
     private enum Phase { Idle, Armed, AtStart, Running, Finished }
 
@@ -44,10 +67,11 @@ public class LineComparisonViewModel : BaseViewModel
     public event Action NewBest;
 
     public LineComparisonViewModel(IGameTickService gameTickService, IPlayerService playerService,
-        IStateService stateService)
+        IStateService stateService, ICharacterSnapshotService characterSnapshotService = null)
     {
         _gameTickService = gameTickService;
         _playerService = playerService;
+        _characterSnapshotService = characterSnapshotService;
 
         SetStartCommand = new DelegateCommand(SetStart);
         SetEndCommand = new DelegateCommand(SetEnd);
@@ -59,11 +83,14 @@ public class LineComparisonViewModel : BaseViewModel
         ImportPositionsCommand = new DelegateCommand(ImportPositions);
         OpenSavedLinesCommand = new DelegateCommand(OpenSavedLines);
 
-        _savedLinesViewModel = new SavedLinesViewModel(this);
+        _savedLinesViewModel = new SavedLinesViewModel(this, characterSnapshotService);
 
         Attempts.CollectionChanged += (_, _) => RecomputeDeltas();
 
-        stateService.Subscribe(State.Loaded, () => CanOperate = true);
+        stateService.Subscribe(State.Loaded, () =>
+        {
+            CanOperate = true;
+        });
         stateService.Subscribe(State.NotLoaded, () => CanOperate = false);
 
         _feedbackTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
@@ -228,10 +255,70 @@ public class LineComparisonViewModel : BaseViewModel
         catch { }
     }
 
+    // Opt-in: also reset the zone (revive bosses to first-encounter, reset mobs,
+    // refill flasks) when restoring to start. Persisted across sessions.
+    private bool _resetZoneOnRestore = SettingsManager.Default.ResetZoneOnRestore;
+    public bool ResetZoneOnRestore
+    {
+        get => _resetZoneOnRestore;
+        set
+        {
+            if (!SetProperty(ref _resetZoneOnRestore, value)) return;
+            SettingsManager.Default.ResetZoneOnRestore = value;
+            SettingsManager.Default.Save();
+        }
+    }
+
     public void RestoreToStart()
     {
         if (_start == null) return;
+
+        if (ResetZoneOnRestore)
+        {
+            // The reset may warp (WarpToBlockId blocks until the fade completes), so
+            // run the whole sequence on a background thread IN ORDER — reset → snap
+            // exact start → apply char — to avoid a racing second warp. Suppress the
+            // timer meanwhile; the Tick re-arms once _reArmPending is set.
+            _resetInProgress = true;
+            _resetStart = DateTime.Now;
+            ReArm(); // show Armed / 00:00 immediately
+
+            var start = _start;
+            var snapshot = _activeSavedLine?.Snapshot;
+
+            _ = Task.Run(() =>
+            {
+                try
+                {
+                    bool warped = _resetZoneAction?.Invoke(start) ?? false;
+
+                    // Boss case: WarpToBlockId already landed at the exact start; this
+                    // raw-writes the same coords (same area now, no second warp). No-boss
+                    // case: this is the actual teleport to start.
+                    try { _playerService.RestorePos(start); } catch { }
+
+                    if (snapshot != null)
+                        try { _characterSnapshotService?.Apply(snapshot); } catch { }
+
+                    // Rest LAST — after the char's stats are applied — so the flask/HP/FP
+                    // refill uses the final max values and leaves no gap.
+                    try { _restAction?.Invoke(); } catch { }
+                }
+                finally
+                {
+                    _reArmPending = true;
+                    _resetInProgress = false;
+                }
+            });
+
+            return;
+        }
+
+        // Reset off: instant raw teleport + char.
         try { _playerService.RestorePos(_start); } catch { }
+        if (_activeSavedLine?.Snapshot != null)
+            try { _characterSnapshotService?.Apply(_activeSavedLine.Snapshot); } catch { }
+
         ReArm();
     }
 
@@ -451,6 +538,26 @@ public class LineComparisonViewModel : BaseViewModel
         try
         {
             if (_start == null || _end == null) return;
+
+            // While a reset (warp/reload) runs, don't advance the phase machine —
+            // transient positions during a quitout would false-start the timer.
+            // Fall back to clearing if the reset somehow never completes.
+            if (_resetInProgress)
+            {
+                if (DateTime.Now - _resetStart > ResetTimeout)
+                    _resetInProgress = false;
+                return;
+            }
+
+            // The reset finished on the background thread — re-arm here (game-tick
+            // thread) so the player comes back at the start with the clock at 0.
+            if (_reArmPending)
+            {
+                _reArmPending = false;
+                ReArm();
+                return;
+            }
+
             var current = _playerService.CapturePosition();
 
             switch (_phase)

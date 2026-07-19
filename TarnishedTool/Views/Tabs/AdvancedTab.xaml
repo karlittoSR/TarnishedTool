@@ -103,6 +103,7 @@
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
 
                 <StackPanel Grid.Row="0"
@@ -165,6 +166,74 @@
                             HorizontalAlignment="Right"
                             Height="35"
                             Width="80" />
+                </StackPanel>
+
+                <!-- Equip proof-of-concept: spawn then equip into a ChrAsm slot. -->
+                <StackPanel Grid.Row="2"
+                            Orientation="Horizontal"
+                            Margin="0,12,0,0">
+                    <TextBlock Text="Slot:"
+                               Width="40"
+                               FontSize="14"
+                               VerticalAlignment="Center"
+                               TextAlignment="Right" />
+                    <TextBox Text="{Binding EquipSlot}"
+                             Height="35"
+                             Width="55"
+                             FontSize="14"
+                             Margin="10,0,0,0"
+                             VerticalContentAlignment="Center"
+                             MaxLength="2" />
+                    <Border Background="#3498db"
+                            CornerRadius="10"
+                            Width="12"
+                            Height="12"
+                            Margin="8,0,0,0"
+                            VerticalAlignment="Center"
+                            ToolTipService.InitialShowDelay="100">
+                        <Border.ToolTip>
+                            <ToolTip MaxWidth="260">
+                                <TextBlock TextWrapping="Wrap"
+                                           Text="ChrAsm equipment slot: 0=left hand 1, 1=right hand 1, 6=arrow 1, 7=bolt 1, 12=head, 13=chest, 14=legs, 15=hands, 17-20=talismans. Spawns the item above then equips it into this slot." />
+                            </ToolTip>
+                        </Border.ToolTip>
+                        <TextBlock Text="i"
+                                   Foreground="White"
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center"
+                                   FontWeight="Bold"
+                                   FontSize="10" />
+                    </Border>
+                    <Button Content="Spawn &amp; Equip"
+                            Command="{Binding SpawnAndEquipCommand}"
+                            IsEnabled="{Binding AreOptionsEnabled}"
+                            Margin="15,0,0,0"
+                            Height="35"
+                            Width="110" />
+
+                    <Button Content="Capture"
+                            Command="{Binding CaptureEquipmentCommand}"
+                            IsEnabled="{Binding AreOptionsEnabled}"
+                            Margin="8,0,0,0"
+                            Height="35"
+                            Width="80"
+                            ToolTip="Debug: read and list everything currently equipped (validates equipment capture)." />
+
+                    <Button Content="Save Char"
+                            Command="{Binding SaveCharacterCommand}"
+                            IsEnabled="{Binding AreOptionsEnabled}"
+                            Margin="8,0,0,0"
+                            Height="35"
+                            Width="80"
+                            ToolTip="Debug: snapshot equipment + stats + rune level in memory." />
+
+                    <Button Content="Restore Char"
+                            Command="{Binding RestoreCharacterCommand}"
+                            IsEnabled="{Binding AreOptionsEnabled}"
+                            Margin="8,0,0,0"
+                            Height="35"
+                            Width="90"
+                            ToolTip="Debug: apply the last saved character (stats then equipment)." />
                 </StackPanel>
             </Grid>
         </Border>

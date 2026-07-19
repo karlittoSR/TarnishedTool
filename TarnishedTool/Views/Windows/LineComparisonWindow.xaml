@@ -90,17 +90,24 @@
             </Border>
 
             <!-- Controls -->
-            <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,2,0,8">
-                <Button Content="Export position" Width="110" Height="30" Margin="0,0,6,0"
-                        IsEnabled="{Binding CanExport}"
-                        Command="{Binding ExportPositionsCommand}" />
-                <Button Content="Restore to Start" Width="140" Height="30" Margin="0,0,6,0"
-                        IsEnabled="{Binding CanOperate}"
-                        Command="{Binding RestoreToStartCommand}" />
-                <Button Content="Import position" Width="110" Height="30" Margin="0,0,6,0"
-                        Command="{Binding ImportPositionsCommand}" />
-                <Button Content="List" Width="55" Height="30"
-                        Command="{Binding OpenSavedLinesCommand}" />
+            <StackPanel Grid.Row="2" Margin="0,2,0,8">
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                    <Button Content="Export position" Width="110" Height="30" Margin="0,0,6,0"
+                            IsEnabled="{Binding CanExport}"
+                            Command="{Binding ExportPositionsCommand}" />
+                    <Button Content="Restore to Start" Width="140" Height="30" Margin="0,0,6,0"
+                            IsEnabled="{Binding CanOperate}"
+                            Command="{Binding RestoreToStartCommand}" />
+                    <Button Content="Import position" Width="110" Height="30" Margin="0,0,6,0"
+                            Command="{Binding ImportPositionsCommand}" />
+                    <Button Content="List" Width="55" Height="30"
+                            Command="{Binding OpenSavedLinesCommand}" />
+                </StackPanel>
+                <CheckBox Content="Reset zone on Restore to Start (revive bosses, reset mobs, refill flasks)"
+                          IsChecked="{Binding ResetZoneOnRestore}"
+                          HorizontalAlignment="Center"
+                          Margin="0,6,0,0"
+                          ToolTip="When enabled, Restore to Start also resets the area to its first-encounter state." />
             </StackPanel>
 
             <!-- Live timer + status -->

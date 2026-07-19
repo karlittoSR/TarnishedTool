@@ -97,5 +97,10 @@ namespace TarnishedTool.Memory
         public const int ActionRequestIntercept = 0x4000;
         public const int NoPlayerRoll = 0x4100;
         public const int NoPlayerJump = 0x4101;
+
+        // Equip proof-of-concept (spawn-then-equip). Scratch + shellcode region.
+        public const int EquipStruct = 0x4200;   // EquipItemStruct (0x5C bytes, zeroed): equipment_slot @+0x08, inventory_slot @+0x58
+        public const int EquipItemId = 0x4270;   // uint32 item id that find_inventoryid searches for
+        public const int EquipCode = 0x4280;     // shellcode: find_inventoryid -> equip
     }
 }

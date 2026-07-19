@@ -589,6 +589,64 @@ public class EnemyViewModel : BaseViewModel
         HandleReviveAllWarp(useFirstEncounter: false);
     }
 
+    // In-place zone reset for the Line Comparison "Restore to Start" flow.
+    //
+    // The boss to revive is resolved from the DESTINATION block (start.BlockId), NOT
+    // the player's current block. When restoring a far-away line (e.g. standing at
+    // Gideon, restoring the Margit line) the player is in a different block than the
+    // target, so resolving from the current block would set the wrong boss's flags and
+    // leave the destination boss dead — you'd have to press Restore twice. Resolving
+    // from start.BlockId sets the correct boss before the single warp/reload, so the
+    // destination boss revives to its first-encounter state on the first press.
+    //
+    // The flags are set, then we WARP to the start position — a clean reload that
+    // safely unloads any live boss and respawns it fresh. (An in-place ReloadArea on
+    // a live, in-arena boss crashes; warping is the same mechanism the "Revive Boss"
+    // button uses.) The caller rests at the very end. For line/skip practice with no
+    // boss at the destination, there's no warp/reload here — just the caller's rest.
+    //
+    // SYNCHRONOUS: the caller runs this on a background thread. WarpToBlockId blocks
+    // until the warp fade completes and lands at the exact position coords, so on
+    // return the warp is fully done — the caller can safely finish (snap position,
+    // apply char) with no racing second warp.
+    //
+    // Returns true if a boss was present (a warp/reload happened) so the caller can
+    // suppress the line timer across the reload.
+    public bool ResetZoneInPlace(Position start)
+    {
+        var targetBlockId = start.BlockId;
+
+        var bossesNear = BossRevives.AllItems
+            .Where(b => b.BlockId == targetBlockId ||
+                        (b.BossBlockIds != null && b.BossBlockIds.Contains(targetBlockId)))
+            .ToList();
+
+        if (bossesNear.Count == 0)
+        {
+            // No boss: nothing to reload/warp here. The caller rests at the very end
+            // (after applying the character), so max HP/FP is final before the refill.
+            return false;
+        }
+
+        foreach (var boss in bossesNear)
+            SetBossFlags(boss, isFirstEncounter: true);
+
+        // Warp (clean reload — blocks until done). Same order as the Revive Boss button,
+        // so the live boss is unloaded safely. The caller rests at the very end.
+        _travelService.WarpToBlockId(start);
+
+        return true;
+    }
+
+    // Grace-rest: refill flasks/FP/HP and reset mobs. Called as the LAST step of a
+    // reset (after the character snapshot is applied) so the refill uses the final
+    // max HP/FP instead of leaving a gap when stats change afterwards.
+    public void RestAndRefresh()
+    {
+        _emevdService.ExecuteEmevdCommand(Emevd.EmevdCommands.Rest);
+        _playerService.RefreshFromStorage();
+    }
+
     private void ReviveAllBossesAsFirstEncounter()
     {
         HandleReviveAllWarp(useFirstEncounter: true);

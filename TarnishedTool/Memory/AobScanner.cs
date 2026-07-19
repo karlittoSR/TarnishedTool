@@ -263,6 +263,21 @@ namespace TarnishedTool.Memory
 #endif
         }
 
+        // Equip proof-of-concept. Resolved by AOB on EVERY startup (known and
+        // unknown versions) so it's version-proof without a hardcoded per-version
+        // offset table: the pattern locates the function on whatever build matches.
+        public void ScanEquipFunctions()
+        {
+            Functions.EquipItem = FindAddressByPattern(Pattern.EquipItem).ToInt64();
+            Functions.GetInventoryId = FindAddressByPattern(Pattern.GetInventoryId).ToInt64();
+
+#if DEBUG
+            var baseAddr = memoryService.BaseAddress;
+            Console.WriteLine($@"Funcs.EquipItem: 0x{Functions.EquipItem:X} (base+0x{Functions.EquipItem - baseAddr:X})");
+            Console.WriteLine($@"Funcs.GetInventoryId: 0x{Functions.GetInventoryId:X} (base+0x{Functions.GetInventoryId - baseAddr:X})");
+#endif
+        }
+
         private void TryPatternWithFallback(string name, Pattern pattern, Action<IntPtr> setter,
             ConcurrentDictionary<string, long> saved)
         {

@@ -559,6 +559,26 @@ namespace TarnishedTool.Memory
             5
         );
 
+        // Equip POC. Signatures sourced from yuiamoroll/elden_ring_item_randomiser
+        // (an older ER build) — validate they resolve uniquely on current versions.
+
+        // The pattern sits 10 bytes into the equip function; step back to the entry.
+        // 48 8B F9 48 83 C1 10 E8 <rel32> 8B 4F
+        public static readonly Pattern EquipItem = new(
+            [0x48, 0x8B, 0xF9, 0x48, 0x83, 0xC1, 0x10, 0xE8, 0x00, 0x00, 0x00, 0x00, 0x8B, 0x4F],
+            "xxxxxxxx????xx",
+            -0xA,
+            AddressingMode.Absolute
+        );
+
+        // find_inventoryid entry prologue: 40 56 48 83 EC 20 83 CE
+        public static readonly Pattern GetInventoryId = new(
+            [0x40, 0x56, 0x48, 0x83, 0xEC, 0x20, 0x83, 0xCE],
+            "xxxxxxxx",
+            0,
+            AddressingMode.Absolute
+        );
+
         public static readonly Pattern MatrixVectorProduct = new(
             [
                 0xE8, 0x00, 0x00, 0x00, 0x00, 0x48, 0x8D, 0x53, 0x20, 0x4C, 0x8B, 0xC7, 0x48, 0x8D, 0x4C, 0x24, 0x40,

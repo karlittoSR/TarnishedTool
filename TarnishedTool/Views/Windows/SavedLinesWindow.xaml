@@ -31,16 +31,24 @@
             </CheckBox>
         </Grid>
 
-        <ListBox Grid.Row="2"
+        <ListBox x:Name="SavedLinesList"
+                 Grid.Row="2"
                  Margin="10,0,10,0"
                  ItemsSource="{Binding Lines}"
                  SelectedItem="{Binding SelectedLine, Mode=TwoWay}"
                  MouseDoubleClick="SavedLinesList_MouseDoubleClick"
-                 ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                 AllowDrop="True"
+                 PreviewMouseLeftButtonDown="SavedLinesList_PreviewMouseLeftButtonDown"
+                 PreviewMouseMove="SavedLinesList_PreviewMouseMove"
+                 DragOver="SavedLinesList_DragOver"
+                 Drop="SavedLinesList_Drop"
+                 ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                 ScrollViewer.VerticalScrollBarVisibility="Auto">
             <ListBox.ItemContainerStyle>
                 <Style TargetType="ListBoxItem">
                     <Setter Property="HorizontalContentAlignment" Value="Stretch" />
                     <Setter Property="Padding" Value="4,3" />
+                    <Setter Property="ToolTip" Value="Drag to reorder" />
                 </Style>
             </ListBox.ItemContainerStyle>
             <ListBox.ItemTemplate>
@@ -49,24 +57,33 @@
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <TextBlock Grid.Column="0" Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
-                        <TextBlock Grid.Column="1" Text="{Binding BestText}" Foreground="Gold"
+                        <TextBlock Grid.Column="1" Text="{Binding SnapshotMarker}" Foreground="#3498db"
+                                   FontWeight="Bold" Margin="6,0,0,0"
+                                   ToolTip="Has a saved character state (gear + stats)" />
+                        <TextBlock Grid.Column="2" Text="{Binding BestText}" Foreground="Gold"
                                    FontWeight="SemiBold" Margin="10,0,0,0" />
                     </Grid>
                 </DataTemplate>
             </ListBox.ItemTemplate>
         </ListBox>
 
-        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Center" Margin="10">
-            <Button Content="Load" Width="70" Height="28" Margin="0,0,6,0"
-                    Command="{Binding LoadCommand}" />
-            <Button Content="Save current" Width="95" Height="28" Margin="0,0,6,0"
-                    Command="{Binding SaveCurrentCommand}" />
-            <Button Content="Rename" Width="70" Height="28" Margin="0,0,6,0"
+        <WrapPanel Grid.Row="3" HorizontalAlignment="Center" Margin="10">
+            <Button Content="Load" Width="70" Height="28" Margin="3"
+                    Command="{Binding LoadCommand}"
+                    ToolTip="Load this line's start/end into the timer." />
+            <Button Content="Save current" Width="90" Height="28" Margin="3"
+                    Command="{Binding SaveCurrentCommand}"
+                    ToolTip="Save the current line plus the current character state (gear + stats)." />
+            <Button Content="Apply Char" Width="80" Height="28" Margin="3"
+                    Command="{Binding ApplyCharacterCommand}"
+                    ToolTip="Apply this line's saved character state (stats then gear) to your character." />
+            <Button Content="Rename" Width="70" Height="28" Margin="3"
                     Command="{Binding RenameCommand}" />
-            <Button Content="Delete" Width="70" Height="28"
+            <Button Content="Delete" Width="70" Height="28" Margin="3"
                     Command="{Binding DeleteCommand}" />
-        </StackPanel>
+        </WrapPanel>
     </Grid>
 </windows:TopmostWindow>
