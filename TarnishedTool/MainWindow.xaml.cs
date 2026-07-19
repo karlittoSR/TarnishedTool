@@ -79,12 +79,14 @@ namespace TarnishedTool
             IItemService itemService = new ItemService(_memoryService);
             IEquipService equipService = new EquipService(_memoryService, itemService);
             IFlaskService flaskService = new FlaskService(ezStateService, _memoryService);
+            IParamRepository paramRepository = new ParamRepository();
+            IInventoryService inventoryService =
+                new InventoryService(_memoryService, paramService, paramRepository, ezStateService, itemService);
             ICharacterSnapshotService characterSnapshotService =
-                new CharacterSnapshotService(equipService, playerService, flaskService);
+                new CharacterSnapshotService(equipService, playerService, flaskService, inventoryService);
             ISpEffectService spEffectService = new SpEffectService(_memoryService, reminderService);
             IEmevdService emevdService = new EmevdService(_memoryService);
             IEventLogReader eventLogReader = new EventLogReader(_memoryService);
-            IParamRepository paramRepository = new ParamRepository();
             IGameTickService gameTickService = new GameTickService(_stateService);
             IAiService aiService = new AiService(_memoryService);
             IAiWindowService aiWindowService = new AiWindowService(aiService, gameTickService, spEffectService);

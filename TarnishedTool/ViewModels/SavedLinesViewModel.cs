@@ -114,7 +114,12 @@ public class SavedLinesViewModel : BaseViewModel
             MsgBox.Show("This line has no saved character state.");
             return;
         }
-        _characterSnapshotService.Apply(SelectedLine.Snapshot);
+        var errors = _characterSnapshotService.Apply(SelectedLine.Snapshot);
+        if (!string.IsNullOrWhiteSpace(errors))
+        {
+            try { System.Windows.Clipboard.SetDataObject(errors, true); } catch { }
+            MsgBox.Show(errors + "\n(copied to clipboard)", "Apply Character");
+        }
     }
 
     private void RenameSelected()

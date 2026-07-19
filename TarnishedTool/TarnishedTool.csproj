@@ -342,6 +342,10 @@
         <Compile Include="Models\CharacterSnapshot.cs" />
         <Compile Include="Models\EquipmentSnapshot.cs" />
         <Compile Include="Models\FlaskSnapshot.cs" />
+        <Compile Include="Models\PhysickSnapshot.cs" />
+        <Compile Include="Models\ConsumablesSnapshot.cs" />
+        <Compile Include="Interfaces\IInventoryService.cs" />
+        <Compile Include="Services\InventoryService.cs" />
         <Compile Include="Services\CharacterSnapshotService.cs" />
         <Compile Include="Services\EquipService.cs" />
         <Compile Include="Services\ItemService.cs" />

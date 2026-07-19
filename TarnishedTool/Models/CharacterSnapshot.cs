@@ -13,4 +13,8 @@ public class CharacterSnapshot
 
     // Null on legacy snapshots captured before flasks were tracked.
     public FlaskSnapshot Flasks { get; set; }
+
+    // Null on legacy snapshots captured before physick/consumables were tracked.
+    public PhysickSnapshot Physick { get; set; }
+    public ConsumablesSnapshot Consumables { get; set; }
 }

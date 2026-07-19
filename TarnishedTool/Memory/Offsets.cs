@@ -681,6 +681,48 @@ namespace TarnishedTool.Memory
             // equipping talismans.
             public const int TalismanPouchCount = 0xC6;   // byte
 
+            // Quick-item bar: 10 goods-prefixed slots inline in PlayerGameData
+            // (0xFFFFFFFF = empty). Confirmed on v1.07 — the first bar item (Kukri)
+            // scanned to +0x630. The pouch follows at +0x658 and the physick tears
+            // sit after it at +0x674, so the 10-slot write stops well clear of both.
+            public const int QuickItemSlots = 0x630;
+            public const int QuickItemSlotCount = 10;
+
+            // Flask of Wondrous Physick: the two mixed crystal tears, stored inline
+            // in PlayerGameData as goods-prefixed ids (GoodsCategoryPrefix | goodId),
+            // 0xFFFFFFFF when the slot is empty. Derived on v1.07 by scanning for a
+            // known mixed pair (Crimson 11002 -> +0x674, Cerulean 11004 -> +0x678).
+            // NOTE: the quick-item bar occupies the range just before these.
+            public const int PhysickTear1 = 0x674;
+            public const int PhysickTear2 = 0x678;
+
+            // Goods inventory, reached through the EquipInventoryData struct
+            // (PlayerGameData + EquipInventoryData). The struct is a series of
+            // {pointer(8), count(4), capacity(4)} blocks; the first block is the
+            // main inventory.
+            //
+            // Entries are 20 bytes (NOT 16) and start at the buffer base:
+            //   +0x00 ga_item handle (category 0xB0… for goods)
+            //   +0x04 item id (category-prefixed: 0x0 weapon, 0x10000000 armor,
+            //         0x20000000 accessory, 0x40000000 goods)
+            //   +0x08 quantity
+            //   +0x0C display/sort id
+            //   +0x10 padding (reads 0xFFFFFFFF)
+            // Verified on v1.07: Kukri at byte 0x230 = entry 28, Exalted Flesh at
+            // 0x26C = entry 31, Memory of Grace at 0x00 = entry 0 — all exact
+            // multiples of 20. A 16-byte stride misaligns every entry after the
+            // first, which silently reduced capture to a few coincidental matches.
+            public const int InventoryEntriesPtr = 0x10;   // qword: entries array
+            public const int InventoryCount = 0x18;        // dword: used entries
+            public const int InventoryEntrySize = 0x14;
+            public const int InventoryEntryItemId = 0x04;  // u32, category-prefixed
+            public const int InventoryEntryQuantity = 0x08; // u32
+
+            // Item-id category bits. Goods (consumables, tears) use 0x40000000.
+            public const uint ItemCategoryMask = 0xF0000000;
+            public const uint GoodsCategoryPrefix = 0x40000000;
+            public const uint ItemIdMask = 0x0FFFFFFF;
+
             public static int TorrentHandle => Version switch
             {
                 Version1_2_0 or Version1_2_1 or Version1_2_2 or Version1_2_3 or Version1_3_0 or Version1_3_1
