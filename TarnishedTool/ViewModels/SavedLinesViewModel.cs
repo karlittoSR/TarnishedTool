@@ -18,6 +18,7 @@ public class SavedLinesViewModel : BaseViewModel
 
     public ICommand LoadCommand { get; }
     public ICommand SaveCurrentCommand { get; }
+    public ICommand UpdateCommand { get; }
     public ICommand RenameCommand { get; }
     public ICommand DeleteCommand { get; }
     public ICommand ApplyCharacterCommand { get; }
@@ -33,6 +34,7 @@ public class SavedLinesViewModel : BaseViewModel
 
         LoadCommand = new DelegateCommand(LoadSelected);
         SaveCurrentCommand = new DelegateCommand(SaveCurrent);
+        UpdateCommand = new DelegateCommand(UpdateSelected);
         RenameCommand = new DelegateCommand(RenameSelected);
         DeleteCommand = new DelegateCommand(DeleteSelected);
         ApplyCharacterCommand = new DelegateCommand(ApplyCharacter);
@@ -76,6 +78,30 @@ public class SavedLinesViewModel : BaseViewModel
         // Track the freshly saved line so the first time you get on it updates its PB.
         _lineComparison.SetActiveSavedLine(line);
         SelectedLine = line;
+    }
+
+    // Re-captures the current character state onto the selected line in place,
+    // keeping its name, line geometry, and PB. Lets you refresh (or add) a
+    // snapshot on an existing line without deleting and re-creating it.
+    private void UpdateSelected()
+    {
+        if (SelectedLine == null) return;
+        if (_characterSnapshotService == null)
+        {
+            MsgBox.Show("Character snapshots are unavailable (game not attached).");
+            return;
+        }
+
+        if (!MsgBox.ShowYesNo(
+                $"Update \"{SelectedLine.Name}\" with the current character state (gear + stats + flasks)?",
+                "Update Line"))
+            return;
+
+        SelectedLine.Snapshot = _characterSnapshotService.Capture();
+        Persist();
+
+        // Track it as active so subsequent attempts keep updating its PB.
+        _lineComparison.SetActiveSavedLine(SelectedLine);
     }
 
     // Applies the selected line's captured character state (stats + equipment).

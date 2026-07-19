@@ -77,6 +77,9 @@
             <Button Content="Save current" Width="90" Height="28" Margin="3"
                     Command="{Binding SaveCurrentCommand}"
                     ToolTip="Save the current line plus the current character state (gear + stats)." />
+            <Button Content="Update" Width="70" Height="28" Margin="3"
+                    Command="{Binding UpdateCommand}"
+                    ToolTip="Re-capture the current character state (gear + stats + flasks) onto the selected line, keeping its name and PB." />
             <Button Content="Apply Char" Width="80" Height="28" Margin="3"
                     Command="{Binding ApplyCharacterCommand}"
                     ToolTip="Apply this line's saved character state (stats then gear) to your character." />

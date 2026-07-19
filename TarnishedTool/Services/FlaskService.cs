@@ -4,6 +4,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using TarnishedTool.Interfaces;
+using TarnishedTool.Models;
 using static TarnishedTool.GameIds.EzState;
 using static TarnishedTool.Memory.Offsets;
 
@@ -115,6 +116,59 @@ public class FlaskService(IEzStateService ezStateService, IMemoryService memoryS
         SyncFlaskCharges();
         
         ezStateService.ExecuteTalkCommand(TalkCommands.OpenDialog(7, IncreaseChargeSuccessTextId, 1, 0, 1));
+    }
+
+    public FlaskSnapshot CaptureFlasks()
+    {
+        var snapshot = new FlaskSnapshot();
+
+        int flaskId = FindFlaskItemId(CrimsonFlaskBaseId);
+        if (flaskId >= 0)
+            snapshot.FlaskLevel = (flaskId - CrimsonFlaskBaseId) / 2;
+
+        snapshot.HpAllocation = ezStateService.EnvQuery(EnvQueries.GetEstusAllocation, 0).IntValue;
+        snapshot.FpAllocation = ezStateService.EnvQuery(EnvQueries.GetEstusAllocation, 1).IntValue;
+
+        return snapshot;
+    }
+
+    public void ApplyFlasks(FlaskSnapshot snapshot)
+    {
+        if (snapshot == null) return;
+
+        // --- Level: swap the physical flask goods from the current level to the
+        // target, in a single jump (ReplaceTool is direction-agnostic, so this
+        // handles both upgrades and downgrades). Skipped if the player has no flask
+        // to swap or the target level is unset/out of the item range.
+        int currentFlaskId = FindFlaskItemId(CrimsonFlaskBaseId);
+        if (currentFlaskId >= 0 && snapshot.FlaskLevel >= 0 && snapshot.FlaskLevel <= 12)
+        {
+            int currentLevel = (currentFlaskId - CrimsonFlaskBaseId) / 2;
+            if (snapshot.FlaskLevel != currentLevel)
+            {
+                ezStateService.ExecuteTalkCommand(TalkCommands.UpgradeFlask(snapshot.FlaskLevel));
+
+                foreach (int flaskType in new[] { 0, 1 }) // Crimson, Cerulean
+                {
+                    foreach (int variant in new[] { 0, 1 }) // Even, Odd
+                    {
+                        int oldId = CrimsonFlaskBaseId + (flaskType * 50) + (currentLevel * 2) + variant;
+                        int newId = CrimsonFlaskBaseId + (flaskType * 50) + (snapshot.FlaskLevel * 2) + variant;
+                        if (oldId != newId && HasItem(GoodsItemType, oldId))
+                            ezStateService.ExecuteTalkCommand(TalkCommands.ReplaceTool(oldId, newId, 1));
+                    }
+                }
+            }
+        }
+
+        // --- Allocation: set the HP/FP charge split, then reconcile the physical
+        // charge items to match. A later grace-rest tops the charges off.
+        if (snapshot.HpAllocation >= 0)
+            ezStateService.ExecuteTalkCommand(TalkCommands.EstusAllocationUpdate(snapshot.HpAllocation, 0));
+        if (snapshot.FpAllocation >= 0)
+            ezStateService.ExecuteTalkCommand(TalkCommands.EstusAllocationUpdate(snapshot.FpAllocation, 1));
+
+        SyncFlaskCharges();
     }
 
     private void ClearDialogResult()

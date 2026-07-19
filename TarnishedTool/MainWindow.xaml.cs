@@ -78,10 +78,11 @@ namespace TarnishedTool
             IEzStateService ezStateService = new EzStateService(_memoryService);
             IItemService itemService = new ItemService(_memoryService);
             IEquipService equipService = new EquipService(_memoryService, itemService);
-            ICharacterSnapshotService characterSnapshotService = new CharacterSnapshotService(equipService, playerService);
+            IFlaskService flaskService = new FlaskService(ezStateService, _memoryService);
+            ICharacterSnapshotService characterSnapshotService =
+                new CharacterSnapshotService(equipService, playerService, flaskService);
             ISpEffectService spEffectService = new SpEffectService(_memoryService, reminderService);
             IEmevdService emevdService = new EmevdService(_memoryService);
-            IFlaskService flaskService = new FlaskService(ezStateService, _memoryService);
             IEventLogReader eventLogReader = new EventLogReader(_memoryService);
             IParamRepository paramRepository = new ParamRepository();
             IGameTickService gameTickService = new GameTickService(_stateService);
@@ -149,7 +150,7 @@ namespace TarnishedTool
                 paramService, paramRepository, spEffectService, playerService,
                 hotkeyManager, gameTickService, reminderService, aiService,
                 utilityService, chrInsService, aiWindowService, hotkeyNotificationService,
-                equipService, characterSnapshotService
+                characterSnapshotService
             );
 
             // Wire the Line Comparison "Reset zone on Restore to Start" toggle to the

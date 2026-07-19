@@ -83,10 +83,13 @@ public class EquipService(IMemoryService memoryService, IItemService itemService
 
         var current = ReadEquippedArray(playerGameData);
 
-        // Target ids by slot for quick lookup.
+        // Target ids by slot for quick lookup. Skip Unarmed/empty ids so a slot the
+        // snapshot leaves empty (incl. legacy snapshots that stored Unarmed=110000)
+        // is unequipped, never spawned/equipped.
         var target = new Dictionary<int, uint>();
         foreach (var item in snapshot.Items)
-            target[item.Slot] = item.ItemId;
+            if (!IsEmptySlotId(item.ItemId))
+                target[item.Slot] = item.ItemId;
 
         // Raise the talisman pouch count to cover both current and snapshot while we
         // work, so equip/unequip on any talisman slot is valid; it's set to the
@@ -100,7 +103,7 @@ public class EquipService(IMemoryService memoryService, IItemService itemService
             if (slot == HairSlot) continue;
 
             uint cur = current[slot];
-            bool curFilled = cur != 0xFFFFFFFF && cur != 0;
+            bool curFilled = !IsEmptySlotId(cur);
 
             if (target.TryGetValue(slot, out uint want))
             {
@@ -125,6 +128,16 @@ public class EquipService(IMemoryService memoryService, IItemService itemService
             memoryService.Write(playerGameData + GameDataMan.ChrAsmWepSlotSel + i * 4, snapshot.WeaponSlotSelections[i]);
     }
 
+    // The ChrAsm array stores "Unarmed" (an empty weapon slot) as this weapon id.
+    // It is NOT a real inventory item, so it must be treated as an empty slot and
+    // never spawned/equipped: doing so makes find_inventoryid miss and the equip
+    // function grab a garbage inventory index, equipping a random weapon (a stray
+    // longbow/rapier). Empty slots otherwise read as 0 or 0xFFFFFFFF.
+    private const uint UnarmedWeaponId = 110000;
+
+    private static bool IsEmptySlotId(uint id) =>
+        id == 0 || id == 0xFFFFFFFF || id == UnarmedWeaponId;
+
     // ChrAsm stores bare param ids; the spawn/equip functions want the category-
     // prefixed id, keyed by slot type.
     private const int HairSlot = 16;
@@ -147,7 +160,7 @@ public class EquipService(IMemoryService memoryService, IItemService itemService
         for (int slot = 0; slot < current.Length; slot++)
         {
             uint id = current[slot];
-            if (id != 0xFFFFFFFF && id != 0)
+            if (!IsEmptySlotId(id))
                 snapshot.Items.Add(new EquippedItem { Slot = slot, ItemId = id });
         }
 

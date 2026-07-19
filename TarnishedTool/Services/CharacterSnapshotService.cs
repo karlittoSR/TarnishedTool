@@ -9,7 +9,8 @@ namespace TarnishedTool.Services;
 // Composes the per-domain services into a single character capture/apply. Kept
 // separate from the line-comparison feature so it can be reused wherever a
 // character state needs saving or restoring.
-public class CharacterSnapshotService(IEquipService equipService, IPlayerService playerService)
+public class CharacterSnapshotService(
+    IEquipService equipService, IPlayerService playerService, IFlaskService flaskService)
     : ICharacterSnapshotService
 {
     public CharacterSnapshot Capture() => new()
@@ -17,6 +18,7 @@ public class CharacterSnapshotService(IEquipService equipService, IPlayerService
         Equipment = equipService.CaptureEquipment(),
         Stats = playerService.GetStats(),
         RuneLevel = playerService.GetRuneLevel(),
+        Flasks = flaskService?.CaptureFlasks(),
     };
 
     public void Apply(CharacterSnapshot snapshot)
@@ -28,6 +30,12 @@ public class CharacterSnapshotService(IEquipService equipService, IPlayerService
 
         if (snapshot.Equipment != null)
             equipService.ApplyEquipment(snapshot.Equipment);
+
+        // Flasks after stats: stat changes move max HP/FP, so set the charge
+        // allocation once the character is otherwise final. A grace-rest (run last
+        // by the reset flow) then tops the charges off.
+        if (snapshot.Flasks != null)
+            flaskService?.ApplyFlasks(snapshot.Flasks);
     }
 
     // SetStat adjusts rune level + rune memory per stat, keeping the character
