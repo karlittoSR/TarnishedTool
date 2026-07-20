@@ -9,7 +9,7 @@
                        Style="{StaticResource DefaultWindowStyle}"
                        WindowStyle="None"
                        AllowsTransparency="True"
-                       Title="Line Comparison" Height="600" Width="500">
+                       Title="Segment Timer" Height="600" Width="500">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="30" />
@@ -25,7 +25,7 @@
                 IsHitTestVisible="False"
                 Panel.ZIndex="100" />
 
-        <controls:TitleBar Grid.Row="0" Title="Line Comparison" />
+        <controls:TitleBar Grid.Row="0" Title="Segment Timer" />
 
         <Grid Grid.Row="1">
             <CheckBox x:Name="AlwaysOnTopCheckBox"
@@ -34,11 +34,11 @@
                       Margin="0,0,10,0"
                       Checked="AlwaysOnTopCheckBox_Checked"
                       Unchecked="AlwaysOnTopCheckBox_Unchecked">
-                Always on Top
+                Always on top
             </CheckBox>
         </Grid>
 
-        <Grid Grid.Row="2" Margin="12,4,12,12">
+        <Grid Grid.Row="2" Margin="10,2,10,10">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
@@ -50,72 +50,59 @@
             </Grid.RowDefinitions>
 
             <!-- Start -->
-            <Border Grid.Row="0" BorderThickness="1" BorderBrush="#333" CornerRadius="3" Padding="8" Margin="0,0,0,8">
+            <Border Grid.Row="0" BorderThickness="1" BorderBrush="#333" CornerRadius="3" Padding="6" Margin="0,0,0,5">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
-                    <Button Grid.Column="0" Content="Set Start" Width="90" Height="28"
+                    <Button Grid.Column="0" Content="Set Start" Width="82" Height="26"
                             IsEnabled="{Binding CanOperate}"
                             Command="{Binding SetStartCommand}" />
                     <TextBlock Grid.Column="1" Text="{Binding StartText}" VerticalAlignment="Center"
                                Margin="10,0,0,0" TextTrimming="CharacterEllipsis" />
                     <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-                        <TextBlock Text="Radius" VerticalAlignment="Center" Margin="0,0,5,0" />
+                        <TextBlock Text="Radius:" VerticalAlignment="Center" Margin="0,0,5,0" />
                         <TextBox Width="45" Text="{Binding StartRadius, UpdateSourceTrigger=PropertyChanged}" VerticalContentAlignment="Center" />
                     </StackPanel>
                 </Grid>
             </Border>
 
             <!-- End -->
-            <Border Grid.Row="1" BorderThickness="1" BorderBrush="#333" CornerRadius="3" Padding="8" Margin="0,0,0,8">
+            <Border Grid.Row="1" BorderThickness="1" BorderBrush="#333" CornerRadius="3" Padding="6" Margin="0,0,0,5">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
-                    <Button Grid.Column="0" Content="Set End" Width="90" Height="28"
+                    <Button Grid.Column="0" Content="Set Finish" Width="82" Height="26"
                             IsEnabled="{Binding CanOperate}"
                             Command="{Binding SetEndCommand}" />
                     <TextBlock Grid.Column="1" Text="{Binding EndText}" VerticalAlignment="Center"
                                Margin="10,0,0,0" TextTrimming="CharacterEllipsis" />
                     <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-                        <TextBlock Text="Radius" VerticalAlignment="Center" Margin="0,0,5,0" />
+                        <TextBlock Text="Radius:" VerticalAlignment="Center" Margin="0,0,5,0" />
                         <TextBox Width="45" Text="{Binding EndRadius, UpdateSourceTrigger=PropertyChanged}" VerticalContentAlignment="Center" />
                     </StackPanel>
                 </Grid>
             </Border>
 
             <!-- Controls -->
-            <StackPanel Grid.Row="2" Margin="0,2,0,8">
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                    <Button Content="Export position" Width="110" Height="30" Margin="0,0,6,0"
-                            IsEnabled="{Binding CanExport}"
-                            Command="{Binding ExportPositionsCommand}" />
-                    <Button Content="Restore to Start" Width="140" Height="30" Margin="0,0,6,0"
-                            IsEnabled="{Binding CanOperate}"
-                            Command="{Binding RestoreToStartCommand}" />
-                    <Button Content="Import position" Width="110" Height="30" Margin="0,0,6,0"
-                            Command="{Binding ImportPositionsCommand}" />
-                    <Button Content="Saves" Width="65" Height="30"
-                            Command="{Binding OpenSavedLinesCommand}" />
-                </StackPanel>
-                <TextBlock Text="Restore to Start also resets the zone: bosses nearby are revived to their first-encounter state, mobs reset and flasks refill."
-                           HorizontalAlignment="Center"
-                           TextWrapping="Wrap"
-                           MaxWidth="440"
-                           TextAlignment="Center"
-                           Foreground="#999"
-                           FontSize="11"
-                           Margin="0,6,0,0" />
+            <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,1,0,6">
+                <Button Content="Reset to Start" Width="120" Height="28" Margin="0,0,6,0"
+                        IsEnabled="{Binding CanOperate}"
+                        Command="{Binding RestoreToStartCommand}"
+                        ToolTip="Restore the start position, revive nearby bosses, reset mobs and refill flasks." />
+                <Button Content="Saved Segments" Width="130" Height="28"
+                        Command="{Binding OpenSavedLinesCommand}"
+                        ToolTip="Open the saved-segment library." />
             </StackPanel>
 
             <!-- Live timer + status -->
-            <StackPanel Grid.Row="3">
-                <TextBlock Text="{Binding LiveTimeText}" FontSize="34" FontWeight="Bold"
+            <StackPanel Grid.Row="3" Margin="0,0,0,2">
+                <TextBlock Text="{Binding LiveTimeText}" FontSize="36" FontWeight="Bold"
                            HorizontalAlignment="Center" />
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,2,0,0">
                     <TextBlock Text="Status: " />
@@ -131,10 +118,11 @@
             </StackPanel>
 
             <!-- Next attempt name -->
-            <StackPanel Grid.Row="4" Orientation="Horizontal" Margin="0,10,0,6" VerticalAlignment="Center">
-                <TextBlock Text="Next attempt name:" VerticalAlignment="Center" Margin="0,0,8,0" />
+            <StackPanel Grid.Row="4" Orientation="Horizontal" Margin="0,5,0,5" VerticalAlignment="Center">
+                <TextBlock Text="Attempt name:" VerticalAlignment="Center" Margin="0,0,8,0" />
                 <TextBox Width="220" VerticalContentAlignment="Center" MaxLength="44"
-                         Text="{Binding NextAttemptName, UpdateSourceTrigger=PropertyChanged}" />
+                         Text="{Binding NextAttemptName, UpdateSourceTrigger=PropertyChanged}"
+                         ToolTip="Optional name for the next completed attempt." />
             </StackPanel>
 
             <!-- Results table -->
@@ -143,8 +131,10 @@
                       SelectedItem="{Binding SelectedAttempt, Mode=TwoWay}"
                       AutoGenerateColumns="False"
                       CanUserAddRows="False"
-                      CanUserDeleteRows="True"
+                      CanUserDeleteRows="False"
                       CanUserResizeRows="False"
+                      RowHeight="22"
+                      ColumnHeaderHeight="24"
                       BeginningEdit="AttemptsGrid_BeginningEdit"
                       HeadersVisibility="Column"
                       GridLinesVisibility="Horizontal"
@@ -169,7 +159,7 @@
                     </Style>
                 </DataGrid.CellStyle>
                 <DataGrid.Columns>
-                    <DataGridTextColumn Header="#" Binding="{Binding Number}" IsReadOnly="True" Width="40" />
+                    <DataGridTextColumn Header="#" Binding="{Binding NumberText}" IsReadOnly="True" Width="40" />
                     <DataGridTextColumn Header="Name" Binding="{Binding Name, UpdateSourceTrigger=LostFocus}" Width="*">
                         <DataGridTextColumn.EditingElementStyle>
                             <Style TargetType="TextBox">
@@ -177,7 +167,7 @@
                             </Style>
                         </DataGridTextColumn.EditingElementStyle>
                     </DataGridTextColumn>
-                    <DataGridTextColumn Header="Result" Binding="{Binding ResultText}" IsReadOnly="True" Width="110" />
+                    <DataGridTextColumn Header="Time" Binding="{Binding ResultText}" IsReadOnly="True" Width="110" />
                     <DataGridTextColumn Header="Delta" Binding="{Binding DeltaText}" IsReadOnly="True" Width="90" />
                 </DataGrid.Columns>
             </DataGrid>
@@ -185,11 +175,11 @@
             <!-- Table actions -->
             <StackPanel Grid.Row="6" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,8,0,0">
                 <Button Content="Remove Selected" Width="120" Height="26" Margin="0,0,8,0"
-                        Command="{Binding RemoveSelectedCommand}" />
-                <Button Content="Copy" Width="80" Height="26" Margin="0,0,8,0"
-                        Command="{Binding CopyResultsCommand}" />
-                <Button Content="Clear" Width="80" Height="26"
-                        Command="{Binding ClearResultsCommand}" />
+                        Command="{Binding RemoveSelectedCommand}"
+                        ToolTip="Remove the selected attempt. Selecting the PB explicitly deletes the saved PB." />
+                <Button Content="Clear Runs" Width="85" Height="26"
+                        Command="{Binding ClearResultsCommand}"
+                        ToolTip="Clear this session's attempts while keeping the saved PB." />
             </StackPanel>
         </Grid>
     </Grid>

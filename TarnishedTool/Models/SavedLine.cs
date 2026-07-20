@@ -6,8 +6,8 @@ using TarnishedTool.Utilities;
 
 namespace TarnishedTool.Models;
 
-// One entry in the saved-lines library: a user-given name, the shareable line
-// code (the same TTLINE1 token produced by "Export position"), and the best
+// One entry in the saved-lines library: a user-given name, its encoded TTLINE1
+// definition (start/end positions and radii), and the best
 // (gold) time achieved on that line — a personal best that stays up to date.
 //
 // Persisted as JSON (see SavedLinesStore). Serialization uses this single

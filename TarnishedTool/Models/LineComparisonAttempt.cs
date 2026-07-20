@@ -9,6 +9,7 @@ namespace TarnishedTool.Models;
 public class LineComparisonAttempt : INotifyPropertyChanged
 {
     public int Number { get; }
+    public string NumberText => IsPersistentPb ? "" : Number.ToString();
     public bool IsPersistentPb { get; }
 
     private uint _resultMs;

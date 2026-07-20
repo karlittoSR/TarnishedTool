@@ -260,7 +260,7 @@ namespace TarnishedTool.Services
                 HotkeyActions.SpawnItem => "Spawn Item",
                 HotkeyActions.SpawnSelectedLoadout => "Spawn Loadout",
                 HotkeyActions.SpawnCustomItem => "Spawn Custom Item",
-                HotkeyActions.OpenLineComparison => "Line Comparison",
+                HotkeyActions.OpenLineComparison => "Segment Timer",
                 HotkeyActions.SetLineStart => "Set Line Start",
                 HotkeyActions.SetLineEnd => "Set Line End",
                 HotkeyActions.RestoreLineStart => "Restore to Line Start",

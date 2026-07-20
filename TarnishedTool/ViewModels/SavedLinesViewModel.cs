@@ -1,8 +1,11 @@
 //
 
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Linq;
+using System.Text.Json;
 using System.Windows.Input;
 using TarnishedTool.Core;
 using TarnishedTool.Interfaces;
@@ -20,6 +23,9 @@ public class SavedLinesViewModel : BaseViewModel
 
     public ICommand LoadCommand { get; }
     public ICommand SaveCurrentCommand { get; }
+    public ICommand ImportFileCommand { get; }
+    public ICommand ExportSelectedCommand { get; }
+    public ICommand ExportAllCommand { get; }
     public ICommand UpdateCommand { get; }
     public ICommand RenameCommand { get; }
     public ICommand DeleteCommand { get; }
@@ -53,6 +59,9 @@ public class SavedLinesViewModel : BaseViewModel
 
         LoadCommand = new DelegateCommand(LoadSelected);
         SaveCurrentCommand = new DelegateCommand(SaveCurrent);
+        ImportFileCommand = new DelegateCommand(ImportFile);
+        ExportSelectedCommand = new DelegateCommand(ExportSelected);
+        ExportAllCommand = new DelegateCommand(ExportAll);
         UpdateCommand = new DelegateCommand(UpdateSelected);
         RenameCommand = new DelegateCommand(RenameSelected);
         DeleteCommand = new DelegateCommand(DeleteSelected);
@@ -197,9 +206,167 @@ public class SavedLinesViewModel : BaseViewModel
         Persist();
 
         // Track the freshly saved line so the first time you get on it updates its PB.
-        _lineComparison.SetActiveSavedLine(line);
+        _lineComparison.SetActiveSavedLine(line, ensurePersistentPbRow: true);
         SelectedLine = line;
     }
+
+    #region Share saved lines
+
+    private static readonly JsonSerializerOptions ExportOptions = new() { WriteIndented = true };
+
+    private void ExportSelected()
+    {
+        if (SelectedLine == null)
+        {
+            MsgBox.Show("Select a saved segment first.", "Export Saved Segment");
+            return;
+        }
+
+        ExportToFile(new[] { SelectedLine }, SafeFileName(SelectedLine.Name) + ".json",
+            $"Exported saved segment: {SelectedLine.Name}");
+    }
+
+    private void ExportAll()
+    {
+        if (Lines.Count == 0)
+        {
+            MsgBox.Show("There are no saved segments to export.", "Export Saved Segments");
+            return;
+        }
+
+        ExportToFile(Lines, "lines.json",
+            $"Exported {Lines.Count} saved segment{(Lines.Count == 1 ? "" : "s")}.");
+    }
+
+    private static void ExportToFile(IEnumerable<SavedLine> lines, string fileName, string successMessage)
+    {
+        var dialog = new Microsoft.Win32.SaveFileDialog
+        {
+            Filter = "JSON files (*.json)|*.json|All files (*.*)|*.*",
+            Title = "Export Saved Segments",
+            FileName = fileName
+        };
+
+        if (dialog.ShowDialog() != true) return;
+
+        try
+        {
+            var json = JsonSerializer.Serialize(new List<SavedLine>(lines), ExportOptions);
+            File.WriteAllText(dialog.FileName, json);
+            MsgBox.Show(successMessage, "Export Saved Segments");
+        }
+        catch (Exception ex)
+        {
+            MsgBox.Show($"Failed to export saved segments: {ex.Message}", "Export Error");
+        }
+    }
+
+    private void ImportFile()
+    {
+        var dialog = new Microsoft.Win32.OpenFileDialog
+        {
+            Filter = "JSON files (*.json)|*.json|All files (*.*)|*.*",
+            Title = "Import Saved Segments"
+        };
+
+        if (dialog.ShowDialog() != true) return;
+
+        try
+        {
+            var json = File.ReadAllText(dialog.FileName);
+            var importedLines = JsonSerializer.Deserialize<List<SavedLine>>(json);
+            if (importedLines == null || importedLines.Count == 0)
+            {
+                MsgBox.Show("No saved segments were found in this file.", "Import Saved Segments");
+                return;
+            }
+
+            var usedNames = new HashSet<string>(Lines.Select(l => l.Name), StringComparer.OrdinalIgnoreCase);
+            var knownDefinitions = new HashSet<string>(Lines.Select(SegmentDefinition), StringComparer.Ordinal);
+            int imported = 0;
+            int renamed = 0;
+            int invalid = 0;
+            int duplicates = 0;
+            SavedLine lastImported = null;
+
+            foreach (var line in importedLines)
+            {
+                if (line == null || string.IsNullOrWhiteSpace(line.Name)
+                    || !LineShareCodec.TryDecode(line.Code, out _, out _, out _, out _))
+                {
+                    invalid++;
+                    continue;
+                }
+
+                // Name and PB are personal metadata, not part of a segment's
+                // identity. Positions, radii and the entire character snapshot
+                // (equipment, ashes, stats, flasks, etc.) must differ for a
+                // second entry to be worth importing.
+                if (!knownDefinitions.Add(SegmentDefinition(line)))
+                {
+                    duplicates++;
+                    continue;
+                }
+
+                var originalName = line.Name.Trim();
+                var uniqueName = UniqueName(originalName, usedNames);
+                if (uniqueName != originalName) renamed++;
+                line.Name = uniqueName;
+
+                Lines.Add(line);
+                lastImported = line;
+                imported++;
+            }
+
+            if (imported > 0)
+            {
+                Persist();
+                SelectedLine = lastImported;
+            }
+
+            var message = $"Imported {imported} saved segment{(imported == 1 ? "" : "s")}.";
+            if (renamed > 0) message += $" {renamed} renamed to avoid duplicate names.";
+            if (duplicates > 0) message += $" {duplicates} duplicate{(duplicates == 1 ? " was" : "s were")} skipped.";
+            if (invalid > 0) message += $" {invalid} invalid entr{(invalid == 1 ? "y was" : "ies were")} skipped.";
+            MsgBox.Show(message, "Import Saved Segments");
+        }
+        catch (Exception ex)
+        {
+            MsgBox.Show($"Failed to import saved segments: {ex.Message}", "Import Error");
+        }
+    }
+
+    private static string UniqueName(string baseName, HashSet<string> usedNames)
+    {
+        if (usedNames.Add(baseName)) return baseName;
+
+        int suffix = 2;
+        string candidate;
+        do candidate = $"{baseName} ({suffix++})";
+        while (!usedNames.Add(candidate));
+        return candidate;
+    }
+
+    private static string SegmentDefinition(SavedLine line)
+    {
+        // Normalize the position token so equivalent numeric spellings compare
+        // equally. Serializing the strongly typed snapshot provides a stable,
+        // complete comparison without coupling this check to every nested field.
+        var code = line.Code;
+        if (LineShareCodec.TryDecode(code, out var start, out var startRadius, out var end, out var endRadius))
+            code = LineShareCodec.Encode(start, startRadius, end, endRadius);
+
+        return code + "\n" + JsonSerializer.Serialize(line.Snapshot);
+    }
+
+    private static string SafeFileName(string name)
+    {
+        var invalid = Path.GetInvalidFileNameChars();
+        var safe = new string(name.Trim().Select(c => invalid.Contains(c) ? '_' : c).ToArray());
+        return string.IsNullOrWhiteSpace(safe) ? "saved-line" : safe;
+    }
+
+    #endregion
 
     // Re-captures the current line definition and character state onto the
     // selected save in place, keeping its name and PB.

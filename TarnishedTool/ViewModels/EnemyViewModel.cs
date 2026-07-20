@@ -46,6 +46,25 @@ public class EnemyViewModel : BaseViewModel
     private const string BossStatusAlive = "Alive";
     private const string BossStatusFirstEncounter = "Alive, First Encounter";
 
+    // A segment intended for a boss starts at or near its fog/arena entry. Block
+    // membership alone is far too broad (an overworld block is 256x256), so the
+    // allowed distance scales with the boss's physical capsule dimensions:
+    // normal 40, large 80, giant 120. This keeps ordinary bosses strict while
+    // accommodating bosses whose spawn point can be deep inside a large arena.
+    private const float NormalBossResetDistance = 40f;
+    private const float LargeBossResetDistance = 80f;
+    private const float GiantBossResetDistance = 120f;
+    private const float LargeBossDimension = 5f;
+    private const float GiantBossDimension = 10f;
+
+    // NpcParam: hitHeight (0x14) and hitRadius (0x18). Radius is converted to a
+    // diameter before comparing it with height so both values describe a full
+    // physical dimension in game units.
+    private const int NpcCapsuleHeightOffset = 0x14;
+    private const int NpcCapsuleRadiusOffset = 0x18;
+    private const int NpcCapsuleFieldsEnd = 0x1C;
+    private readonly Dictionary<uint, float> _npcDimensions = new();
+
     private static readonly SolidColorBrush BossStatusDeadBrush =
         (SolidColorBrush)new BrushConverter().ConvertFrom("#e74c3c")!;
     private static readonly SolidColorBrush BossStatusAliveBrush =
@@ -614,11 +633,8 @@ public class EnemyViewModel : BaseViewModel
     // suppress the line timer across the reload.
     public bool ResetZoneInPlace(Position start)
     {
-        var targetBlockId = start.BlockId;
-
         var bossesNear = BossRevives.AllItems
-            .Where(b => b.BlockId == targetBlockId ||
-                        (b.BossBlockIds != null && b.BossBlockIds.Contains(targetBlockId)))
+            .Where(b => IsSegmentStartNearBoss(start, b))
             .ToList();
 
         if (bossesNear.Count == 0)
@@ -636,6 +652,77 @@ public class EnemyViewModel : BaseViewModel
         _travelService.WarpToBlockId(start);
 
         return true;
+    }
+
+    private bool IsSegmentStartNearBoss(Position start, BossRevive boss)
+    {
+        bool primaryBlockMatch = boss.BlockId == start.BlockId;
+        bool arenaBlockMatch = boss.BossBlockIds != null && boss.BossBlockIds.Contains(start.BlockId);
+        if (!primaryBlockMatch && !arenaBlockMatch) return false;
+
+        var bossStart = boss.PositionFirstEncounter;
+        if (bossStart == null) return false;
+
+        byte startArea = (byte)(start.BlockId >> 24);
+        byte bossArea = (byte)(bossStart.BlockId >> 24);
+
+        if (PositionUtils.IsOverworld(startArea) && PositionUtils.IsOverworld(bossArea)
+            && startArea == bossArea)
+        {
+            return Vector3.Distance(
+                PositionUtils.ToAbsolute(start.Coords, start.BlockId),
+                PositionUtils.ToAbsolute(bossStart.Coords, bossStart.BlockId))
+                <= GetBossResetDistance(boss);
+        }
+
+        if (start.BlockId == bossStart.BlockId)
+            return Vector3.Distance(start.Coords, bossStart.Coords) <= GetBossResetDistance(boss);
+
+        // A small number of bosses map a separate interior arena block to an
+        // overworld/dungeon entry. Those coordinate systems are unrelated, so
+        // exact arena-block membership is the only reliable signal available.
+        return arenaBlockMatch;
+    }
+
+    private float GetBossResetDistance(BossRevive boss)
+    {
+        float largestDimension = 0f;
+
+        if (boss.NpcParamIds != null)
+        {
+            foreach (uint npcParamId in boss.NpcParamIds)
+                largestDimension = Math.Max(largestDimension, GetNpcDimension(npcParamId));
+        }
+
+        if (largestDimension >= GiantBossDimension)
+            return GiantBossResetDistance;
+
+        if (largestDimension >= LargeBossDimension)
+            return LargeBossResetDistance;
+
+        // Missing/unreadable param data deliberately falls back to the strict tier.
+        return NormalBossResetDistance;
+    }
+
+    private float GetNpcDimension(uint npcParamId)
+    {
+        if (_npcDimensions.TryGetValue(npcParamId, out float cachedDimension))
+            return cachedDimension;
+
+        nint row = _paramService.GetParamRow(NpcParamTableIndex, NpcParamSlotIndex, npcParamId);
+        if (row == IntPtr.Zero)
+            return 0f;
+
+        byte[] data = _paramService.ReadRow(row, NpcCapsuleFieldsEnd);
+        float height = Math.Abs(BitConverter.ToSingle(data, NpcCapsuleHeightOffset));
+        float diameter = Math.Abs(BitConverter.ToSingle(data, NpcCapsuleRadiusOffset)) * 2f;
+        float dimension = Math.Max(height, diameter);
+
+        if (float.IsNaN(dimension) || float.IsInfinity(dimension) || dimension <= 0f)
+            return 0f;
+
+        _npcDimensions[npcParamId] = dimension;
+        return dimension;
     }
 
     // Grace-rest: refill flasks/FP/HP and reset mobs. Called as the LAST step of a

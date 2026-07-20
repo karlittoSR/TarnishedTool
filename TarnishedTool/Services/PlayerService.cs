@@ -88,11 +88,11 @@ namespace TarnishedTool.Services
         public void RestorePos(Position savedPos) => RestorePosCore(savedPos, blockOnWarp: false);
 
         // Synchronous variant for ordered sequences (the line-comparison reset).
-        // A cross-area restore warps, and WarpToBlockId blocks until the fade
-        // completes — but RestorePos deliberately fires it on a background task so
-        // callers on the UI thread are not stalled. That makes it unusable when
-        // later steps must observe the arrival: applying the character mid-warp is
-        // undone by the load, which restores HP/FP from storage. This variant waits.
+        // A cross-area or very long restore warps, and WarpToBlockId blocks until
+        // the fade completes. RestorePos deliberately fires cross-area warps on a
+        // background task, which makes it unusable when later steps must observe
+        // the arrival. This Segment Timer variant waits and also treats a 500-unit
+        // move as a warp rather than an unsafe direct coordinate write.
         public void RestorePosBlocking(Position savedPos) => RestorePosCore(savedPos, blockOnWarp: true);
 
         private void RestorePosCore(Position savedPos, bool blockOnWarp)
@@ -107,12 +107,19 @@ namespace TarnishedTool.Services
                 var currentAbsolute = PositionUtils.ToAbsolute(currentPos.Coords, currentPos.BlockId);
                 var savedAbsolute = PositionUtils.ToAbsolute(savedPos.Coords, savedPos.BlockId);
                 var delta = savedAbsolute - currentAbsolute;
+                var isLongDistance = delta.Length() >= LongDistanceRestore;
+
+                if (blockOnWarp && isLongDistance)
+                {
+                    travelService.WarpToBlockId(savedPos);
+                    TeleportGuard.MarkTeleport();
+                    return;
+                }
 
                 var chrRideModule = GetChrRidePtr();
                 var isRiding = IsRidingInternal(chrRideModule);
                 var physicsPtr = isRiding ? GetTorrentPhysicsPtr() : GetChrPhysicsPtr();
                 var coordsPtr = physicsPtr + (int)ChrIns.ChrPhysicsOffsets.Coords;
-                var isLongDistance = delta.Length() > LongDistanceRestore;
 
                 if (isLongDistance)
                     memoryService.Write(physicsPtr + (int)ChrIns.ChrPhysicsOffsets.NoGravity, true);

@@ -89,6 +89,30 @@ public partial class SavedLinesWindow : TopmostWindow
         vm.Persist();
     }
 
+    private void ExportButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (DataContext is SavedLinesViewModel vm)
+        {
+            ExportSelectedMenuItem.IsEnabled = vm.SelectedLine != null;
+            ExportAllMenuItem.IsEnabled = vm.Lines.Count > 0;
+        }
+
+        ExportButton.ContextMenu.PlacementTarget = ExportButton;
+        ExportButton.ContextMenu.IsOpen = true;
+    }
+
+    private void ExportSelectedMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (DataContext is SavedLinesViewModel vm && vm.ExportSelectedCommand.CanExecute(null))
+            vm.ExportSelectedCommand.Execute(null);
+    }
+
+    private void ExportAllMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (DataContext is SavedLinesViewModel vm && vm.ExportAllCommand.CanExecute(null))
+            vm.ExportAllCommand.Execute(null);
+    }
+
     public SavedLinesWindow()
     {
         InitializeComponent();

@@ -4,9 +4,7 @@ using System;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Numerics;
-using System.Text;
 using System.Threading.Tasks;
-using System.Windows;
 using System.Windows.Input;
 using System.Windows.Threading;
 using TarnishedTool.Core;
@@ -20,7 +18,6 @@ namespace TarnishedTool.ViewModels;
 
 public class LineComparisonViewModel : BaseViewModel
 {
-    private readonly IGameTickService _gameTickService;
     private readonly IPlayerService _playerService;
     private readonly ICharacterSnapshotService _characterSnapshotService;
 
@@ -47,7 +44,7 @@ public class LineComparisonViewModel : BaseViewModel
 
     private enum Phase { Idle, Armed, AtStart, Running, Finished }
 
-    private const int MaxAttempts = 10;
+    private const int MaxAttempts = 8;
     private const int MaxNameLength = 44;
     private const float MinRadius = 0.1f;
 
@@ -55,8 +52,8 @@ public class LineComparisonViewModel : BaseViewModel
     private Position _start;
     private Position _end;
     private uint _startIgt;
-    private bool _subscribed;
     private int _attemptCounter;
+    private readonly DispatcherTimer _comparisonTimer;
     private readonly DispatcherTimer _feedbackTimer;
 
     private readonly SavedLinesViewModel _savedLinesViewModel;
@@ -66,10 +63,9 @@ public class LineComparisonViewModel : BaseViewModel
     // Raised when a recorded attempt beats the previous best (never on the first attempt).
     public event Action NewBest;
 
-    public LineComparisonViewModel(IGameTickService gameTickService, IPlayerService playerService,
+    public LineComparisonViewModel(IPlayerService playerService,
         IStateService stateService, ICharacterSnapshotService characterSnapshotService = null)
     {
-        _gameTickService = gameTickService;
         _playerService = playerService;
         _characterSnapshotService = characterSnapshotService;
 
@@ -77,10 +73,7 @@ public class LineComparisonViewModel : BaseViewModel
         SetEndCommand = new DelegateCommand(SetEnd);
         RestoreToStartCommand = new DelegateCommand(RestoreToStart);
         ClearResultsCommand = new DelegateCommand(ClearResults);
-        CopyResultsCommand = new DelegateCommand(CopyResults);
         RemoveSelectedCommand = new DelegateCommand(RemoveSelected);
-        ExportPositionsCommand = new DelegateCommand(ExportPositions);
-        ImportPositionsCommand = new DelegateCommand(ImportPositions);
         OpenSavedLinesCommand = new DelegateCommand(OpenSavedLines);
 
         _savedLinesViewModel = new SavedLinesViewModel(this, characterSnapshotService);
@@ -93,6 +86,16 @@ public class LineComparisonViewModel : BaseViewModel
         });
         stateService.Subscribe(State.NotLoaded, () => CanOperate = false);
 
+        // Line crossings need frame-level polling. The shared game tick runs every
+        // 64 ms, which can notice both the start and finish several frames late.
+        // Keep the faster poll local to this window so unrelated features retain
+        // their existing memory-read frequency.
+        _comparisonTimer = new DispatcherTimer(DispatcherPriority.Render)
+        {
+            Interval = TimeSpan.FromMilliseconds(16)
+        };
+        _comparisonTimer.Tick += (_, _) => Tick();
+
         _feedbackTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
         _feedbackTimer.Tick += (_, _) => { FeedbackText = ""; _feedbackTimer.Stop(); };
     }
@@ -103,10 +106,7 @@ public class LineComparisonViewModel : BaseViewModel
     public ICommand SetEndCommand { get; }
     public ICommand RestoreToStartCommand { get; }
     public ICommand ClearResultsCommand { get; }
-    public ICommand CopyResultsCommand { get; }
     public ICommand RemoveSelectedCommand { get; }
-    public ICommand ExportPositionsCommand { get; }
-    public ICommand ImportPositionsCommand { get; }
     public ICommand OpenSavedLinesCommand { get; }
 
     #endregion
@@ -120,13 +120,6 @@ public class LineComparisonViewModel : BaseViewModel
     {
         get => _canOperate;
         set => SetProperty(ref _canOperate, value);
-    }
-
-    private bool _canExport;
-    public bool CanExport
-    {
-        get => _canExport;
-        set => SetProperty(ref _canExport, value);
     }
 
     private string _feedbackText = "";
@@ -215,16 +208,13 @@ public class LineComparisonViewModel : BaseViewModel
 
     public void NotifyWindowOpen()
     {
-        if (_subscribed) return;
-        _gameTickService.Subscribe(Tick);
-        _subscribed = true;
+        if (!_comparisonTimer.IsEnabled)
+            _comparisonTimer.Start();
     }
 
     public void NotifyWindowClosed()
     {
-        if (!_subscribed) return;
-        _gameTickService.Unsubscribe(Tick);
-        _subscribed = false;
+        _comparisonTimer.Stop();
     }
 
     public void SetStart()
@@ -311,18 +301,6 @@ public class LineComparisonViewModel : BaseViewModel
         });
     }
 
-    private void ExportPositions()
-    {
-        if (_start == null || _end == null) return;
-        var code = LineShareCodec.Encode(_start, StartRadius, _end, EndRadius);
-        try
-        {
-            Clipboard.SetText(code);
-            ShowFeedback("Positions copied to clipboard");
-        }
-        catch { }
-    }
-
     private void ShowFeedback(string message)
     {
         FeedbackText = message;
@@ -330,17 +308,8 @@ public class LineComparisonViewModel : BaseViewModel
         _feedbackTimer.Start();
     }
 
-    private void ImportPositions()
-    {
-        string text;
-        try { text = Clipboard.GetText(); } catch { text = null; }
-
-        if (!ApplyCode(text))
-            MsgBox.Show("Invalid line code. Paste a code produced by the \"Export position\" button.");
-    }
-
-    // Applies a shared line code (start/end + radii). Returns false if invalid.
-    // Detaches from any active saved line (a raw/clipboard code isn't a library entry).
+    // Applies an encoded line definition (start/end + radii). Returns false if invalid.
+    // Detaches from any previously active saved line before loading the new one.
     public bool ApplyCode(string code)
     {
         if (!LineShareCodec.TryDecode(code, out var start, out var startRadius, out var end, out var endRadius))
@@ -355,7 +324,7 @@ public class LineComparisonViewModel : BaseViewModel
         SetProperty(ref _endRadius, endRadius < MinRadius ? MinRadius : endRadius, nameof(EndRadius));
         ResetResultsForChangedLine(); // new line definition
         ReArm();
-        ShowFeedback("Line imported");
+        ShowFeedback("Line loaded");
         return true;
     }
 
@@ -399,9 +368,8 @@ public class LineComparisonViewModel : BaseViewModel
         var pb = Attempts.FirstOrDefault(a => a.IsPersistentPb);
         if (pb == null)
         {
-            pb = new LineComparisonAttempt(1, "PB", _activeSavedLine.BestMs, true);
+            pb = new LineComparisonAttempt(0, "PB", _activeSavedLine.BestMs, true);
             Attempts.Insert(0, pb);
-            if (_attemptCounter < 1) _attemptCounter = 1;
         }
         else
         {
@@ -441,9 +409,12 @@ public class LineComparisonViewModel : BaseViewModel
 
     private void ClearResults()
     {
-        Attempts.Clear();
+        // Clear only this session's runs. The saved PB is durable data and may
+        // only be removed explicitly by selecting its row and removing it.
+        foreach (var attempt in Attempts.Where(a => !a.IsPersistentPb).ToList())
+            Attempts.Remove(attempt);
         _attemptCounter = 0;
-        SyncSavedLineBest();
+        EnsurePersistentPbRow();
     }
 
     // Internal line changes must discard the visible attempt table without
@@ -461,54 +432,18 @@ public class LineComparisonViewModel : BaseViewModel
     {
         if (SelectedAttempt == null) return;
 
-        Attempts.Remove(SelectedAttempt);
-        SyncSavedLineBest();
-    }
+        var removed = SelectedAttempt;
+        SelectedAttempt = null;
+        Attempts.Remove(removed);
 
-    // Re-derives the saved line's gold from what is actually in the table, and
-    // persists it. Recording an attempt only ever moves the stored best DOWN, so
-    // without this, deleting a mistaken gold (or clearing the table) left the save
-    // showing a time that no longer exists anywhere. Also covers deleting the last
-    // row, which correctly clears the gold back to none.
-    private void SyncSavedLineBest()
-    {
-        if (_activeSavedLine == null) return;
-
-        uint best = GetCurrentBestMs(); // 0 when there are no attempts left
-        if (_activeSavedLine.BestMs == best) return;
-
-        // The setter raises PropertyChanged, so the saves list updates live.
-        _activeSavedLine.BestMs = best;
-        UpdateTargetPb();
-        _savedLinesViewModel.Persist();
-    }
-
-    private void CopyResults()
-    {
-        if (Attempts.Count == 0 && _start == null && _end == null) return;
-
-        var sb = new StringBuilder();
-
-        // Positions this table belongs to, captured at copy time.
-        sb.AppendLine($"Start: {(_start != null ? Describe(_start) : "Not set")}");
-        sb.AppendLine($"End:   {(_end != null ? Describe(_end) : "Not set")}");
-        if (_start != null && _end != null)
-            sb.AppendLine($"Code:  {LineShareCodec.Encode(_start, StartRadius, _end, EndRadius)}");
-        sb.AppendLine();
-
-        sb.AppendLine("#\tName\tResult\tDelta");
-        foreach (var a in Attempts)
+        // Ordinary session rows never own the durable PB. Removing the protected
+        // PB row is the one explicit action that clears it from the saved line.
+        if (removed.IsPersistentPb && _activeSavedLine != null)
         {
-            // Strip the leading '+' so spreadsheets don't read the delta as a formula.
-            var delta = a.DeltaText.TrimStart('+');
-            sb.AppendLine($"{a.Number}\t{a.Name}\t{a.ResultText}\t{delta}");
+            _activeSavedLine.BestMs = 0;
+            UpdateTargetPb();
+            _savedLinesViewModel.Persist();
         }
-        try
-        {
-            Clipboard.SetText(sb.ToString());
-            ShowFeedback("Results copied to clipboard");
-        }
-        catch { }
     }
 
     private void RecordAttempt(uint result)
@@ -529,9 +464,13 @@ public class LineComparisonViewModel : BaseViewModel
         // attempt into a separate session gold.
         if (_activeSavedLine != null && (_activeSavedLine.BestMs == 0 || result < _activeSavedLine.BestMs))
         {
-            _activeSavedLine.BestMs = result;
-            var persistentPb = Attempts.FirstOrDefault(a => a.IsPersistentPb);
-            persistentPb?.UpdatePersistentPb(result);
+            // After an explicit PB deletion there may already be session runs in
+            // the table. Re-establish the PB from the fastest session run, not
+            // blindly from the newest one.
+            _activeSavedLine.BestMs = _activeSavedLine.BestMs == 0
+                ? Attempts.Where(a => !a.IsPersistentPb).Min(a => a.ResultMs)
+                : result;
+            EnsurePersistentPbRow();
             UpdateTargetPb();
             _savedLinesViewModel.Persist();
         }
@@ -580,7 +519,6 @@ public class LineComparisonViewModel : BaseViewModel
             _phase = Phase.Idle;
             PhaseText = "Set start and end";
         }
-        CanExport = _start != null && _end != null;
         LiveTimeText = FormatMs(0);
     }
 
@@ -588,6 +526,7 @@ public class LineComparisonViewModel : BaseViewModel
     {
         try
         {
+            if (!CanOperate) return;
             if (_start == null || _end == null) return;
 
             // While a reset (warp/reload) runs, don't advance the phase machine —

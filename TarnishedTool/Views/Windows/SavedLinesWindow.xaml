@@ -9,7 +9,7 @@
                        Style="{StaticResource DefaultWindowStyle}"
                        WindowStyle="None"
                        AllowsTransparency="True"
-                       Title="Saves" Height="520" Width="380">
+                       Title="Saved Segments" Height="520" Width="380">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="30" />
@@ -19,7 +19,7 @@
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <controls:TitleBar Grid.Row="0" Title="Saves" />
+        <controls:TitleBar Grid.Row="0" Title="Saved Segments" />
 
         <Grid Grid.Row="1">
             <CheckBox x:Name="AlwaysOnTopCheckBox"
@@ -97,29 +97,55 @@
             </StackPanel>
         </Border>
 
-        <WrapPanel Grid.Row="4" HorizontalAlignment="Center" Margin="10">
-            <Button Content="Load" Width="70" Height="28" Margin="3"
+        <Grid Grid.Row="4" Margin="10,7,10,10">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <Button Grid.Row="0" Grid.Column="0" Content="Load" Height="28" Margin="3"
                     IsEnabled="{Binding CanOperate}"
                     Command="{Binding LoadCommand}"
-                    ToolTip="Load this save's line and immediately restore to its start." />
-            <Button Content="Import" Width="70" Height="28" Margin="3"
+                    ToolTip="Load this saved segment and immediately restore to its start." />
+            <Button Grid.Row="0" Grid.Column="1" Content="Save Current" Height="28" Margin="3"
                     IsEnabled="{Binding CanOperate}"
                     Command="{Binding SaveCurrentCommand}"
-                    ToolTip="Import the current line plus the current character state as a new save." />
-            <Button Content="Update" Width="70" Height="28" Margin="3"
+                    ToolTip="Save the current segment and character state as a new library entry." />
+            <Button Grid.Row="0" Grid.Column="2" Content="Import" Height="28" Margin="3"
+                    Command="{Binding ImportFileCommand}"
+                    ToolTip="Import one or more complete saved segments from a JSON file." />
+            <Button Grid.Row="0" Grid.Column="3" x:Name="ExportButton" Content="Export ▾" Height="28" Margin="3"
+                    Click="ExportButton_Click"
+                    ToolTip="Export the selected saved segment or the complete library to JSON.">
+                <Button.ContextMenu>
+                    <ContextMenu Placement="Bottom">
+                        <MenuItem x:Name="ExportSelectedMenuItem" Header="Selected segment"
+                                  Click="ExportSelectedMenuItem_Click" />
+                        <MenuItem x:Name="ExportAllMenuItem" Header="All segments (lines.json)"
+                                  Click="ExportAllMenuItem_Click" />
+                    </ContextMenu>
+                </Button.ContextMenu>
+            </Button>
+            <Button Grid.Row="1" Grid.Column="0" Content="Update" Height="28" Margin="3"
                     IsEnabled="{Binding CanOperate}"
                     Command="{Binding UpdateCommand}"
-                    ToolTip="Update the selected save with the current positions, radii and character state, keeping its name and PB." />
+                    ToolTip="Update the selected segment with the current positions, radii and character state, keeping its name and PB." />
             <!-- Debug-only: Load already restores and applies the character. Kept
                  collapsed so the per-step apply error report stays reachable. -->
-            <Button Content="Apply Char" Width="80" Height="28" Margin="3"
+            <Button Grid.Row="1" Grid.Column="3" Content="Apply Char" Height="28" Margin="3"
                     Visibility="Collapsed"
                     Command="{Binding ApplyCharacterCommand}"
                     ToolTip="Apply this save's character state (stats then gear) to your character." />
-            <Button Content="Rename" Width="70" Height="28" Margin="3"
+            <Button Grid.Row="1" Grid.Column="1" Content="Rename" Height="28" Margin="3"
                     Command="{Binding RenameCommand}" />
-            <Button Content="Delete" Width="70" Height="28" Margin="3"
+            <Button Grid.Row="1" Grid.Column="2" Content="Delete" Height="28" Margin="3"
                     Command="{Binding DeleteCommand}" />
-        </WrapPanel>
+        </Grid>
     </Grid>
 </windows:TopmostWindow>

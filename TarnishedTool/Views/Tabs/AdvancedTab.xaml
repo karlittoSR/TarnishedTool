@@ -247,7 +247,7 @@
             <StackPanel Margin="5">
                 <StackPanel Orientation="Horizontal">
                     <TextBlock
-                        Text="Line Comparison"
+                        Text="Segment Timer"
                         FontWeight="SemiBold"
                         TextAlignment="Left" />
                     <Border Background="#3498db"
@@ -260,7 +260,7 @@
                         <Border.ToolTip>
                             <ToolTip MaxWidth="300">
                                 <TextBlock TextWrapping="Wrap"
-                                           Text="Time a run segment (a &quot;line&quot;) from a fixed start point to an end point using in-game time, then compare multiple attempts to find your fastest — no LiveSplit needed. Set a start and end, restore to the start, and the timer runs automatically from when you leave the start until you reach the end." />
+                                           Text="Time a segment between fixed start and finish positions using in-game time. The timer starts automatically when you leave the start radius and stops when you enter the finish radius, then compares each attempt with your PB — no LiveSplit needed." />
                             </ToolTip>
                         </Border.ToolTip>
                         <TextBlock Text="i"
@@ -272,22 +272,22 @@
                     </Border>
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
-                    <Button Content="Initialize Line Comparison"
+                    <Button Content="Open Segment Timer"
                             Command="{Binding OpenLineComparisonCommand}"
                             VerticalAlignment="Center"
                             Width="250"
                             Height="50" />
-                    <Button Content="Saves"
+                    <Button Content="Saved Segments"
                             Command="{Binding OpenSavedLinesCommand}"
                             VerticalAlignment="Center"
-                            Width="90"
+                            Width="125"
                             Height="50"
                             Margin="8,0,0,0"
                             ToolTipService.InitialShowDelay="100">
                         <Button.ToolTip>
                             <ToolTip MaxWidth="300">
                                 <TextBlock TextWrapping="Wrap"
-                                           Text="Open your saves without the timer. Loading a save still warps you to its start, revives the boss and restores your character — use this when you just want to practise a fight and don't care about timing it." />
+                                           Text="Open saved segments without the timer. Loading one still warps you to its start, revives the boss and restores your character — useful when you want to practise without timing the attempt." />
                             </ToolTip>
                         </Button.ToolTip>
                     </Button>

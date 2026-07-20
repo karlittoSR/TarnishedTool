@@ -84,7 +84,7 @@ public class AdvancedViewModel : BaseViewModel
 
         _paramEditorViewModel = new ParamEditorViewModel(paramRepository, paramService, reminderService);
         _chrInsWindowViewModel = new ChrInsWindowViewModel(stateService, gameTickService, playerService, chrInsService, aiWindowService);
-        _lineComparisonViewModel = new LineComparisonViewModel(gameTickService, playerService, stateService, characterSnapshotService);
+        _lineComparisonViewModel = new LineComparisonViewModel(playerService, stateService, characterSnapshotService);
     }
 
     
