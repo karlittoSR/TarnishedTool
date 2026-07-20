@@ -10,6 +10,9 @@
                        WindowStyle="None"
                        AllowsTransparency="True"
                        Title="Segment Timer" Height="600" Width="500">
+    <windows:TopmostWindow.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVisibilityConverter" />
+    </windows:TopmostWindow.Resources>
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="30" />
@@ -75,16 +78,47 @@
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
-                    <Button Grid.Column="0" Content="Set Finish" Width="82" Height="26"
-                            IsEnabled="{Binding CanOperate}"
-                            Command="{Binding SetEndCommand}" />
-                    <TextBlock Grid.Column="1" Text="{Binding EndText}" VerticalAlignment="Center"
-                               Margin="10,0,0,0" TextTrimming="CharacterEllipsis" />
-                    <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-                        <TextBlock Text="Radius:" VerticalAlignment="Center" Margin="0,0,5,0" />
-                        <TextBox Width="45" Text="{Binding EndRadius, UpdateSourceTrigger=PropertyChanged}" VerticalContentAlignment="Center" />
+
+                    <ComboBox Grid.Column="0" Width="90" Height="26" Margin="0,0,7,0"
+                              ItemsSource="{Binding FinishTypeOptions}"
+                              SelectedIndex="{Binding SelectedFinishTypeIndex, Mode=TwoWay}"
+                              ToolTip="Choose whether the segment ends at a position or when an event flag changes." />
+
+                    <Grid Grid.Column="1"
+                          Visibility="{Binding IsPositionFinish, Converter={StaticResource BoolToVisibilityConverter}}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <Button Grid.Column="0" Content="Set Finish" Width="82" Height="26"
+                                IsEnabled="{Binding CanOperate}"
+                                Command="{Binding SetEndCommand}" />
+                        <TextBlock Grid.Column="1" Text="{Binding EndText}" VerticalAlignment="Center"
+                                   Margin="10,0,0,0" TextTrimming="CharacterEllipsis" />
+                        <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                            <TextBlock Text="Radius:" VerticalAlignment="Center" Margin="0,0,5,0" />
+                            <TextBox Width="45" Text="{Binding EndRadius, UpdateSourceTrigger=PropertyChanged}"
+                                     VerticalContentAlignment="Center" />
+                        </StackPanel>
+                    </Grid>
+
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center"
+                                Visibility="{Binding IsEventFlagFinish, Converter={StaticResource BoolToVisibilityConverter}}">
+                        <TextBlock Text="Flag ID:" VerticalAlignment="Center" Margin="0,0,5,0" />
+                        <TextBox Width="120" MaxLength="10" VerticalContentAlignment="Center"
+                                 Text="{Binding EndFlagIdText, UpdateSourceTrigger=PropertyChanged}"
+                                 ToolTip="Enter the event ID found with the Event Flag Scanner." />
+                        <TextBlock Text="Value:" VerticalAlignment="Center" Margin="12,0,5,0" />
+                        <ComboBox Width="55" Height="24"
+                                  ItemsSource="{Binding FlagValueOptions}"
+                                  SelectedIndex="{Binding SelectedFlagValueIndex, Mode=TwoWay}"
+                                  ToolTip="Finish when the flag transitions to this value." />
+                        <Button Content="Scan" Width="52" Height="24" Margin="10,0,0,0"
+                                IsEnabled="{Binding CanOperate}"
+                                Command="{Binding ScanEventFlagsCommand}"
+                                ToolTip="Open TarnishedTool's Event Logger to find a flag ID." />
                     </StackPanel>
                 </Grid>
             </Border>
@@ -108,6 +142,7 @@
                     <TextBlock Text="Status: " />
                     <TextBlock Text="{Binding PhaseText}" FontWeight="SemiBold" />
                     <TextBlock Text="{Binding TargetPbText}" Foreground="Gold" FontWeight="SemiBold" Margin="14,0,0,0" />
+                    <TextBlock Text="{Binding TargetReferenceText}" Foreground="#3498db" FontWeight="SemiBold" Margin="14,0,0,0" />
                 </StackPanel>
                 <TextBlock Text="{Binding FeedbackText}"
                            Foreground="White"
@@ -151,6 +186,10 @@
                 <DataGrid.CellStyle>
                     <Style TargetType="DataGridCell" BasedOn="{StaticResource {x:Type DataGridCell}}">
                         <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsReference}" Value="True">
+                                <Setter Property="Foreground" Value="#3498db" />
+                                <Setter Property="FontWeight" Value="SemiBold" />
+                            </DataTrigger>
                             <DataTrigger Binding="{Binding IsBest}" Value="True">
                                 <Setter Property="Foreground" Value="Gold" />
                                 <Setter Property="FontWeight" Value="Bold" />
@@ -176,10 +215,10 @@
             <StackPanel Grid.Row="6" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,8,0,0">
                 <Button Content="Remove Selected" Width="120" Height="26" Margin="0,0,8,0"
                         Command="{Binding RemoveSelectedCommand}"
-                        ToolTip="Remove the selected attempt. Selecting the PB explicitly deletes the saved PB." />
+                        ToolTip="Remove the selected attempt. Selecting PB or Reference explicitly deletes that saved comparison." />
                 <Button Content="Clear Runs" Width="85" Height="26"
                         Command="{Binding ClearResultsCommand}"
-                        ToolTip="Clear this session's attempts while keeping the saved PB." />
+                        ToolTip="Clear this session's attempts while keeping the saved PB and reference." />
             </StackPanel>
         </Grid>
     </Grid>

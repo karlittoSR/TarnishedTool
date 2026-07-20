@@ -9,25 +9,29 @@ namespace TarnishedTool.Models;
 public class LineComparisonAttempt : INotifyPropertyChanged
 {
     public int Number { get; }
-    public string NumberText => IsPersistentPb ? "" : Number.ToString();
+    public string NumberText => IsProtected ? "" : Number.ToString();
     public bool IsPersistentPb { get; }
+    public bool IsReference { get; }
+    public bool IsProtected => IsPersistentPb || IsReference;
 
     private uint _resultMs;
     public uint ResultMs => _resultMs;
     public string ResultText => TimeFormatter.Mmssmmm(ResultMs);
 
-    public LineComparisonAttempt(int number, string name, uint resultMs, bool isPersistentPb = false)
+    public LineComparisonAttempt(int number, string name, uint resultMs,
+        bool isPersistentPb = false, bool isReference = false)
     {
         Number = number;
         _name = name;
         _resultMs = resultMs;
         IsPersistentPb = isPersistentPb;
+        IsReference = isReference;
     }
 
     // Only the view model may advance the persistent PB after a genuine record.
     public void UpdatePersistentPb(uint resultMs)
     {
-        if (!IsPersistentPb || _resultMs == resultMs) return;
+        if (!IsProtected || _resultMs == resultMs) return;
         _resultMs = resultMs;
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ResultMs)));
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ResultText)));
@@ -39,7 +43,7 @@ public class LineComparisonAttempt : INotifyPropertyChanged
         get => _name;
         set
         {
-            if (IsPersistentPb) return;
+            if (IsProtected) return;
             SetProperty(ref _name, value);
         }
     }

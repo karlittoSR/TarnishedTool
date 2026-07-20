@@ -52,7 +52,9 @@ public class AdvancedViewModel : BaseViewModel
         IParamService paramService, IParamRepository paramRepository, ISpEffectService spEffectService,
         IPlayerService playerService, HotkeyManager hotkeyManager, IGameTickService gameTickService,
         IReminderService reminderService, IAiService aiService, IUtilityService utilityService,
-        IChrInsService chrInsService, IAiWindowService aiWindowService, IHotkeyNotificationService notificationService = null,
+        IChrInsService chrInsService, IAiWindowService aiWindowService,
+        IEventService eventService, IEventLogReader eventLogReader,
+        IHotkeyNotificationService notificationService = null,
         ICharacterSnapshotService characterSnapshotService = null)
     {
         _itemService = itemService;
@@ -84,7 +86,8 @@ public class AdvancedViewModel : BaseViewModel
 
         _paramEditorViewModel = new ParamEditorViewModel(paramRepository, paramService, reminderService);
         _chrInsWindowViewModel = new ChrInsWindowViewModel(stateService, gameTickService, playerService, chrInsService, aiWindowService);
-        _lineComparisonViewModel = new LineComparisonViewModel(playerService, stateService, characterSnapshotService);
+        _lineComparisonViewModel = new LineComparisonViewModel(
+            playerService, stateService, eventService, eventLogReader, characterSnapshotService);
     }
 
     

@@ -13,6 +13,7 @@ public class EventLogReader(IMemoryService memoryService) : IEventLogReader, IDi
 {
     private DispatcherTimer _timer;
     private int _readIndex;
+    private int _consumerCount;
     
     private IntPtr _writeIndexAddr;
     private IntPtr _bufferAddr;
@@ -21,17 +22,33 @@ public class EventLogReader(IMemoryService memoryService) : IEventLogReader, IDi
     
     public void Start()
     {
-        _readIndex = 0;
+        if (_consumerCount++ > 0) return;
+
         _writeIndexAddr = CodeCaveOffsets.Base + CodeCaveOffsets.EventLogWriteIndex;
         _bufferAddr = CodeCaveOffsets.Base + CodeCaveOffsets.EventLogBuffer;
-        _timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(50) };
+        // Ignore entries recorded before the first active consumer subscribed.
+        _readIndex = memoryService.Read<int>(_writeIndexAddr);
+        _timer = new DispatcherTimer(DispatcherPriority.Render)
+        {
+            Interval = TimeSpan.FromMilliseconds(16)
+        };
         _timer.Tick += Poll;
         
         _timer.Start();
     }
 
-    public void Stop() => _timer?.Stop();
-    public void Dispose() => _timer?.Stop();
+    public void Stop()
+    {
+        if (_consumerCount == 0) return;
+        if (--_consumerCount > 0) return;
+        _timer?.Stop();
+    }
+
+    public void Dispose()
+    {
+        _consumerCount = 0;
+        _timer?.Stop();
+    }
     
     private void Poll(object sender, EventArgs e)
     {

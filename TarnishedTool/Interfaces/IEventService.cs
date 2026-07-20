@@ -13,7 +13,8 @@ public interface IEventService
     void ToggleDisableEvents(bool isEnabled);
     bool AreAllEventsTrue(long[] eventToCheck);
     void ToggleEvent(long clearDlc);
-    void ToggleEventLogger(bool isEnabled);
+    void AcquireEventLogger();
+    void ReleaseEventLogger();
     void ToggleEvents(IEnumerable<long> eventIds);
     void SetEvents(IEnumerable<long> eventIds, bool flagValue);
 }

@@ -384,6 +384,7 @@
         <Compile Include="ViewModels\SavedLinesViewModel.cs" />
         <Compile Include="Models\LineComparisonAttempt.cs" />
         <Compile Include="Models\SavedLine.cs" />
+        <Compile Include="Models\SegmentDefinition.cs" />
         <Compile Include="Utilities\TimeFormatter.cs" />
         <Compile Include="Utilities\TeleportGuard.cs" />
         <Compile Include="Utilities\LineShareCodec.cs" />

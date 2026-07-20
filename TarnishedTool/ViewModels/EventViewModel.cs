@@ -57,6 +57,7 @@ namespace TarnishedTool.ViewModels
 
             stateService.Subscribe(State.Loaded, OnGameLoaded);
             stateService.Subscribe(State.NotLoaded, OnGameNotLoaded);
+            stateService.Subscribe(State.Detached, OnGameNotLoaded);
             stateService.Subscribe(State.FirstLoaded, OnGameFirstLoaded);
             stateService.Subscribe(State.EventTabActivated, OnEventTabActivated);
 
@@ -275,7 +276,10 @@ namespace TarnishedTool.ViewModels
             {
                 if (!SetProperty(ref _isEventLoggerEnabled, value)) return;
 
-                _eventService.ToggleEventLogger(value);
+                if (value)
+                    _eventService.AcquireEventLogger();
+                else
+                    _eventService.ReleaseEventLogger();
 
                 if (value)
                 {
@@ -317,6 +321,8 @@ namespace TarnishedTool.ViewModels
         private void OnGameNotLoaded()
         {
             AreOptionsEnabled = false;
+            if (IsEventLoggerEnabled)
+                IsEventLoggerEnabled = false;
         }
 
         private void OnGameFirstLoaded()
@@ -355,7 +361,7 @@ namespace TarnishedTool.ViewModels
             _hotkeyManager.RegisterAction(HotkeyActions.SetEvent, () => { SafeExecute(SetEvent); _notificationService?.ShowNotification(HotkeyActions.SetEvent); });
             _hotkeyManager.RegisterAction(HotkeyActions.DisableEvents,
                 () => { IsDisableEventsEnabled = !IsDisableEventsEnabled; _notificationService?.ShowNotification(HotkeyActions.DisableEvents); });
-            _hotkeyManager.RegisterAction(HotkeyActions.OpenEventLogger, () => { OpenEventLogWindow(); _notificationService?.ShowNotification(HotkeyActions.OpenEventLogger); });
+            _hotkeyManager.RegisterAction(HotkeyActions.OpenEventLogger, () => { OpenEventLogger(); _notificationService?.ShowNotification(HotkeyActions.OpenEventLogger); });
             _hotkeyManager.RegisterAction(HotkeyActions.UnlockAffinites, () => { SafeExecute(UnlockWhetblades); _notificationService?.ShowNotification(HotkeyActions.UnlockAffinites); });
             _hotkeyManager.RegisterAction(HotkeyActions.UnlockGestures, () => { SafeExecute(UnlockGestures); _notificationService?.ShowNotification(HotkeyActions.UnlockGestures); });
             _hotkeyManager.RegisterAction(HotkeyActions.FightEldenBeast, () => { SafeExecute(FightEldenBeast); _notificationService?.ShowNotification(HotkeyActions.FightEldenBeast); });
@@ -493,8 +499,38 @@ namespace TarnishedTool.ViewModels
         private void SetWeatherByType(sbyte type) =>
             _emevdService.ExecuteEmevdCommand(Emevd.EmevdCommands.SetWeather(type));
 
+        // Opens the existing flag scanner and enables its logger when needed.
+        // Public so the Segment Timer's compact Scan button can reference the
+        // same feature without duplicating scanner state or UI.
+        public void OpenEventLogger()
+        {
+            if (!AreOptionsEnabled) return;
+
+            if (IsEventLoggerEnabled)
+            {
+                if (_eventLogWindow?.IsVisible == true)
+                {
+                    _eventLogWindow.Activate();
+                    _eventLogWindow.Focus();
+                }
+                else
+                {
+                    OpenEventLogWindow();
+                }
+                return;
+            }
+
+            IsEventLoggerEnabled = true;
+        }
+
         private void OpenEventLogWindow()
         {
+            if (_eventLogWindow?.IsVisible == true)
+            {
+                _eventLogWindow.Activate();
+                return;
+            }
+
             _eventLogWindow = new EventLogWindow()
             {
                 DataContext = _eventLogViewModel,
@@ -508,7 +544,7 @@ namespace TarnishedTool.ViewModels
                     _isEventLoggerEnabled = false;
                     OnPropertyChanged(nameof(IsEventLoggerEnabled));
                     _eventLogReader.Stop();
-                    _eventService.ToggleEventLogger(false);
+                    _eventService.ReleaseEventLogger();
                 }
             };
             _eventLogWindow.Show();

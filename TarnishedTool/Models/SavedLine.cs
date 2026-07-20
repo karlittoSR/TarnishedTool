@@ -6,9 +6,9 @@ using TarnishedTool.Utilities;
 
 namespace TarnishedTool.Models;
 
-// One entry in the saved-lines library: a user-given name, its encoded TTLINE1
-// definition (start/end positions and radii), and the best
-// (gold) time achieved on that line — a personal best that stays up to date.
+// One entry in the saved-lines library: a user-given name, its encoded segment
+// definition (mandatory start plus a position or event-flag finish), the local
+// personal best, and an optional read-only reference supplied by another runner.
 //
 // Persisted as JSON (see SavedLinesStore). Serialization uses this single
 // constructor: System.Text.Json matches JSON properties to the parameters by
@@ -28,15 +28,16 @@ public class SavedLine : INotifyPropertyChanged
         }
     }
 
-    public SavedLine(string name, string code, uint bestMs = 0)
+    public SavedLine(string name, string code, uint bestMs = 0, uint referenceMs = 0)
     {
         _name = name;
         Code = code;
         _bestMs = bestMs;
+        _referenceMs = referenceMs;
     }
 
-    // Replaces the saved start/end positions and radii while keeping the entry's
-    // identity, PB and character snapshot intact.
+    // Replaces the encoded segment definition while keeping the entry's identity,
+    // PB and character snapshot intact.
     public void UpdateCode(string code) => Code = code;
 
     private string _name;
@@ -65,7 +66,27 @@ public class SavedLine : INotifyPropertyChanged
     }
 
     [JsonIgnore]
-    public string BestText => _bestMs > 0 ? TimeFormatter.Mmssmmm(_bestMs) : "";
+    public string BestText => _bestMs > 0 ? $"PB {TimeFormatter.Mmssmmm(_bestMs)}" : "";
+
+    // A shared runner's time is comparison-only. Local attempts never overwrite
+    // it; it can only be removed explicitly from the protected Reference row.
+    private uint _referenceMs;
+    public uint ReferenceMs
+    {
+        get => _referenceMs;
+        set
+        {
+            if (_referenceMs == value) return;
+            _referenceMs = value;
+            Raise(nameof(ReferenceMs));
+            Raise(nameof(ReferenceText));
+        }
+    }
+
+    [JsonIgnore]
+    public string ReferenceText => _referenceMs > 0
+        ? $"Ref {TimeFormatter.Mmssmmm(_referenceMs)}"
+        : "";
 
     // Optional character state (equipment + stats + rune level) captured when the
     // line was saved. Null for position-only lines and for legacy entries.

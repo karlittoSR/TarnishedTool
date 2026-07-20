@@ -56,7 +56,7 @@ public partial class LineComparisonWindow : TopmostWindow
 
     private void AttemptsGrid_BeginningEdit(object sender, DataGridBeginningEditEventArgs e)
     {
-        if (e.Row.Item is LineComparisonAttempt { IsPersistentPb: true })
+        if (e.Row.Item is LineComparisonAttempt { IsProtected: true })
             e.Cancel = true;
     }
 

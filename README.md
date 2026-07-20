@@ -39,13 +39,15 @@ This fork focuses on reliability and workflow improvements for speedrunners: saf
 * The overlay is display-only and does not change Repeat Last Act or Force Act state.
 * A **hotkey binding** for the Acts Overlay toggle is available in the Settings tab.
 
-### Line Comparison
-* Open **Initialize Line Comparison** in the Advanced tab to time a run segment (a "line") from a fixed start point to an end point using **in-game time** — no LiveSplit needed.
-* Set a **start** and an **end** (each with its own trigger radius), restore to the start, and the timer starts automatically the moment you leave the start and stops when you reach the end.
-* Attempts are collected in a draggable, **stay-on-top** window (OBS-friendly) with a live timer, **editable names**, **delta vs. best**, and the fastest attempt highlighted **gold** — with a subtle gold flash on a new record.
-* Keeps your best 10 attempts, and everything can be driven by **hotkeys** (open window, set start, set end, restore to start) from the Settings tab.
-* **Share lines** — **Export / Import position** turns a line's start and end (full precision, orientation and radii included) into a shareable code, so runners can trade lines and race the exact same segment.
-* **Saved Lines library** — the **List** button opens a manager to save named lines (bosses/segments you train often) and load them in one click. Each saved line keeps its **personal best**, seeds it as a target to beat when loaded, and updates it automatically when you beat it.
+### Segment Timer
+* Open **Segment Timer** in the Advanced tab to practise a boss, skip, or movement segment using **in-game time** — no LiveSplit needed.
+* The start is always positional. The finish can be another position or an **Event Flag** transition; the built-in **Scan** button opens the Event Logger to help find the flag ID.
+* Timing is automatic and standardized: enter the start radius, leave it to begin, then reach the finish radius or trigger the configured flag to stop. Position checks run every 16 ms.
+* The draggable, **stay-on-top** window keeps up to eight session attempts with editable names and deltas. A saved personal best is protected and shown in **gold**; a benchmark imported from another runner is kept separately as a read-only blue **Reference**.
+* **Reset to Start** restores the exact starting position and saved character setup, resets nearby enemies, refills HP/FP and flasks, and revives nearby bosses through boss-size-aware reload ranges.
+* **Saved Segments** stores named segments with their complete definition and character snapshot: positions/radii or finish flag, equipment, stats, flasks, physick, consumables, and per-weapon Ash of War choices.
+* **JSON sharing** can export the selected segment or the complete library. Imports preserve every segment field, skip equivalent definitions, keep the sender's best as a reference, and maintain the recipient's personal PB independently. Versioned exports from the same library round-trip both times exactly.
+* Saved segments live in `%AppData%\TarnishedTool\lines.json`; legacy `lines.txt` libraries migrate automatically.
 
 ### Other Additions
 * **Import from Practice Tool** — import hotkey bindings directly from the Elden Ring Practice Tool, mapping compatible bindings in one click.

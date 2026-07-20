@@ -151,7 +151,8 @@ namespace TarnishedTool
                 itemService, _stateService,
                 paramService, paramRepository, spEffectService, playerService,
                 hotkeyManager, gameTickService, reminderService, aiService,
-                utilityService, chrInsService, aiWindowService, hotkeyNotificationService,
+                utilityService, chrInsService, aiWindowService, eventService, eventLogReader,
+                hotkeyNotificationService,
                 characterSnapshotService
             );
 
@@ -159,6 +160,7 @@ namespace TarnishedTool
             // proven in-place boss-revive + area-reload + rest logic.
             advancedViewModel.LineComparison.SetZoneResetAction(enemyViewModel.ResetZoneInPlace);
             advancedViewModel.LineComparison.SetRestAction(enemyViewModel.RestAndRefresh);
+            advancedViewModel.LineComparison.SetOpenEventLoggerAction(eventViewModel.OpenEventLogger);
 
             var activateOnLaunchManager = new ActivateOnLaunchManager();
             

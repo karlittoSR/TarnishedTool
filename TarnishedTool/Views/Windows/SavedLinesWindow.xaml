@@ -59,12 +59,15 @@
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <TextBlock Grid.Column="0" Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
                         <TextBlock Grid.Column="1" Text="{Binding SnapshotMarker}" Foreground="#3498db"
                                    FontWeight="Bold" Margin="6,0,0,0"
                                    ToolTip="Has a saved character state (gear + stats)" />
-                        <TextBlock Grid.Column="2" Text="{Binding BestText}" Foreground="Gold"
+                        <TextBlock Grid.Column="2" Text="{Binding ReferenceText}" Foreground="#3498db"
+                                   FontWeight="SemiBold" Margin="10,0,0,0" />
+                        <TextBlock Grid.Column="3" Text="{Binding BestText}" Foreground="Gold"
                                    FontWeight="SemiBold" Margin="10,0,0,0" />
                     </Grid>
                 </DataTemplate>
@@ -135,7 +138,7 @@
             <Button Grid.Row="1" Grid.Column="0" Content="Update" Height="28" Margin="3"
                     IsEnabled="{Binding CanOperate}"
                     Command="{Binding UpdateCommand}"
-                    ToolTip="Update the selected segment with the current positions, radii and character state, keeping its name and PB." />
+                    ToolTip="Update the selected segment with the current start, finish and character state, keeping its name, PB and reference." />
             <!-- Debug-only: Load already restores and applies the character. Kept
                  collapsed so the per-step apply error report stays reachable. -->
             <Button Grid.Row="1" Grid.Column="3" Content="Apply Char" Height="28" Margin="3"

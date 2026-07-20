@@ -1,7 +1,9 @@
 //
 
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Globalization;
 using System.Linq;
 using System.Numerics;
 using System.Threading.Tasks;
@@ -20,6 +22,8 @@ public class LineComparisonViewModel : BaseViewModel
 {
     private readonly IPlayerService _playerService;
     private readonly ICharacterSnapshotService _characterSnapshotService;
+    private readonly IEventService _eventService;
+    private readonly IEventLogReader _eventLogReader;
 
     // Resets the current zone (revive bosses, reset mobs, refill flasks). Wired from
     // MainWindow to EnemyViewModel.ResetZoneInPlace so this VM stays decoupled from
@@ -32,6 +36,9 @@ public class LineComparisonViewModel : BaseViewModel
 
     private Action _restAction;
     public void SetRestAction(Action action) => _restAction = action;
+
+    private Action _openEventLoggerAction;
+    public void SetOpenEventLoggerAction(Action action) => _openEventLoggerAction = action;
 
     // A reset (which may warp/reload) is running on a background thread. The phase
     // machine is suppressed until it finishes, then the Tick re-arms cleanly (player
@@ -47,11 +54,14 @@ public class LineComparisonViewModel : BaseViewModel
     private const int MaxAttempts = 8;
     private const int MaxNameLength = 44;
     private const float MinRadius = 0.1f;
+    private const float DefaultStartRadius = 2f;
 
     private Phase _phase = Phase.Idle;
     private Position _start;
     private Position _end;
     private uint _startIgt;
+    private bool _endFlagIsExpected;
+    private bool _flagFinishPending;
     private int _attemptCounter;
     private readonly DispatcherTimer _comparisonTimer;
     private readonly DispatcherTimer _feedbackTimer;
@@ -59,15 +69,21 @@ public class LineComparisonViewModel : BaseViewModel
     private readonly SavedLinesViewModel _savedLinesViewModel;
     private SavedLinesWindow _savedLinesWindow;
     private SavedLine _activeSavedLine;
+    private bool _isWindowOpen;
+    private bool _flagMonitorActive;
 
     // Raised when a recorded attempt beats the previous best (never on the first attempt).
     public event Action NewBest;
 
     public LineComparisonViewModel(IPlayerService playerService,
-        IStateService stateService, ICharacterSnapshotService characterSnapshotService = null)
+        IStateService stateService, IEventService eventService, IEventLogReader eventLogReader,
+        ICharacterSnapshotService characterSnapshotService = null)
     {
         _playerService = playerService;
         _characterSnapshotService = characterSnapshotService;
+        _eventService = eventService;
+        _eventLogReader = eventLogReader;
+        _eventLogReader.EntriesReceived += OnEventLogEntriesReceived;
 
         SetStartCommand = new DelegateCommand(SetStart);
         SetEndCommand = new DelegateCommand(SetEnd);
@@ -75,6 +91,7 @@ public class LineComparisonViewModel : BaseViewModel
         ClearResultsCommand = new DelegateCommand(ClearResults);
         RemoveSelectedCommand = new DelegateCommand(RemoveSelected);
         OpenSavedLinesCommand = new DelegateCommand(OpenSavedLines);
+        ScanEventFlagsCommand = new DelegateCommand(() => _openEventLoggerAction?.Invoke());
 
         _savedLinesViewModel = new SavedLinesViewModel(this, characterSnapshotService);
 
@@ -85,6 +102,7 @@ public class LineComparisonViewModel : BaseViewModel
             CanOperate = true;
         });
         stateService.Subscribe(State.NotLoaded, () => CanOperate = false);
+        stateService.Subscribe(State.Detached, () => CanOperate = false);
 
         // Line crossings need frame-level polling. The shared game tick runs every
         // 64 ms, which can notice both the start and finish several frames late.
@@ -108,6 +126,7 @@ public class LineComparisonViewModel : BaseViewModel
     public ICommand ClearResultsCommand { get; }
     public ICommand RemoveSelectedCommand { get; }
     public ICommand OpenSavedLinesCommand { get; }
+    public ICommand ScanEventFlagsCommand { get; }
 
     #endregion
 
@@ -119,7 +138,58 @@ public class LineComparisonViewModel : BaseViewModel
     public bool CanOperate
     {
         get => _canOperate;
-        set => SetProperty(ref _canOperate, value);
+        set
+        {
+            if (SetProperty(ref _canOperate, value))
+                UpdateFlagMonitor();
+        }
+    }
+
+    public IReadOnlyList<string> FinishTypeOptions { get; } = new[] { "Position", "Event Flag" };
+    public IReadOnlyList<string> FlagValueOptions { get; } = new[] { "ON", "OFF" };
+
+    private int _selectedFinishTypeIndex;
+    public int SelectedFinishTypeIndex
+    {
+        get => _selectedFinishTypeIndex;
+        set
+        {
+            int normalized = value == 1 ? 1 : 0;
+            if (!SetProperty(ref _selectedFinishTypeIndex, normalized)) return;
+            OnPropertyChanged(nameof(IsPositionFinish));
+            OnPropertyChanged(nameof(IsEventFlagFinish));
+            ResetResultsForChangedLine();
+            UpdateFlagMonitor();
+            ReArm();
+        }
+    }
+
+    public bool IsPositionFinish => _selectedFinishTypeIndex == 0;
+    public bool IsEventFlagFinish => _selectedFinishTypeIndex == 1;
+
+    private string _endFlagIdText = "";
+    public string EndFlagIdText
+    {
+        get => _endFlagIdText;
+        set
+        {
+            if (!SetProperty(ref _endFlagIdText, value)) return;
+            ResetResultsForChangedLine();
+            ReArm();
+        }
+    }
+
+    private int _selectedFlagValueIndex;
+    public int SelectedFlagValueIndex
+    {
+        get => _selectedFlagValueIndex;
+        set
+        {
+            int normalized = value == 1 ? 1 : 0;
+            if (!SetProperty(ref _selectedFlagValueIndex, normalized)) return;
+            ResetResultsForChangedLine();
+            ReArm();
+        }
     }
 
     private string _feedbackText = "";
@@ -136,7 +206,14 @@ public class LineComparisonViewModel : BaseViewModel
         set => SetProperty(ref _targetPbText, value);
     }
 
-    private float _startRadius = 1f;
+    private string _targetReferenceText = "";
+    public string TargetReferenceText
+    {
+        get => _targetReferenceText;
+        set => SetProperty(ref _targetReferenceText, value);
+    }
+
+    private float _startRadius = DefaultStartRadius;
     public float StartRadius
     {
         get => _startRadius;
@@ -208,12 +285,16 @@ public class LineComparisonViewModel : BaseViewModel
 
     public void NotifyWindowOpen()
     {
+        _isWindowOpen = true;
+        UpdateFlagMonitor();
         if (!_comparisonTimer.IsEnabled)
             _comparisonTimer.Start();
     }
 
     public void NotifyWindowClosed()
     {
+        _isWindowOpen = false;
+        UpdateFlagMonitor();
         _comparisonTimer.Stop();
     }
 
@@ -223,6 +304,7 @@ public class LineComparisonViewModel : BaseViewModel
         {
             _start = _playerService.CapturePosition();
             StartText = Describe(_start);
+            SetProperty(ref _startRadius, DefaultStartRadius, nameof(StartRadius));
             ResetResultsForChangedLine(); // line definition changed — old attempts no longer comparable
             ReArm();
         }
@@ -308,45 +390,65 @@ public class LineComparisonViewModel : BaseViewModel
         _feedbackTimer.Start();
     }
 
-    // Applies an encoded line definition (start/end + radii). Returns false if invalid.
+    // Applies an encoded segment definition. Returns false if invalid.
     // Detaches from any previously active saved line before loading the new one.
     public bool ApplyCode(string code)
     {
-        if (!LineShareCodec.TryDecode(code, out var start, out var startRadius, out var end, out var endRadius))
+        if (!LineShareCodec.TryDecode(code, out var definition))
             return false;
 
-        _start = start;
-        _end = end;
+        _start = definition.Start;
+        _end = definition.EndPosition;
         StartText = Describe(_start);
-        EndText = Describe(_end);
-        // Set fields directly so the radius setters don't clear twice.
-        SetProperty(ref _startRadius, startRadius < MinRadius ? MinRadius : startRadius, nameof(StartRadius));
-        SetProperty(ref _endRadius, endRadius < MinRadius ? MinRadius : endRadius, nameof(EndRadius));
+        EndText = _end != null ? Describe(_end) : "Not set";
+
+        // Set fields directly so their editing setters do not repeatedly clear
+        // attempts while one complete definition is being loaded.
+        SetProperty(ref _startRadius,
+            definition.StartRadius < MinRadius ? MinRadius : definition.StartRadius, nameof(StartRadius));
+        SetProperty(ref _endRadius,
+            definition.EndRadius < MinRadius ? MinRadius : definition.EndRadius, nameof(EndRadius));
+        SetProperty(ref _selectedFinishTypeIndex,
+            definition.FinishType == SegmentFinishType.EventFlag ? 1 : 0, nameof(SelectedFinishTypeIndex));
+        SetProperty(ref _endFlagIdText,
+            definition.FinishType == SegmentFinishType.EventFlag
+                ? definition.EndFlagId.ToString(CultureInfo.InvariantCulture)
+                : "",
+            nameof(EndFlagIdText));
+        SetProperty(ref _selectedFlagValueIndex,
+            definition.FinishType != SegmentFinishType.EventFlag || definition.EndFlagValue ? 0 : 1,
+            nameof(SelectedFlagValueIndex));
+        OnPropertyChanged(nameof(IsPositionFinish));
+        OnPropertyChanged(nameof(IsEventFlagFinish));
         ResetResultsForChangedLine(); // new line definition
+        UpdateFlagMonitor();
         ReArm();
-        ShowFeedback("Line loaded");
+        ShowFeedback("Segment loaded");
         return true;
     }
 
-    // Loads a library entry: applies its code, tracks it as active (so its PB
-    // auto-updates), seeds the PB as "Attempt 1" (a target to beat), and shows
-    // the PB in the main window.
+    // Loads a library entry and restores its protected PB/reference comparison
+    // rows. Only the local PB is advanced by completed attempts.
     public bool LoadSavedLine(SavedLine line)
     {
         if (line == null || !ApplyCode(line.Code)) return false;
 
         _activeSavedLine = line;
-        EnsurePersistentPbRow();
-        UpdateTargetPb();
+        EnsureComparisonRows();
+        UpdateTargetTimes();
         return true;
     }
 
-    // The current start/end as a shareable code, or null if not both set.
+    // The current typed definition as the token persisted inside SavedLine JSON.
     public string ExportCurrentCode() =>
-        _start != null && _end != null ? LineShareCodec.Encode(_start, StartRadius, _end, EndRadius) : null;
+        TryBuildDefinition(out var definition) ? LineShareCodec.Encode(definition) : null;
 
-    // Best (gold) time currently in the table, or 0 if none.
-    public uint GetCurrentBestMs() => Attempts.Count == 0 ? 0 : Attempts.Min(a => a.ResultMs);
+    // Best local time currently in the table, excluding a shared reference.
+    public uint GetCurrentBestMs()
+    {
+        var localTimes = Attempts.Where(a => !a.IsReference).Select(a => a.ResultMs).ToList();
+        return localTimes.Count == 0 ? 0 : localTimes.Min();
+    }
 
     // Marks a saved line as active so subsequent attempts update its PB live.
     // Used right after Save current, so a freshly saved line starts tracking
@@ -355,42 +457,92 @@ public class LineComparisonViewModel : BaseViewModel
     {
         _activeSavedLine = line;
         if (ensurePersistentPbRow)
-            EnsurePersistentPbRow();
-        UpdateTargetPb();
+            EnsureComparisonRows();
+        UpdateTargetTimes();
     }
 
-    // A saved PB is a permanent comparison baseline for this session. It always
-    // stays first and is visually distinct from the fastest ordinary attempt.
-    private void EnsurePersistentPbRow()
+    // Protected comparison rows are durable data, not session attempts. PB stays
+    // first; an imported reference follows it and is never changed by a run.
+    private void EnsureComparisonRows()
     {
-        if (_activeSavedLine == null || _activeSavedLine.BestMs == 0) return;
+        if (_activeSavedLine == null) return;
 
         var pb = Attempts.FirstOrDefault(a => a.IsPersistentPb);
-        if (pb == null)
+        if (_activeSavedLine.BestMs > 0)
         {
-            pb = new LineComparisonAttempt(0, "PB", _activeSavedLine.BestMs, true);
-            Attempts.Insert(0, pb);
+            if (pb == null)
+            {
+                pb = new LineComparisonAttempt(0, "PB", _activeSavedLine.BestMs, isPersistentPb: true);
+                Attempts.Insert(0, pb);
+            }
+            else
+            {
+                pb.UpdatePersistentPb(_activeSavedLine.BestMs);
+                var index = Attempts.IndexOf(pb);
+                if (index > 0) Attempts.Move(index, 0);
+            }
         }
-        else
+        else if (pb != null)
         {
-            pb.UpdatePersistentPb(_activeSavedLine.BestMs);
-            var index = Attempts.IndexOf(pb);
-            if (index > 0) Attempts.Move(index, 0);
+            Attempts.Remove(pb);
+            pb = null;
+        }
+
+        var reference = Attempts.FirstOrDefault(a => a.IsReference);
+        if (_activeSavedLine.ReferenceMs > 0)
+        {
+            if (reference == null)
+            {
+                reference = new LineComparisonAttempt(0, "Reference",
+                    _activeSavedLine.ReferenceMs, isReference: true);
+                Attempts.Insert(pb == null ? 0 : 1, reference);
+            }
+            else
+            {
+                reference.UpdatePersistentPb(_activeSavedLine.ReferenceMs);
+                var targetIndex = pb == null ? 0 : 1;
+                var index = Attempts.IndexOf(reference);
+                if (index != targetIndex) Attempts.Move(index, targetIndex);
+            }
+        }
+        else if (reference != null)
+        {
+            Attempts.Remove(reference);
         }
 
         RecomputeDeltas();
     }
 
+    // Keep the positional/flag definition usable after deletion, but sever its
+    // ownership link so future runs cannot update an object absent from Lines.
+    public void DetachDeletedSavedLine(SavedLine line)
+    {
+        if (!ReferenceEquals(_activeSavedLine, line)) return;
+
+        _activeSavedLine = null;
+        foreach (var protectedAttempt in Attempts.Where(a => a.IsProtected).ToList())
+            Attempts.Remove(protectedAttempt);
+
+        UpdateTargetTimes();
+        RecomputeDeltas();
+        ShowFeedback("Saved segment deleted; timer is now unsaved");
+    }
+
     private void DetachSavedLine()
     {
         _activeSavedLine = null;
-        UpdateTargetPb();
+        UpdateTargetTimes();
     }
 
-    private void UpdateTargetPb() =>
+    private void UpdateTargetTimes()
+    {
         TargetPbText = _activeSavedLine != null && _activeSavedLine.BestMs > 0
             ? $"PB: {FormatMs(_activeSavedLine.BestMs)}"
             : "";
+        TargetReferenceText = _activeSavedLine != null && _activeSavedLine.ReferenceMs > 0
+            ? $"Ref: {FormatMs(_activeSavedLine.ReferenceMs)}"
+            : "";
+    }
 
     private void OpenSavedLines()
     {
@@ -409,12 +561,12 @@ public class LineComparisonViewModel : BaseViewModel
 
     private void ClearResults()
     {
-        // Clear only this session's runs. The saved PB is durable data and may
-        // only be removed explicitly by selecting its row and removing it.
-        foreach (var attempt in Attempts.Where(a => !a.IsPersistentPb).ToList())
+        // Clear only session runs. PB and reference are durable and can only be
+        // removed explicitly by selecting their protected row.
+        foreach (var attempt in Attempts.Where(a => !a.IsProtected).ToList())
             Attempts.Remove(attempt);
         _attemptCounter = 0;
-        EnsurePersistentPbRow();
+        EnsureComparisonRows();
     }
 
     // Internal line changes must discard the visible attempt table without
@@ -428,6 +580,90 @@ public class LineComparisonViewModel : BaseViewModel
         _attemptCounter = 0;
     }
 
+    private bool TryBuildDefinition(out SegmentDefinition definition)
+    {
+        definition = null;
+        if (_start == null) return false;
+
+        if (IsEventFlagFinish)
+        {
+            if (!TryGetEndFlagId(out uint eventId)) return false;
+            definition = SegmentDefinition.EventFlagFinish(
+                _start, StartRadius, eventId, _selectedFlagValueIndex == 0);
+            return true;
+        }
+
+        if (_end == null) return false;
+        definition = SegmentDefinition.PositionFinish(_start, StartRadius, _end, EndRadius);
+        return true;
+    }
+
+    private bool TryGetEndFlagId(out uint eventId) =>
+        uint.TryParse(_endFlagIdText?.Trim(), NumberStyles.None,
+            CultureInfo.InvariantCulture, out eventId) && eventId > 0;
+
+    private void UpdateFlagMonitor()
+    {
+        bool shouldBeActive = _isWindowOpen && CanOperate && IsEventFlagFinish;
+        if (shouldBeActive == _flagMonitorActive) return;
+
+        if (shouldBeActive)
+        {
+            _eventService.AcquireEventLogger();
+            _eventLogReader.Start();
+        }
+        else
+        {
+            _eventLogReader.Stop();
+            _eventService.ReleaseEventLogger();
+        }
+
+        _flagMonitorActive = shouldBeActive;
+    }
+
+    private void OnEventLogEntriesReceived(List<EventLogEntry> entries)
+    {
+        if (_phase != Phase.Running || !IsEventFlagFinish
+            || !TryGetEndFlagId(out uint eventId))
+            return;
+
+        bool expectedValue = _selectedFlagValueIndex == 0;
+        foreach (var entry in entries)
+        {
+            if (entry.EventId != eventId) continue;
+
+            bool wasExpected = _endFlagIsExpected;
+            _endFlagIsExpected = entry.Value == expectedValue;
+            if (!wasExpected && _endFlagIsExpected)
+            {
+                // Preserve a detected one-shot transition if IGT happens to be
+                // transiently unreadable on this exact frame. Tick retries it.
+                _flagFinishPending = true;
+                TryFinishPendingFlag();
+                return;
+            }
+        }
+    }
+
+    private void TryFinishPendingFlag()
+    {
+        if (!_flagFinishPending || _phase != Phase.Running) return;
+
+        uint igt = _playerService.GetIgt();
+        if (igt == 0 || igt < _startIgt) return;
+
+        _flagFinishPending = false;
+        FinishAttempt(igt - _startIgt);
+    }
+
+    private void FinishAttempt(uint result)
+    {
+        _phase = Phase.Finished;
+        PhaseText = "Finished";
+        LiveTimeText = FormatMs(result);
+        RecordAttempt(result);
+    }
+
     private void RemoveSelected()
     {
         if (SelectedAttempt == null) return;
@@ -436,21 +672,41 @@ public class LineComparisonViewModel : BaseViewModel
         SelectedAttempt = null;
         Attempts.Remove(removed);
 
-        // Ordinary session rows never own the durable PB. Removing the protected
-        // PB row is the one explicit action that clears it from the saved line.
+        // Protected rows are the only explicit way to delete their corresponding
+        // durable value. Ordinary session-row removal never changes saved data.
         if (removed.IsPersistentPb && _activeSavedLine != null)
         {
             _activeSavedLine.BestMs = 0;
-            UpdateTargetPb();
+            UpdateTargetTimes();
             _savedLinesViewModel.Persist();
         }
+        else if (removed.IsReference && _activeSavedLine != null)
+        {
+            _activeSavedLine.ReferenceMs = 0;
+            UpdateTargetTimes();
+            _savedLinesViewModel.Persist();
+        }
+
+        RecomputeDeltas();
     }
 
     private void RecordAttempt(uint result)
     {
-        // Capture the previous best before adding, to detect a new record.
-        var hadAttempts = Attempts.Count > 0;
-        var prevBest = hadAttempts ? Attempts.Min(a => a.ResultMs) : uint.MaxValue;
+        // Defensive ownership check: only an object still present in the saved
+        // library may receive a durable PB update.
+        if (_activeSavedLine != null && !_savedLinesViewModel.Contains(_activeSavedLine))
+            DetachDeletedSavedLine(_activeSavedLine);
+
+        // A shared reference must not suppress a genuine local PB flash. Capture
+        // the local comparison before adding/updating any protected rows.
+        uint previousSavedPb = _activeSavedLine?.BestMs ?? 0;
+        var priorSessionTimes = Attempts.Where(a => !a.IsProtected).Select(a => a.ResultMs).ToList();
+        bool hadLocalComparison = _activeSavedLine != null
+            ? previousSavedPb > 0
+            : priorSessionTimes.Count > 0;
+        uint previousLocalBest = _activeSavedLine != null
+            ? previousSavedPb
+            : (priorSessionTimes.Count > 0 ? priorSessionTimes.Min() : uint.MaxValue);
 
         var number = ++_attemptCounter;
         var name = string.IsNullOrWhiteSpace(NextAttemptName) ? $"Attempt {number}" : NextAttemptName.Trim();
@@ -468,18 +724,18 @@ public class LineComparisonViewModel : BaseViewModel
             // the table. Re-establish the PB from the fastest session run, not
             // blindly from the newest one.
             _activeSavedLine.BestMs = _activeSavedLine.BestMs == 0
-                ? Attempts.Where(a => !a.IsPersistentPb).Min(a => a.ResultMs)
+                ? Attempts.Where(a => !a.IsProtected).Min(a => a.ResultMs)
                 : result;
-            EnsurePersistentPbRow();
-            UpdateTargetPb();
+            EnsureComparisonRows();
+            UpdateTargetTimes();
             _savedLinesViewModel.Persist();
         }
 
-        // Keep the best MaxAttempts ordinary attempts. A persistent PB is a
-        // baseline, not a session attempt, and must never be pruned as the worst.
-        while (Attempts.Count(a => !a.IsPersistentPb) > MaxAttempts)
+        // Keep the best MaxAttempts ordinary attempts. Protected PB/reference
+        // baselines are not session attempts and must never be pruned.
+        while (Attempts.Count(a => !a.IsProtected) > MaxAttempts)
         {
-            var worst = Attempts.Where(a => !a.IsPersistentPb)
+            var worst = Attempts.Where(a => !a.IsProtected)
                 .OrderByDescending(a => a.ResultMs).First();
             Attempts.Remove(worst);
         }
@@ -488,7 +744,7 @@ public class LineComparisonViewModel : BaseViewModel
         RecomputeDeltas();
 
         // Flash only on a genuine improvement — never on the first attempt.
-        if (hadAttempts && result < prevBest)
+        if (hadLocalComparison && result < previousLocalBest)
             NewBest?.Invoke();
     }
 
@@ -497,19 +753,26 @@ public class LineComparisonViewModel : BaseViewModel
         if (Attempts.Count == 0) return;
 
         var persistentPb = Attempts.FirstOrDefault(a => a.IsPersistentPb);
-        var bestMs = persistentPb?.ResultMs ?? Attempts.Min(a => a.ResultMs);
+        var reference = Attempts.FirstOrDefault(a => a.IsReference);
+        var protectedBaseline = persistentPb ?? reference;
+        var bestMs = protectedBaseline?.ResultMs ?? Attempts.Min(a => a.ResultMs);
         foreach (var a in Attempts)
         {
-            // With an all-time PB baseline, only that protected row is gold. If
-            // there is no baseline, retain the original session-best behaviour.
-            a.IsBest = persistentPb != null ? ReferenceEquals(a, persistentPb) : a.ResultMs == bestMs;
-            a.DeltaText = a.IsBest ? "—" : TimeFormatter.SignedDelta((long)a.ResultMs - bestMs);
+            // A personal PB remains the sole gold row. Reference-only saves use
+            // their reference for deltas without presenting it as a personal PB.
+            a.IsBest = persistentPb != null
+                ? ReferenceEquals(a, persistentPb)
+                : reference == null && a.ResultMs == bestMs;
+            a.DeltaText = ReferenceEquals(a, protectedBaseline) || a.IsBest
+                ? "—"
+                : TimeFormatter.SignedDelta((long)a.ResultMs - bestMs);
         }
     }
 
     private void ReArm()
     {
-        if (_start != null && _end != null)
+        _flagFinishPending = false;
+        if (TryBuildDefinition(out _))
         {
             _phase = Phase.Armed;
             PhaseText = "Go to start";
@@ -527,7 +790,7 @@ public class LineComparisonViewModel : BaseViewModel
         try
         {
             if (!CanOperate) return;
-            if (_start == null || _end == null) return;
+            if (!TryBuildDefinition(out _)) return;
 
             // While a reset (warp/reload) runs, don't advance the phase machine —
             // transient positions during a quitout would false-start the timer.
@@ -569,6 +832,12 @@ public class LineComparisonViewModel : BaseViewModel
                         var startIgt = _playerService.GetIgt();
                         if (startIgt == 0) break; // transient read — don't start on a bad baseline
                         _startIgt = startIgt;
+                        _flagFinishPending = false;
+                        if (IsEventFlagFinish && TryGetEndFlagId(out uint eventId))
+                        {
+                            bool expectedValue = _selectedFlagValueIndex == 0;
+                            _endFlagIsExpected = _eventService.GetEvent(eventId) == expectedValue;
+                        }
                         _phase = Phase.Running;
                         PhaseText = "Running";
                     }
@@ -586,13 +855,13 @@ public class LineComparisonViewModel : BaseViewModel
 
                     LiveTimeText = FormatMs(igt - _startIgt);
 
-                    if (Distance(current, _end) <= EndRadius)
+                    if (IsEventFlagFinish)
                     {
-                        var result = igt - _startIgt;
-                        _phase = Phase.Finished;
-                        PhaseText = "Finished";
-                        LiveTimeText = FormatMs(result);
-                        RecordAttempt(result);
+                        TryFinishPendingFlag();
+                    }
+                    else if (Distance(current, _end) <= EndRadius)
+                    {
+                        FinishAttempt(igt - _startIgt);
                     }
                     break;
             }

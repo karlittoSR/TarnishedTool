@@ -260,7 +260,7 @@
                         <Border.ToolTip>
                             <ToolTip MaxWidth="300">
                                 <TextBlock TextWrapping="Wrap"
-                                           Text="Time a segment between fixed start and finish positions using in-game time. The timer starts automatically when you leave the start radius and stops when you enter the finish radius, then compares each attempt with your PB — no LiveSplit needed." />
+                                           Text="Time a segment using in-game time. The start is always positional; the finish can be a position or an event-flag transition. Attempts start automatically when you leave the start radius and are compared with your personal PB or an imported reference — no LiveSplit needed." />
                             </ToolTip>
                         </Border.ToolTip>
                         <TextBlock Text="i"

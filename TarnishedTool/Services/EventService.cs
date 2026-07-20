@@ -11,6 +11,8 @@ namespace TarnishedTool.Services
 {
     public class EventService(IMemoryService memoryService, HookManager hookManager, IReminderService reminderService) : IEventService
     {
+        private readonly object _eventLoggerLock = new();
+        private int _eventLoggerUsers;
         
         public void SetEvent(long eventId, bool flagValue)
         {
@@ -74,7 +76,29 @@ namespace TarnishedTool.Services
                 SetEvent(eventId, !GetEvent(eventId));
         }
         
-        public void ToggleEventLogger(bool isEnabled)
+        // The Event tab's scanner and Segment Timer can consume the same hook at
+        // once. Reference counting prevents either consumer from uninstalling it
+        // while the other still needs flag transitions.
+        public void AcquireEventLogger()
+        {
+            lock (_eventLoggerLock)
+            {
+                if (_eventLoggerUsers++ == 0)
+                    SetEventLoggerEnabled(true);
+            }
+        }
+
+        public void ReleaseEventLogger()
+        {
+            lock (_eventLoggerLock)
+            {
+                if (_eventLoggerUsers == 0) return;
+                if (--_eventLoggerUsers == 0)
+                    SetEventLoggerEnabled(false);
+            }
+        }
+
+        private void SetEventLoggerEnabled(bool isEnabled)
         {
             var code = CodeCaveOffsets.Base + CodeCaveOffsets.EventLogCode;
             if (isEnabled)
