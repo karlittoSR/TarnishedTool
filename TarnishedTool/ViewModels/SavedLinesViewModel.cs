@@ -1,6 +1,8 @@
 //
 
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Windows.Input;
 using TarnishedTool.Core;
 using TarnishedTool.Interfaces;
@@ -29,6 +31,23 @@ public class SavedLinesViewModel : BaseViewModel
         _lineComparison = lineComparison;
         _characterSnapshotService = characterSnapshotService;
 
+        // Mirror the load state so the buttons grey out in the main menu.
+        _lineComparison.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(LineComparisonViewModel.CanOperate))
+                OnPropertyChanged(nameof(CanOperate));
+        };
+
+        // Ash of war cannot be read off a mounted weapon, so it is chosen here and
+        // stored with the save. "Default" means the weapon's class default, which
+        // is what a spawned weapon gets when nothing is chosen.
+        AshOptions.Add(new AshOfWar { Id = -1, Name = "Default (weapon's own)" });
+        foreach (var ash in DataLoader.GetAshOfWars().OrderBy(a => a.Name))
+            AshOptions.Add(ash);
+
+        foreach (var weapon in DataLoader.GetWeapons())
+            _weaponNames[(uint)weapon.Id - ((uint)weapon.Id % 10000)] = weapon.Name;
+
         foreach (var line in SavedLinesStore.Load())
             Lines.Add(line);
 
@@ -44,7 +63,98 @@ public class SavedLinesViewModel : BaseViewModel
     public SavedLine SelectedLine
     {
         get => _selectedLine;
-        set => SetProperty(ref _selectedLine, value);
+        set
+        {
+            if (!SetProperty(ref _selectedLine, value)) return;
+            RefreshLineWeapons();
+        }
+    }
+
+    #region Ash of war
+
+    // A weapon inside the selected save, paired with the ash chosen for it.
+    public class LineWeapon
+    {
+        public EquippedItem Item { get; set; }
+        public string Display { get; set; }
+        public override string ToString() => Display;
+    }
+
+    private static readonly string[] WeaponSlotNames =
+        { "L.Hand 1", "R.Hand 1", "L.Hand 2", "R.Hand 2", "L.Hand 3", "R.Hand 3" };
+
+    public ObservableCollection<LineWeapon> LineWeapons { get; } = new();
+
+    // "Default" first, so clearing a choice is obvious.
+    public ObservableCollection<AshOfWar> AshOptions { get; } = new();
+
+    private LineWeapon _selectedLineWeapon;
+    public LineWeapon SelectedLineWeapon
+    {
+        get => _selectedLineWeapon;
+        set
+        {
+            if (!SetProperty(ref _selectedLineWeapon, value)) return;
+            // Show whatever ash this weapon already carries.
+            _selectedAsh = AshOptions.FirstOrDefault(a => a.Id == (value?.Item.AshOfWarId ?? -1))
+                           ?? AshOptions.FirstOrDefault();
+            OnPropertyChanged(nameof(SelectedAsh));
+        }
+    }
+
+    private AshOfWar _selectedAsh;
+    public AshOfWar SelectedAsh
+    {
+        get => _selectedAsh;
+        set
+        {
+            if (!SetProperty(ref _selectedAsh, value)) return;
+            if (SelectedLineWeapon?.Item == null || value == null) return;
+
+            SelectedLineWeapon.Item.AshOfWarId = value.Id;
+            Persist();
+        }
+    }
+
+    private void RefreshLineWeapons()
+    {
+        LineWeapons.Clear();
+
+        var items = SelectedLine?.Snapshot?.Equipment?.Items;
+        if (items != null)
+        {
+            foreach (var item in items.Where(i => i.Slot < WeaponSlotNames.Length).OrderBy(i => i.Slot))
+            {
+                var name = _weaponNames.TryGetValue(BaseWeaponId(item.ItemId), out var n) ? n : "Unknown";
+                LineWeapons.Add(new LineWeapon
+                {
+                    Item = item,
+                    Display = $"{WeaponSlotNames[item.Slot]} — {name}"
+                });
+            }
+        }
+
+        SelectedLineWeapon = LineWeapons.FirstOrDefault();
+    }
+
+    private static uint BaseWeaponId(uint itemId) => itemId - (itemId % 10000);
+
+    private readonly Dictionary<uint, string> _weaponNames = new();
+
+    #endregion
+
+    // True only while a character is actually loaded. Everything here reads or
+    // writes player memory, so acting from the main menu crashes the game — the
+    // pointers it walks (PlayerGameData, ChrIns, the inventory) do not exist yet.
+    public bool CanOperate => _lineComparison.CanOperate;
+
+    // Guards every action that touches the game. Returns false (and says why)
+    // when there is nothing loaded to act on.
+    private bool RequireLoadedGame()
+    {
+        if (CanOperate) return true;
+        MsgBox.Show("Load into the game first — saves can't be used from the main menu.");
+        return false;
     }
 
     // Loading a save also puts you on its start: the line goes into the timer and
@@ -53,7 +163,7 @@ public class SavedLinesViewModel : BaseViewModel
     // line first, which is what RestoreToStart reads to apply the snapshot.
     private void LoadSelected()
     {
-        if (SelectedLine == null) return;
+        if (SelectedLine == null || !RequireLoadedGame()) return;
         if (!_lineComparison.LoadSavedLine(SelectedLine))
         {
             MsgBox.Show("This save's line code is invalid and could not be loaded.");
@@ -65,6 +175,8 @@ public class SavedLinesViewModel : BaseViewModel
 
     private void SaveCurrent()
     {
+        if (!RequireLoadedGame()) return;
+
         var code = _lineComparison.ExportCurrentCode();
         if (code == null)
         {
@@ -89,34 +201,47 @@ public class SavedLinesViewModel : BaseViewModel
         SelectedLine = line;
     }
 
-    // Re-captures the current character state onto the selected line in place,
-    // keeping its name, line geometry, and PB. Lets you refresh (or add) a
-    // snapshot on an existing line without deleting and re-creating it.
+    // Re-captures the current line definition and character state onto the
+    // selected save in place, keeping its name and PB.
     private void UpdateSelected()
     {
-        if (SelectedLine == null) return;
+        if (SelectedLine == null || !RequireLoadedGame()) return;
         if (_characterSnapshotService == null)
         {
             MsgBox.Show("Character snapshots are unavailable (game not attached).");
             return;
         }
 
+        var code = _lineComparison.ExportCurrentCode();
+        if (code == null)
+        {
+            MsgBox.Show("Set a start and an end first, then update.");
+            return;
+        }
+
         if (!MsgBox.ShowYesNo(
-                $"Update \"{SelectedLine.Name}\" with the current character state (gear + stats + flasks)?",
+                $"Update \"{SelectedLine.Name}\" with the current positions, radii and character state (gear + stats + flasks)?",
                 "Update Line"))
             return;
 
-        SelectedLine.Snapshot = _characterSnapshotService.Capture();
+        var refreshed = _characterSnapshotService.Capture();
+
+        // Ash of war is authored by hand in lines.json (it cannot be read off a
+        // mounted weapon), so carry it over rather than losing it on every Update.
+        refreshed?.Equipment?.PreserveAshFrom(SelectedLine.Snapshot?.Equipment);
+
+        SelectedLine.UpdateCode(code);
+        SelectedLine.Snapshot = refreshed;
         Persist();
 
         // Track it as active so subsequent attempts keep updating its PB.
-        _lineComparison.SetActiveSavedLine(SelectedLine);
+        _lineComparison.SetActiveSavedLine(SelectedLine, ensurePersistentPbRow: true);
     }
 
     // Applies the selected line's captured character state (stats + equipment).
     private void ApplyCharacter()
     {
-        if (SelectedLine == null) return;
+        if (SelectedLine == null || !RequireLoadedGame()) return;
         if (_characterSnapshotService == null) return;
         if (SelectedLine.Snapshot == null)
         {

@@ -151,8 +151,7 @@ public class LineComparisonViewModel : BaseViewModel
         {
             if (SetProperty(ref _startRadius, value < MinRadius ? MinRadius : value))
             {
-                ClearResults(); // trigger zone changed — old attempts no longer comparable
-                DetachSavedLine();
+                ResetResultsForChangedLine(); // trigger zone changed — old attempts no longer comparable
             }
         }
     }
@@ -165,8 +164,7 @@ public class LineComparisonViewModel : BaseViewModel
         {
             if (SetProperty(ref _endRadius, value < MinRadius ? MinRadius : value))
             {
-                ClearResults();
-                DetachSavedLine();
+                ResetResultsForChangedLine();
             }
         }
     }
@@ -235,8 +233,7 @@ public class LineComparisonViewModel : BaseViewModel
         {
             _start = _playerService.CapturePosition();
             StartText = Describe(_start);
-            ClearResults(); // line definition changed — old attempts no longer comparable
-            DetachSavedLine();
+            ResetResultsForChangedLine(); // line definition changed — old attempts no longer comparable
             ReArm();
         }
         catch { }
@@ -248,8 +245,7 @@ public class LineComparisonViewModel : BaseViewModel
         {
             _end = _playerService.CapturePosition();
             EndText = Describe(_end);
-            ClearResults();
-            DetachSavedLine();
+            ResetResultsForChangedLine();
             ReArm();
         }
         catch { }
@@ -280,17 +276,25 @@ public class LineComparisonViewModel : BaseViewModel
         {
             try
             {
-                _resetZoneAction?.Invoke(start);
+                bool warped = _resetZoneAction?.Invoke(start) ?? false;
 
-                // Boss case: WarpToBlockId already landed at the exact start; this
-                // raw-writes the same coords (same area now, no second warp). No-boss
-                // case: this is the actual teleport to start — and it must BLOCK,
-                // because a cross-area restore warps. Applying the character while
-                // that warp is still running is undone by the load (HP/FP come back
-                // from storage), which looked like "warp after changing gear, then
-                // no full life/mana". Safe to block here: we are already on a
-                // background task, so the UI thread is never stalled.
-                try { _playerService.RestorePosBlocking(start); } catch { }
+                // Only restore the position when the reset did NOT warp.
+                //
+                // A warp has already placed the player exactly: WarpToBlockId forces
+                // the saved coords through its write hook and waits out both fade
+                // phases. Running the position restore on top is redundant and
+                // actively unsafe — it moves by a DELTA computed from the position
+                // read immediately after a cross-area load, when coords and block id
+                // can still be mid-transition. A bad read produces a huge delta,
+                // which the long-distance path applies with gravity disabled; gravity
+                // returns a second later and the player falls out of the world.
+                //
+                // No-boss case: nothing warped, so this is the actual teleport, and
+                // it must BLOCK so the character is not applied mid-warp (the load
+                // would restore HP/FP from storage). Safe to block — we are already
+                // on a background task, so the UI thread is never stalled.
+                if (!warped)
+                    try { _playerService.RestorePosBlocking(start); } catch { }
 
                 if (snapshot != null)
                     try { _characterSnapshotService?.Apply(snapshot); } catch { }
@@ -349,8 +353,7 @@ public class LineComparisonViewModel : BaseViewModel
         // Set fields directly so the radius setters don't clear twice.
         SetProperty(ref _startRadius, startRadius < MinRadius ? MinRadius : startRadius, nameof(StartRadius));
         SetProperty(ref _endRadius, endRadius < MinRadius ? MinRadius : endRadius, nameof(EndRadius));
-        ClearResults(); // new line definition
-        DetachSavedLine();
+        ResetResultsForChangedLine(); // new line definition
         ReArm();
         ShowFeedback("Line imported");
         return true;
@@ -364,11 +367,7 @@ public class LineComparisonViewModel : BaseViewModel
         if (line == null || !ApplyCode(line.Code)) return false;
 
         _activeSavedLine = line;
-        if (line.BestMs > 0)
-        {
-            _attemptCounter = 1;
-            Attempts.Add(new LineComparisonAttempt(1, "PB", line.BestMs));
-        }
+        EnsurePersistentPbRow();
         UpdateTargetPb();
         return true;
     }
@@ -383,10 +382,35 @@ public class LineComparisonViewModel : BaseViewModel
     // Marks a saved line as active so subsequent attempts update its PB live.
     // Used right after Save current, so a freshly saved line starts tracking
     // immediately (the first boss time attaches to it).
-    public void SetActiveSavedLine(SavedLine line)
+    public void SetActiveSavedLine(SavedLine line, bool ensurePersistentPbRow = false)
     {
         _activeSavedLine = line;
+        if (ensurePersistentPbRow)
+            EnsurePersistentPbRow();
         UpdateTargetPb();
+    }
+
+    // A saved PB is a permanent comparison baseline for this session. It always
+    // stays first and is visually distinct from the fastest ordinary attempt.
+    private void EnsurePersistentPbRow()
+    {
+        if (_activeSavedLine == null || _activeSavedLine.BestMs == 0) return;
+
+        var pb = Attempts.FirstOrDefault(a => a.IsPersistentPb);
+        if (pb == null)
+        {
+            pb = new LineComparisonAttempt(1, "PB", _activeSavedLine.BestMs, true);
+            Attempts.Insert(0, pb);
+            if (_attemptCounter < 1) _attemptCounter = 1;
+        }
+        else
+        {
+            pb.UpdatePersistentPb(_activeSavedLine.BestMs);
+            var index = Attempts.IndexOf(pb);
+            if (index > 0) Attempts.Move(index, 0);
+        }
+
+        RecomputeDeltas();
     }
 
     private void DetachSavedLine()
@@ -419,12 +443,44 @@ public class LineComparisonViewModel : BaseViewModel
     {
         Attempts.Clear();
         _attemptCounter = 0;
+        SyncSavedLineBest();
+    }
+
+    // Internal line changes must discard the visible attempt table without
+    // treating that discard as a request to erase the saved line's PB. Detach
+    // first so a future change to the clearing logic cannot persist an empty
+    // table back to the previous save.
+    private void ResetResultsForChangedLine()
+    {
+        DetachSavedLine();
+        Attempts.Clear();
+        _attemptCounter = 0;
     }
 
     private void RemoveSelected()
     {
-        if (SelectedAttempt != null)
-            Attempts.Remove(SelectedAttempt);
+        if (SelectedAttempt == null) return;
+
+        Attempts.Remove(SelectedAttempt);
+        SyncSavedLineBest();
+    }
+
+    // Re-derives the saved line's gold from what is actually in the table, and
+    // persists it. Recording an attempt only ever moves the stored best DOWN, so
+    // without this, deleting a mistaken gold (or clearing the table) left the save
+    // showing a time that no longer exists anywhere. Also covers deleting the last
+    // row, which correctly clears the gold back to none.
+    private void SyncSavedLineBest()
+    {
+        if (_activeSavedLine == null) return;
+
+        uint best = GetCurrentBestMs(); // 0 when there are no attempts left
+        if (_activeSavedLine.BestMs == best) return;
+
+        // The setter raises PropertyChanged, so the saves list updates live.
+        _activeSavedLine.BestMs = best;
+        UpdateTargetPb();
+        _savedLinesViewModel.Persist();
     }
 
     private void CopyResults()
@@ -467,37 +523,47 @@ public class LineComparisonViewModel : BaseViewModel
 
         Attempts.Add(new LineComparisonAttempt(number, name, result));
 
-        // Keep only the best MaxAttempts rows: when full, drop the slowest.
-        while (Attempts.Count > MaxAttempts)
+        // Live PB: if a saved line is loaded and this attempt beats its stored
+        // best, update it and persist. When this session started with a persistent
+        // PB row, advance that same protected row instead of turning the ordinary
+        // attempt into a separate session gold.
+        if (_activeSavedLine != null && (_activeSavedLine.BestMs == 0 || result < _activeSavedLine.BestMs))
         {
-            var worst = Attempts.OrderByDescending(a => a.ResultMs).First();
+            _activeSavedLine.BestMs = result;
+            var persistentPb = Attempts.FirstOrDefault(a => a.IsPersistentPb);
+            persistentPb?.UpdatePersistentPb(result);
+            UpdateTargetPb();
+            _savedLinesViewModel.Persist();
+        }
+
+        // Keep the best MaxAttempts ordinary attempts. A persistent PB is a
+        // baseline, not a session attempt, and must never be pruned as the worst.
+        while (Attempts.Count(a => !a.IsPersistentPb) > MaxAttempts)
+        {
+            var worst = Attempts.Where(a => !a.IsPersistentPb)
+                .OrderByDescending(a => a.ResultMs).First();
             Attempts.Remove(worst);
         }
 
         NextAttemptName = "";
-        // Deltas/best recomputed via Attempts.CollectionChanged.
+        RecomputeDeltas();
 
         // Flash only on a genuine improvement — never on the first attempt.
         if (hadAttempts && result < prevBest)
             NewBest?.Invoke();
-
-        // Live PB: if a saved line is loaded and this attempt beats its stored
-        // best, update it and persist (keeps the library's gold up to date).
-        if (_activeSavedLine != null && (_activeSavedLine.BestMs == 0 || result < _activeSavedLine.BestMs))
-        {
-            _activeSavedLine.BestMs = result;
-            UpdateTargetPb();
-            _savedLinesViewModel.Persist();
-        }
     }
 
     private void RecomputeDeltas()
     {
         if (Attempts.Count == 0) return;
-        var bestMs = Attempts.Min(a => a.ResultMs);
+
+        var persistentPb = Attempts.FirstOrDefault(a => a.IsPersistentPb);
+        var bestMs = persistentPb?.ResultMs ?? Attempts.Min(a => a.ResultMs);
         foreach (var a in Attempts)
         {
-            a.IsBest = a.ResultMs == bestMs;
+            // With an all-time PB baseline, only that protected row is gold. If
+            // there is no baseline, retain the original session-best behaviour.
+            a.IsBest = persistentPb != null ? ReferenceEquals(a, persistentPb) : a.ResultMs == bestMs;
             a.DeltaText = a.IsBest ? "—" : TimeFormatter.SignedDelta((long)a.ResultMs - bestMs);
         }
     }

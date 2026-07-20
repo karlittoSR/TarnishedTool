@@ -9,21 +9,38 @@ namespace TarnishedTool.Models;
 public class LineComparisonAttempt : INotifyPropertyChanged
 {
     public int Number { get; }
-    public uint ResultMs { get; }
+    public bool IsPersistentPb { get; }
+
+    private uint _resultMs;
+    public uint ResultMs => _resultMs;
     public string ResultText => TimeFormatter.Mmssmmm(ResultMs);
 
-    public LineComparisonAttempt(int number, string name, uint resultMs)
+    public LineComparisonAttempt(int number, string name, uint resultMs, bool isPersistentPb = false)
     {
         Number = number;
         _name = name;
-        ResultMs = resultMs;
+        _resultMs = resultMs;
+        IsPersistentPb = isPersistentPb;
+    }
+
+    // Only the view model may advance the persistent PB after a genuine record.
+    public void UpdatePersistentPb(uint resultMs)
+    {
+        if (!IsPersistentPb || _resultMs == resultMs) return;
+        _resultMs = resultMs;
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ResultMs)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ResultText)));
     }
 
     private string _name;
     public string Name
     {
         get => _name;
-        set => SetProperty(ref _name, value);
+        set
+        {
+            if (IsPersistentPb) return;
+            SetProperty(ref _name, value);
+        }
     }
 
     // Delta vs the current best attempt. Recomputed by the view model.

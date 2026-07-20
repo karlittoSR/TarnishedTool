@@ -2,7 +2,9 @@
 
 using System;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Media.Animation;
+using TarnishedTool.Models;
 using TarnishedTool.Utilities;
 using TarnishedTool.ViewModels;
 
@@ -50,6 +52,12 @@ public partial class LineComparisonWindow : TopmostWindow
             EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut }
         };
         GoldFlash.BeginAnimation(OpacityProperty, anim);
+    }
+
+    private void AttemptsGrid_BeginningEdit(object sender, DataGridBeginningEditEventArgs e)
+    {
+        if (e.Row.Item is LineComparisonAttempt { IsPersistentPb: true })
+            e.Cancel = true;
     }
 
     protected override void OnClosing(System.ComponentModel.CancelEventArgs e)

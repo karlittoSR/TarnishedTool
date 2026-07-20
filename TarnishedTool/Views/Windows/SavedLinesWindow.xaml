@@ -9,12 +9,13 @@
                        Style="{StaticResource DefaultWindowStyle}"
                        WindowStyle="None"
                        AllowsTransparency="True"
-                       Title="Saves" Height="420" Width="380">
+                       Title="Saves" Height="520" Width="380">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="30" />
             <RowDefinition Height="30" />
             <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
@@ -70,16 +71,45 @@
             </ListBox.ItemTemplate>
         </ListBox>
 
-        <WrapPanel Grid.Row="3" HorizontalAlignment="Center" Margin="10">
+        <!-- Ash of war: chosen per weapon because the mounted ash cannot be read
+             back off a weapon, so it has to be recorded with the save. -->
+        <Border Grid.Row="3" BorderThickness="1" BorderBrush="#333" CornerRadius="3"
+                Margin="10,8,10,0" Padding="8">
+            <Border.ToolTip>
+                <ToolTip MaxWidth="320">
+                    <TextBlock TextWrapping="Wrap"
+                               Text="Ash of War for this save's weapons.&#x0a;&#x0a;When you load a save, any weapon you don't already own has to be spawned — and a spawned weapon only ever comes with its class default skill, because the ash you mounted can't be read back off the original. Pick the ash here and it gets stored with the save, so the weapon is spawned with the right skill (and stays correct when you share the save or upgrade the weapon).&#x0a;&#x0a;Weapons you already own are equipped untouched and keep their ash regardless." />
+                </ToolTip>
+            </Border.ToolTip>
+            <StackPanel>
+                <TextBlock Text="Ash of War" FontWeight="SemiBold" Margin="0,0,0,5" />
+                <ComboBox ItemsSource="{Binding LineWeapons}"
+                          SelectedItem="{Binding SelectedLineWeapon, Mode=TwoWay}"
+                          DisplayMemberPath="Display"
+                          Height="26" VerticalContentAlignment="Center"
+                          ToolTip="Weapon in this save." />
+                <ComboBox ItemsSource="{Binding AshOptions}"
+                          SelectedItem="{Binding SelectedAsh, Mode=TwoWay}"
+                          DisplayMemberPath="Name"
+                          Margin="0,4,0,0"
+                          Height="26" VerticalContentAlignment="Center"
+                          ToolTip="Ash of War to give that weapon when it has to be spawned." />
+            </StackPanel>
+        </Border>
+
+        <WrapPanel Grid.Row="4" HorizontalAlignment="Center" Margin="10">
             <Button Content="Load" Width="70" Height="28" Margin="3"
+                    IsEnabled="{Binding CanOperate}"
                     Command="{Binding LoadCommand}"
                     ToolTip="Load this save's line and immediately restore to its start." />
             <Button Content="Import" Width="70" Height="28" Margin="3"
+                    IsEnabled="{Binding CanOperate}"
                     Command="{Binding SaveCurrentCommand}"
                     ToolTip="Import the current line plus the current character state as a new save." />
             <Button Content="Update" Width="70" Height="28" Margin="3"
+                    IsEnabled="{Binding CanOperate}"
                     Command="{Binding UpdateCommand}"
-                    ToolTip="Re-capture the current character state (gear + stats + flasks) onto the selected save, keeping its name and PB." />
+                    ToolTip="Update the selected save with the current positions, radii and character state, keeping its name and PB." />
             <!-- Debug-only: Load already restores and applies the character. Kept
                  collapsed so the per-step apply error report stays reachable. -->
             <Button Content="Apply Char" Width="80" Height="28" Margin="3"

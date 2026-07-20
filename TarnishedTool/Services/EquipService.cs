@@ -2,9 +2,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using TarnishedTool.Enums;
-using TarnishedTool.GameIds;
 using TarnishedTool.Interfaces;
 using TarnishedTool.Memory;
 using TarnishedTool.Models;
@@ -19,9 +16,7 @@ namespace TarnishedTool.Services;
 //
 // The item must already be in the inventory (spawn it first). This only performs
 // the equip half; capture/clear come later.
-public class EquipService(
-    IMemoryService memoryService, IItemService itemService,
-    IParamService paramService, IParamRepository paramRepository) : IEquipService
+public class EquipService(IMemoryService memoryService, IItemService itemService) : IEquipService
 {
     // EquipItemStruct field offsets (92-byte struct, rest is padding/zeroed).
     private const int SlotFieldOffset = 0x08;      // equipment_slot (uint32)
@@ -78,7 +73,8 @@ public class EquipService(
     // toggles, so re-equipping the item already in a slot is how we both skip
     // no-op slots (by leaving them) and unequip (by toggling the current item off).
     // Finally restores the ChrAsm control block (grip + active armament).
-    // Note: custom ashes of war aren't captured, so weapons re-apply with default ash.
+    // Note: a weapon that must be spawned gets the ash of war authored on the
+    // snapshot (EquippedItem.AshOfWarId); the mounted ash cannot be read back.
     public void ApplyEquipment(EquipmentSnapshot snapshot)
     {
         if (!IsAvailable || snapshot == null) return;
@@ -91,10 +87,10 @@ public class EquipService(
         // Target ids by slot for quick lookup. Skip Unarmed/empty ids so a slot the
         // snapshot leaves empty (incl. legacy snapshots that stored Unarmed=110000)
         // is unequipped, never spawned/equipped.
-        var target = new Dictionary<int, uint>();
+        var target = new Dictionary<int, EquippedItem>();
         foreach (var item in snapshot.Items)
             if (!IsEmptySlotId(item.ItemId))
-                target[item.Slot] = item.ItemId;
+                target[item.Slot] = item;
 
         // Raise the talisman pouch count to cover both current and snapshot while we
         // work, so equip/unequip on any talisman slot is valid; it's set to the
@@ -110,8 +106,9 @@ public class EquipService(
             uint cur = current[slot];
             bool curFilled = !IsEmptySlotId(cur);
 
-            if (target.TryGetValue(slot, out uint want))
+            if (target.TryGetValue(slot, out var wanted))
             {
+                uint want = wanted.ItemId;
                 if (curFilled && cur == want) continue; // already correct — leave it
 
                 uint fullId = want + CategoryPrefix(slot);
@@ -119,15 +116,16 @@ public class EquipService(
                 // Only spawn what the player does not already own. Spawning creates a
                 // FRESH copy, so equipping the one already in the inventory keeps its
                 // ash of war and stops gear being duplicated on every restore.
-                if (!IsInInventory(playerGameData, fullId))
+                bool owned = IsInInventory(playerGameData, fullId);
+
+                if (!owned)
                 {
-                    // Spawning with aowId -1 gives the weapon CLASS default skill, not
-                    // the weapon's own: a spawned Rogier's Rapier came back with the
-                    // generic Repeating Thrust instead of its Glintblade Phalanx.
-                    // Resolve the weapon's native ash and spawn with it. -1 for
-                    // armour/talismans, and as a fallback if the lookup fails.
-                    int aowId = IsWeaponSlot(slot) ? ResolveNativeGemId(want) : -1;
-                    itemService.SpawnItem((int)fullId, 1, aowId, false, 1);
+                    // A spawned weapon otherwise gets its CLASS default skill, not the
+                    // one it was carrying — the mounted ash lives on the item instance
+                    // and cannot be read back, so the snapshot carries a hand-authored
+                    // gem id instead (see EquippedItem.AshOfWarId). -1 keeps the old
+                    // behaviour, which is what every un-authored weapon gets.
+                    itemService.SpawnItem((int)fullId, 1, wanted.AshOfWarId, false, 1);
                 }
 
                 Equip(fullId, slot);
@@ -194,97 +192,19 @@ public class EquipService(
         return snapshot;
     }
 
-    // Slots 0-11 are weapons and ammo; only those carry an ash of war.
-    private static bool IsWeaponSlot(int slot) => slot >= 0 && slot < 12;
-
-    // Weapon ids are base + affinity*100 + upgrade, with the base a multiple of
-    // 10000 — so the param row for the weapon itself is the id with that stripped.
-    private const int WeaponBaseIdModulus = 10000;
-
-    // The weapon's own ash of war, as an EquipParamGem row id, or -1 if it cannot
-    // be resolved (caller then falls back to the previous -1 behaviour).
-    //
-    // EquipParamWeapon.swordArtsParamId names the weapon's native skill, and the
-    // gem that grants that skill is the EquipParamGem row with the same
-    // swordArtsParamId — so the mapping is a reverse lookup over the gem table,
-    // built once and cached.
-    private Dictionary<int, int> _gemBySwordArt;
-
-    private int ResolveNativeGemId(uint weaponItemId)
-    {
-        try
-        {
-            uint baseId = weaponItemId - (weaponItemId % WeaponBaseIdModulus);
-
-            int swordArtsOffset = GetFieldOffset(Param.EquipParamWeapon, "swordArtsParamId");
-            if (swordArtsOffset < 0) return -1;
-
-            var (wepTable, wepSlot) = ParamIndices.All["EquipParamWeapon"];
-            var weaponRow = paramService.GetParamRow(wepTable, wepSlot, baseId);
-            if (weaponRow == IntPtr.Zero) return -1;
-
-            int swordArtsId = memoryService.Read<int>(weaponRow + swordArtsOffset);
-            if (swordArtsId <= 0) return -1;
-
-            return GemBySwordArt().TryGetValue(swordArtsId, out int gemId) ? gemId : -1;
-        }
-        catch { return -1; }
-    }
-
-    private Dictionary<int, int> GemBySwordArt()
-    {
-        if (_gemBySwordArt != null) return _gemBySwordArt;
-
-        var map = new Dictionary<int, int>();
-        try
-        {
-            int offset = GetFieldOffset(Param.EquipParamGem, "swordArtsParamId");
-            var (gemTable, gemSlot) = ParamIndices.All["EquipParamGem"];
-            var gems = paramRepository.GetParam(Param.EquipParamGem);
-
-            if (offset >= 0 && gems?.Entries != null)
-            {
-                foreach (var entry in gems.Entries)
-                {
-                    var row = paramService.GetParamRow(gemTable, gemSlot, entry.Id);
-                    if (row == IntPtr.Zero) continue;
-
-                    int swordArtsId = memoryService.Read<int>(row + offset);
-                    // Several gem rows share a skill; keep the lowest id, which is
-                    // the ordinary obtainable version rather than a variant.
-                    if (swordArtsId > 0 &&
-                        (!map.TryGetValue(swordArtsId, out int existing) || entry.Id < existing))
-                        map[swordArtsId] = (int)entry.Id;
-                }
-            }
-        }
-        catch { /* leave the map empty — callers fall back to -1 */ }
-
-        _gemBySwordArt = map;
-        return map;
-    }
-
-    // Param field offsets are computed by walking the row layout (ParamRepository),
-    // so they are resolved by name once and cached rather than hardcoded.
-    private readonly Dictionary<(Param, string), int> _fieldOffsets = new();
-
-    private int GetFieldOffset(Param param, string fieldName)
-    {
-        if (_fieldOffsets.TryGetValue((param, fieldName), out int cached)) return cached;
-
-        int resolved = -1;
-        try
-        {
-            var loaded = paramRepository.GetParam(param);
-            var field = loaded?.Fields?.FirstOrDefault(f => f.InternalName == fieldName);
-            if (field != null) resolved = field.Offset;
-        }
-        catch { resolved = -1; }
-
-        _fieldOffsets[(param, fieldName)] = resolved;
-        return resolved;
-    }
-
+    // not in PlayerGameData, so it must live on the item instance. Each inventory
+    // entry carries a ga_item handle at +0x00; the matching GaItem record should sit
+    // in one of the buffers hanging off the EquipInventoryData header (its +0x08
+    // reads 0xC00 = 3072, which looks like a GaItem capacity). Search those buffers
+    // for the weapon id and dump the surrounding bytes so the record layout — and
+    // the gem field inside it — can be read off directly.
+    // weapon param (Rogier's Rapier's param default is Repeating Thrust with
+    // gemMountType=2, i.e. changeable). Before assuming it needs the GaItem struct,
+    // check the cheap possibility: a gem id array sitting inside PlayerGameData
+    // near the equipped-item list. Reads PGD once and reports every dword that
+    // matches a known EquipParamGem row id.
+    // row that grants it, so the correct gem to pass as SpawnItem's aowId can be
+    // identified from real data instead of guessed. Reads nothing destructively.
     // Guard so a bad count can never send the walk into unmapped memory.
     private const int MaxInventoryEntries = 4096;
 

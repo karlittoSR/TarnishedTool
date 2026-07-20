@@ -92,9 +92,11 @@ public class InventoryService(
         foreach (var item in snapshot.Items)
             target[item.GoodId] = item.Quantity;
 
+        var seen = ReadHeldGoods().ToList();
+
         // Trim or remove what's held now, then top up the rest.
         var held = new HashSet<uint>();
-        foreach (var (goodId, quantity) in ReadHeldGoods())
+        foreach (var (goodId, quantity) in seen)
         {
             if (!IsRestorableConsumable(goodId)) continue;
             held.Add(goodId);
@@ -246,7 +248,7 @@ public class InventoryService(
     {
         if (IsOwnedByAnotherSystem(goodId)) return false;
 
-        if (GetGoodsField(goodId, "isConsume") is not byte isConsume || isConsume == 0)
+        if (GetGoodsField(goodId, "isConsume") is not int isConsume || isConsume == 0)
             return false;
 
         var type = GetGoodsType(goodId);
@@ -254,45 +256,33 @@ public class InventoryService(
     }
 
     private GoodsType? GetGoodsType(uint goodId) =>
-        GetGoodsField(goodId, "goodsType") is byte raw ? (GoodsType)raw : null;
+        GetGoodsField(goodId, "goodsType") is int raw ? (GoodsType)(byte)raw : null;
 
-    // Reads a single-byte EquipParamGoods field by name. Returns null when the
-    // field or the row cannot be resolved.
-    private byte? GetGoodsField(uint goodId, string fieldName)
+    // Reads an EquipParamGoods field by name, decoded through the param service so
+    // BITFIELDS are handled. Many u8 fields here (isConsume, isEquip, isDiscard…)
+    // are single bits packed into a shared byte — reading the raw byte returns the
+    // whole packed set (e.g. 223) rather than the flag, which is what made the
+    // consumable filter pass everything. Returns null if it cannot be resolved.
+    private int? GetGoodsField(uint goodId, string fieldName)
     {
-        int offset = GetFieldOffset(fieldName);
-        if (offset < 0) return null;
+        try
+        {
+            var loaded = paramRepository.GetParam(Param.EquipParamGoods);
+            var field = loaded?.Fields?.FirstOrDefault(f => f.InternalName == fieldName);
+            if (field == null || loaded.RowSize <= 0) return null;
 
-        var row = paramService.GetParamRow(EquipParamGoodsTable, EquipParamGoodsSlot, goodId);
-        if (row == IntPtr.Zero) return null;
+            var row = paramService.GetParamRow(EquipParamGoodsTable, EquipParamGoodsSlot, goodId);
+            if (row == IntPtr.Zero) return null;
 
-        try { return memoryService.Read<byte>(row + offset); }
+            var bytes = paramService.ReadRow(row, loaded.RowSize);
+            var value = paramService.ReadFieldFromBytes(bytes, field);
+            return value == null ? null : Convert.ToInt32(value);
+        }
         catch { return null; }
     }
 
     private int EquipParamGoodsTable => ParamIndices.All["EquipParamGoods"].TableIndex;
     private int EquipParamGoodsSlot => ParamIndices.All["EquipParamGoods"].SlotIndex;
-
-    // Field offsets are computed by walking the row layout (see ParamRepository),
-    // so they are resolved by name once and cached rather than hardcoded.
-    private readonly Dictionary<string, int> _fieldOffsets = new();
-
-    private int GetFieldOffset(string fieldName)
-    {
-        if (_fieldOffsets.TryGetValue(fieldName, out int cached)) return cached;
-
-        int resolved = -1;
-        try
-        {
-            var loaded = paramRepository.GetParam(Param.EquipParamGoods);
-            var field = loaded?.Fields?.FirstOrDefault(f => f.InternalName == fieldName);
-            if (field != null) resolved = field.Offset;
-        }
-        catch { resolved = -1; }
-
-        _fieldOffsets[fieldName] = resolved;
-        return resolved;
-    }
 
     #endregion
 

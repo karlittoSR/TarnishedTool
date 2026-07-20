@@ -78,8 +78,7 @@ namespace TarnishedTool
             IEzStateService ezStateService = new EzStateService(_memoryService);
             IItemService itemService = new ItemService(_memoryService);
             IParamRepository paramRepository = new ParamRepository();
-            IEquipService equipService =
-                new EquipService(_memoryService, itemService, paramService, paramRepository);
+            IEquipService equipService = new EquipService(_memoryService, itemService);
             IFlaskService flaskService = new FlaskService(ezStateService, _memoryService);
             IInventoryService inventoryService =
                 new InventoryService(_memoryService, paramService, paramRepository, ezStateService, itemService);

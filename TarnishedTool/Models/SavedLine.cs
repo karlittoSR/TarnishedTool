@@ -16,7 +16,17 @@ namespace TarnishedTool.Models;
 // equipment) means adding a property + constructor parameter here.
 public class SavedLine : INotifyPropertyChanged
 {
-    public string Code { get; }
+    private string _code;
+    public string Code
+    {
+        get => _code;
+        private set
+        {
+            if (_code == value) return;
+            _code = value;
+            Raise(nameof(Code));
+        }
+    }
 
     public SavedLine(string name, string code, uint bestMs = 0)
     {
@@ -24,6 +34,10 @@ public class SavedLine : INotifyPropertyChanged
         Code = code;
         _bestMs = bestMs;
     }
+
+    // Replaces the saved start/end positions and radii while keeping the entry's
+    // identity, PB and character snapshot intact.
+    public void UpdateCode(string code) => Code = code;
 
     private string _name;
     public string Name

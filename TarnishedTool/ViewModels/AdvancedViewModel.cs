@@ -99,6 +99,10 @@ public class AdvancedViewModel : BaseViewModel
     public ICommand InjectScriptCommand { get; set; }
     public ICommand OpenLineComparisonCommand { get; set; }
 
+    // Opens the saves list on its own, without the comparison timer — for
+    // practising a fight when the timing is not the point.
+    public ICommand OpenSavedLinesCommand => _lineComparisonViewModel.OpenSavedLinesCommand;
+
     #endregion
 
     #region Properties
