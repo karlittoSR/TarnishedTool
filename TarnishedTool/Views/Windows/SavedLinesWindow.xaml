@@ -9,7 +9,7 @@
                        Style="{StaticResource DefaultWindowStyle}"
                        WindowStyle="None"
                        AllowsTransparency="True"
-                       Title="Saved Lines" Height="420" Width="380">
+                       Title="Saves" Height="420" Width="380">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="30" />
@@ -18,7 +18,7 @@
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <controls:TitleBar Grid.Row="0" Title="Saved Lines" />
+        <controls:TitleBar Grid.Row="0" Title="Saves" />
 
         <Grid Grid.Row="1">
             <CheckBox x:Name="AlwaysOnTopCheckBox"
@@ -73,16 +73,19 @@
         <WrapPanel Grid.Row="3" HorizontalAlignment="Center" Margin="10">
             <Button Content="Load" Width="70" Height="28" Margin="3"
                     Command="{Binding LoadCommand}"
-                    ToolTip="Load this line's start/end into the timer." />
-            <Button Content="Save current" Width="90" Height="28" Margin="3"
+                    ToolTip="Load this save's line and immediately restore to its start." />
+            <Button Content="Import" Width="70" Height="28" Margin="3"
                     Command="{Binding SaveCurrentCommand}"
-                    ToolTip="Save the current line plus the current character state (gear + stats)." />
+                    ToolTip="Import the current line plus the current character state as a new save." />
             <Button Content="Update" Width="70" Height="28" Margin="3"
                     Command="{Binding UpdateCommand}"
-                    ToolTip="Re-capture the current character state (gear + stats + flasks) onto the selected line, keeping its name and PB." />
+                    ToolTip="Re-capture the current character state (gear + stats + flasks) onto the selected save, keeping its name and PB." />
+            <!-- Debug-only: Load already restores and applies the character. Kept
+                 collapsed so the per-step apply error report stays reachable. -->
             <Button Content="Apply Char" Width="80" Height="28" Margin="3"
+                    Visibility="Collapsed"
                     Command="{Binding ApplyCharacterCommand}"
-                    ToolTip="Apply this line's saved character state (stats then gear) to your character." />
+                    ToolTip="Apply this save's character state (stats then gear) to your character." />
             <Button Content="Rename" Width="70" Height="28" Margin="3"
                     Command="{Binding RenameCommand}" />
             <Button Content="Delete" Width="70" Height="28" Margin="3"

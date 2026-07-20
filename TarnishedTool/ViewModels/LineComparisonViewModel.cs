@@ -255,71 +255,56 @@ public class LineComparisonViewModel : BaseViewModel
         catch { }
     }
 
-    // Opt-in: also reset the zone (revive bosses to first-encounter, reset mobs,
-    // refill flasks) when restoring to start. Persisted across sessions.
-    private bool _resetZoneOnRestore = SettingsManager.Default.ResetZoneOnRestore;
-    public bool ResetZoneOnRestore
-    {
-        get => _resetZoneOnRestore;
-        set
-        {
-            if (!SetProperty(ref _resetZoneOnRestore, value)) return;
-            SettingsManager.Default.ResetZoneOnRestore = value;
-            SettingsManager.Default.Save();
-        }
-    }
-
     public void RestoreToStart()
     {
         if (_start == null) return;
 
-        if (ResetZoneOnRestore)
+        // The zone reset is always attempted — no opt-in toggle. ResetZoneInPlace
+        // already decides for itself whether the destination has a boss: if it does
+        // it revives and warps, otherwise it does nothing and this is just a
+        // teleport. A checkbox added nothing the boss lookup doesn't know, and
+        // silently disabled the revive AND the rest when left off.
+        //
+        // The reset may warp (WarpToBlockId blocks until the fade completes), so
+        // run the whole sequence on a background thread IN ORDER — reset → snap
+        // exact start → apply char → rest — to avoid a racing second warp. Suppress
+        // the timer meanwhile; the Tick re-arms once _reArmPending is set.
+        _resetInProgress = true;
+        _resetStart = DateTime.Now;
+        ReArm(); // show Armed / 00:00 immediately
+
+        var start = _start;
+        var snapshot = _activeSavedLine?.Snapshot;
+
+        _ = Task.Run(() =>
         {
-            // The reset may warp (WarpToBlockId blocks until the fade completes), so
-            // run the whole sequence on a background thread IN ORDER — reset → snap
-            // exact start → apply char — to avoid a racing second warp. Suppress the
-            // timer meanwhile; the Tick re-arms once _reArmPending is set.
-            _resetInProgress = true;
-            _resetStart = DateTime.Now;
-            ReArm(); // show Armed / 00:00 immediately
-
-            var start = _start;
-            var snapshot = _activeSavedLine?.Snapshot;
-
-            _ = Task.Run(() =>
+            try
             {
-                try
-                {
-                    bool warped = _resetZoneAction?.Invoke(start) ?? false;
+                _resetZoneAction?.Invoke(start);
 
-                    // Boss case: WarpToBlockId already landed at the exact start; this
-                    // raw-writes the same coords (same area now, no second warp). No-boss
-                    // case: this is the actual teleport to start.
-                    try { _playerService.RestorePos(start); } catch { }
+                // Boss case: WarpToBlockId already landed at the exact start; this
+                // raw-writes the same coords (same area now, no second warp). No-boss
+                // case: this is the actual teleport to start — and it must BLOCK,
+                // because a cross-area restore warps. Applying the character while
+                // that warp is still running is undone by the load (HP/FP come back
+                // from storage), which looked like "warp after changing gear, then
+                // no full life/mana". Safe to block here: we are already on a
+                // background task, so the UI thread is never stalled.
+                try { _playerService.RestorePosBlocking(start); } catch { }
 
-                    if (snapshot != null)
-                        try { _characterSnapshotService?.Apply(snapshot); } catch { }
+                if (snapshot != null)
+                    try { _characterSnapshotService?.Apply(snapshot); } catch { }
 
-                    // Rest LAST — after the char's stats are applied — so the flask/HP/FP
-                    // refill uses the final max values and leaves no gap.
-                    try { _restAction?.Invoke(); } catch { }
-                }
-                finally
-                {
-                    _reArmPending = true;
-                    _resetInProgress = false;
-                }
-            });
-
-            return;
-        }
-
-        // Reset off: instant raw teleport + char.
-        try { _playerService.RestorePos(_start); } catch { }
-        if (_activeSavedLine?.Snapshot != null)
-            try { _characterSnapshotService?.Apply(_activeSavedLine.Snapshot); } catch { }
-
-        ReArm();
+                // Rest LAST — after the char's stats are applied — so the flask/HP/FP
+                // refill uses the final max values and leaves no gap.
+                try { _restAction?.Invoke(); } catch { }
+            }
+            finally
+            {
+                _reArmPending = true;
+                _resetInProgress = false;
+            }
+        });
     }
 
     private void ExportPositions()

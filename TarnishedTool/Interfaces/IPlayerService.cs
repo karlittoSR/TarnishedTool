@@ -15,6 +15,10 @@ public interface IPlayerService
     void SavePos(int index);
     void RestorePos(int index);
     void RestorePos(Position savedPos);
+
+    // RestorePos, but a cross-area warp completes before returning. Use when later
+    // steps must run with the player already at the destination.
+    void RestorePosBlocking(Position savedPos);
     Position CapturePosition();
     uint GetIgt();
     void MoveToPosition(Position targetPosition);

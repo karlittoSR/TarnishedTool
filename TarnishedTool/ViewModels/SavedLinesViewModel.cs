@@ -47,11 +47,20 @@ public class SavedLinesViewModel : BaseViewModel
         set => SetProperty(ref _selectedLine, value);
     }
 
+    // Loading a save also puts you on its start: the line goes into the timer and
+    // is then restored, so a save is one click (or double-click) from being ready
+    // to run — zone reset, character state and all. LoadSavedLine sets the active
+    // line first, which is what RestoreToStart reads to apply the snapshot.
     private void LoadSelected()
     {
         if (SelectedLine == null) return;
         if (!_lineComparison.LoadSavedLine(SelectedLine))
-            MsgBox.Show("This saved line's code is invalid and could not be loaded.");
+        {
+            MsgBox.Show("This save's line code is invalid and could not be loaded.");
+            return;
+        }
+
+        _lineComparison.RestoreToStart();
     }
 
     private void SaveCurrent()

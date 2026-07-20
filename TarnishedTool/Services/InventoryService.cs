@@ -106,14 +106,23 @@ public class InventoryService(
         foreach (var kvp in target)
         {
             if (held.Contains(kvp.Key) || kvp.Value <= 0) continue;
+
+            // Same filter as the capture side. Without it this path could grant an
+            // item the filter rejects — including anything recorded by an older
+            // snapshot taken under looser rules, which is how permanent tools and
+            // tutorial notes kept being re-granted.
+            if (!IsRestorableConsumable(kvp.Key)) continue;
+
             ChangeQuantity(kvp.Key, kvp.Value); // not held at all — grant the stack
         }
 
         // Re-read and report only what failed to land, so a silent partial restore
-        // cannot go unnoticed.
+        // cannot go unnoticed. Entries the filter rejects are skipped — legacy
+        // snapshots hold non-consumables we deliberately no longer touch.
         var after = ReadHeldGoods().ToDictionary(g => g.GoodId, g => g.Quantity);
         foreach (var kvp in target)
         {
+            if (!IsRestorableConsumable(kvp.Key)) continue;
             after.TryGetValue(kvp.Key, out int now);
             if (now != kvp.Value) log.AppendLine($"  {kvp.Key}: wanted {kvp.Value}, got {now}");
         }
@@ -224,52 +233,65 @@ public class InventoryService(
         goodId == 250 || goodId == 251 ||      // Flask of Wondrous Physick
         (goodId >= 11000 && goodId < 11100);   // crystal tears
 
-    // Unknown rows (param lookup failed) are treated as protected — never touched.
+    // Restorable = actually a consumable. The decisive test is the param's own
+    // "isConsume" flag: items consumed on use (pots, greases, kukri, exalted
+    // flesh) are in scope, while permanently-owned tools (Spectral Steed Whistle,
+    // Tarnished's Wizened Finger, Memory of Grace) and tutorial notes are not.
+    // Without this the snapshot captured those permanent items and re-granted them
+    // on every restore, producing a wall of "item acquired" popups.
+    //
+    // Unknown rows (param lookup failed, e.g. ids that resolve to no real item)
+    // are treated as protected — never granted or removed.
     private bool IsRestorableConsumable(uint goodId)
     {
         if (IsOwnedByAnotherSystem(goodId)) return false;
+
+        if (GetGoodsField(goodId, "isConsume") is not byte isConsume || isConsume == 0)
+            return false;
 
         var type = GetGoodsType(goodId);
         return type.HasValue && !ProtectedGoodsTypes.Contains(type.Value);
     }
 
-    private GoodsType? GetGoodsType(uint goodId)
+    private GoodsType? GetGoodsType(uint goodId) =>
+        GetGoodsField(goodId, "goodsType") is byte raw ? (GoodsType)raw : null;
+
+    // Reads a single-byte EquipParamGoods field by name. Returns null when the
+    // field or the row cannot be resolved.
+    private byte? GetGoodsField(uint goodId, string fieldName)
     {
-        int offset = GoodsTypeFieldOffset;
+        int offset = GetFieldOffset(fieldName);
         if (offset < 0) return null;
 
         var row = paramService.GetParamRow(EquipParamGoodsTable, EquipParamGoodsSlot, goodId);
         if (row == IntPtr.Zero) return null;
 
-        try { return (GoodsType)memoryService.Read<byte>(row + offset); }
+        try { return memoryService.Read<byte>(row + offset); }
         catch { return null; }
     }
 
     private int EquipParamGoodsTable => ParamIndices.All["EquipParamGoods"].TableIndex;
     private int EquipParamGoodsSlot => ParamIndices.All["EquipParamGoods"].SlotIndex;
 
-    // Resolved once from the param field definitions (offsets are computed by
-    // walking the row layout, so they are not hardcoded here).
-    private int? _goodsTypeFieldOffset;
+    // Field offsets are computed by walking the row layout (see ParamRepository),
+    // so they are resolved by name once and cached rather than hardcoded.
+    private readonly Dictionary<string, int> _fieldOffsets = new();
 
-    private int GoodsTypeFieldOffset
+    private int GetFieldOffset(string fieldName)
     {
-        get
+        if (_fieldOffsets.TryGetValue(fieldName, out int cached)) return cached;
+
+        int resolved = -1;
+        try
         {
-            if (_goodsTypeFieldOffset.HasValue) return _goodsTypeFieldOffset.Value;
-
-            int resolved = -1;
-            try
-            {
-                var loaded = paramRepository.GetParam(Param.EquipParamGoods);
-                var field = loaded?.Fields?.FirstOrDefault(f => f.InternalName == "goodsType");
-                if (field != null) resolved = field.Offset;
-            }
-            catch { resolved = -1; }
-
-            _goodsTypeFieldOffset = resolved;
-            return resolved;
+            var loaded = paramRepository.GetParam(Param.EquipParamGoods);
+            var field = loaded?.Fields?.FirstOrDefault(f => f.InternalName == fieldName);
+            if (field != null) resolved = field.Offset;
         }
+        catch { resolved = -1; }
+
+        _fieldOffsets[fieldName] = resolved;
+        return resolved;
     }
 
     #endregion

@@ -85,7 +85,17 @@ namespace TarnishedTool.Services
 
         public void RestorePos(int index) => RestorePos(_positions[index]);
 
-        public void RestorePos(Position savedPos)
+        public void RestorePos(Position savedPos) => RestorePosCore(savedPos, blockOnWarp: false);
+
+        // Synchronous variant for ordered sequences (the line-comparison reset).
+        // A cross-area restore warps, and WarpToBlockId blocks until the fade
+        // completes — but RestorePos deliberately fires it on a background task so
+        // callers on the UI thread are not stalled. That makes it unusable when
+        // later steps must observe the arrival: applying the character mid-warp is
+        // undone by the load, which restores HP/FP from storage. This variant waits.
+        public void RestorePosBlocking(Position savedPos) => RestorePosCore(savedPos, blockOnWarp: true);
+
+        private void RestorePosCore(Position savedPos, bool blockOnWarp)
         {
             var currentPos = GetPlayerPosition();
 
@@ -116,6 +126,10 @@ namespace TarnishedTool.Services
                     ScheduleNoGravityReset(isRiding);
             }
 
+            else if (blockOnWarp)
+            {
+                travelService.WarpToBlockId(savedPos);
+            }
             else
             {
                 _ = Task.Run(() => travelService.WarpToBlockId(savedPos));
