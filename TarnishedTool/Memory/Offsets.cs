@@ -688,6 +688,28 @@ namespace TarnishedTool.Memory
             public static int ChrAsmWepSlotSel => UsesDlcCharacterLayout ? 0x328 : 0x32C;
             public const int WepSlotSelCount = 6;
 
+            // Pointer to the live memorized-spell structure. The structure itself
+            // has fourteen 8-byte entries beginning at +0x10 (raw MagicParam id
+            // followed by a companion dword), then the selected entry at +0x80.
+            // Capture and restore are validated on both 1.07 and DLC layouts.
+            public static int EquipMagicData => UsesDlcCharacterLayout ? 0x530 : 0x518;
+            public const int EquipMagicSlotStart = 0x10;
+            public const int EquipMagicSlotStride = 0x08;
+            public const int EquipMagicSlotCount = 14;
+            public const int EquipMagicSelectedSlot = 0x80;
+
+            // Number of memory slots currently available to the character. This
+            // is read and captured as a safety constraint; spell restore does not
+            // grant Memory Stones or write this progression value.
+            public static int MagicSlotCapacity => UsesDlcCharacterLayout ? 0xA74 : 0xA4C;
+
+            // ChangeMagic resolves spell inventory handles through this header.
+            // Before the DLC it is the inline EquipInventoryData at +0x408. In
+            // DLC-era layouts the canonical header is pointed to by +0x5D0.
+            public const int DlcMagicInventoryDataPointer = 0x5D0;
+            public const int InventoryTailDataIndex = 0x1C;
+            public const int InventoryMaxEntries = 2689;
+
             // Number of Talisman Pouches owned (0-3). Gates which talisman equip
             // slots (17-20) are valid, so a snapshot must restore it before
             // equipping talismans.
@@ -1009,6 +1031,8 @@ namespace TarnishedTool.Memory
             // Equip POC — resolved by AOB (see Pattern.EquipItem / Pattern.GetInventoryId).
             public static long EquipItem;
             public static long GetInventoryId;
+            public static long ChangeMagic;
+            public static int ChangeMagicItemIdField;
         }
 
         public static class Patches

@@ -263,19 +263,96 @@ namespace TarnishedTool.Memory
 #endif
         }
 
-        // Equip proof-of-concept. Resolved by AOB on EVERY startup (known and
-        // unknown versions) so it's version-proof without a hardcoded per-version
-        // offset table: the pattern locates the function on whatever build matches.
+        // Equipment and memorized-spell functions. Resolved by AOB on every
+        // startup so supported builds do not rely on hardcoded function offsets.
         public void ScanEquipFunctions()
         {
             Functions.EquipItem = FindAddressByPattern(Pattern.EquipItem).ToInt64();
             Functions.GetInventoryId = FindAddressByPattern(Pattern.GetInventoryId).ToInt64();
+            Functions.ChangeMagic = GameDataMan.UsesDlcCharacterLayout
+                ? FindAddressByPattern(Pattern.ChangeMagicDlc).ToInt64()
+                : FindPreDlcChangeMagicWrapper().ToInt64();
 
 #if DEBUG
             var baseAddr = memoryService.BaseAddress;
             Console.WriteLine($@"Funcs.EquipItem: 0x{Functions.EquipItem:X} (base+0x{Functions.EquipItem - baseAddr:X})");
             Console.WriteLine($@"Funcs.GetInventoryId: 0x{Functions.GetInventoryId:X} (base+0x{Functions.GetInventoryId - baseAddr:X})");
+            Console.WriteLine($@"Funcs.ChangeMagic: 0x{Functions.ChangeMagic:X} (base+0x{Functions.ChangeMagic - baseAddr:X})");
 #endif
+        }
+
+        private IntPtr FindPreDlcChangeMagicWrapper()
+        {
+            // The short historical wrapper signature occurs twice in 1.07. Only
+            // one candidate calls the function which walks PlayerGameData+0x518
+            // (EquipMagicData); the other operates on a different character
+            // array. Resolve the call target and prove the +0x518 access instead
+            // of trusting whichever match happens to be first in the executable.
+            byte[] equipMagicAccess = [0x48, 0x8B, 0x9B, 0x18, 0x05, 0x00, 0x00];
+            foreach (IntPtr wrapper in FindAddressesByPattern(Pattern.ChangeMagicPreDlc, 8))
+            {
+                int relativeCall = memoryService.Read<int>(wrapper + 0xC);
+                IntPtr target = wrapper + 0x10 + relativeCall;
+                byte[] body = memoryService.ReadBytes(target, 0x100);
+                if (ContainsSequence(body, equipMagicAccess) &&
+                    TryResolvePreDlcMagicItemIdField(target, out int itemIdField))
+                {
+                    Functions.ChangeMagicItemIdField = itemIdField;
+                    return wrapper;
+                }
+            }
+
+            return IntPtr.Zero;
+        }
+
+        private bool TryResolvePreDlcMagicItemIdField(IntPtr changeTarget, out int fieldOffset)
+        {
+            fieldOffset = 0;
+
+            // In the validated pre-DLC target, the first call parses the item
+            // data pointer which the wrapper passes as struct+0x10. Its helper
+            // starts with either `mov eax,[rcx+disp8]` or the disp32 form. Read
+            // that displacement so field movement across old builds is detected
+            // from the executable itself (1.07 resolves to 0x10+0x4C = 0x5C).
+            byte[] targetHead = memoryService.ReadBytes(changeTarget, 0x30);
+            const int parserCall = 0x1C;
+            if (targetHead.Length < parserCall + 5 || targetHead[parserCall] != 0xE8)
+                return false;
+
+            int parserRelative = BitConverter.ToInt32(targetHead, parserCall + 1);
+            IntPtr parser = changeTarget + parserCall + 5 + parserRelative;
+            byte[] parserHead = memoryService.ReadBytes(parser, 8);
+
+            int dataOffset;
+            if (parserHead[0] == 0x8B && parserHead[1] == 0x41)
+                dataOffset = parserHead[2];
+            else if (parserHead[0] == 0x8B && parserHead[1] == 0x81)
+                dataOffset = BitConverter.ToInt32(parserHead, 2);
+            else
+                return false;
+
+            fieldOffset = 0x10 + dataOffset;
+            return fieldOffset >= 0x10 && fieldOffset <= 0x7C;
+        }
+
+        private static bool ContainsSequence(byte[] data, byte[] sequence)
+        {
+            if (data == null || sequence == null || sequence.Length == 0 ||
+                data.Length < sequence.Length)
+                return false;
+
+            for (int i = 0; i <= data.Length - sequence.Length; i++)
+            {
+                bool matches = true;
+                for (int j = 0; j < sequence.Length; j++)
+                {
+                    if (data[i + j] == sequence[j]) continue;
+                    matches = false;
+                    break;
+                }
+                if (matches) return true;
+            }
+            return false;
         }
 
         private void TryPatternWithFallback(string name, Pattern pattern, Action<IntPtr> setter,

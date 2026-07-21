@@ -4,7 +4,7 @@ namespace TarnishedTool.Models;
 
 // A full character state that can be attached to a saved line: equipment (with
 // its ChrAsm control block and talisman pouch count), stats, rune level, DLC
-// blessing levels, flasks, physick and consumables.
+// blessing levels, memorized spells, flasks, physick and consumables.
 public class CharacterSnapshot
 {
     public EquipmentSnapshot Equipment { get; set; } = new();
@@ -15,6 +15,10 @@ public class CharacterSnapshot
     // one of those legacy snapshots must leave the player's current levels alone.
     public int? ScadutreeBlessingLevel { get; set; }
     public int? ReveredSpiritAshBlessingLevel { get; set; }
+
+    // Null on snapshots created before memorized spells were tracked. Applying
+    // one of those snapshots must leave the player's current spells untouched.
+    public SpellLoadoutSnapshot Spells { get; set; }
 
     // Null on legacy snapshots captured before flasks were tracked.
     public FlaskSnapshot Flasks { get; set; }

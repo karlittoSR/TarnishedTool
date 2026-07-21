@@ -102,5 +102,10 @@ namespace TarnishedTool.Memory
         public const int EquipStruct = 0x4200;   // EquipItemStruct (0x5C bytes, zeroed): equipment_slot @+0x08, inventory_slot @+0x58
         public const int EquipItemId = 0x4270;   // uint32 item id that find_inventoryid searches for
         public const int EquipCode = 0x4280;     // shellcode: find_inventoryid -> equip
+
+        // Memorized-spell restore. Kept separate from equipment because the game
+        // functions have different structs and calling conventions.
+        public const int SpellStruct = 0x4300;   // ChangeMagic input (0x80 bytes)
+        public const int SpellCode = 0x4380;     // one synchronous ChangeMagic call
     }
 }

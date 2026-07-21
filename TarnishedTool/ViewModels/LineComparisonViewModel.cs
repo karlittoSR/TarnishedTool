@@ -350,6 +350,7 @@ public class LineComparisonViewModel : BaseViewModel
 
         _ = Task.Run(() =>
         {
+            string characterApplyErrors = null;
             try
             {
                 bool warped = _resetZoneAction?.Invoke(start) ?? false;
@@ -373,11 +374,26 @@ public class LineComparisonViewModel : BaseViewModel
                     try { _playerService.RestorePosBlocking(start); } catch { }
 
                 if (snapshot != null)
-                    try { _characterSnapshotService?.Apply(snapshot); } catch { }
+                {
+                    try { characterApplyErrors = _characterSnapshotService?.Apply(snapshot); }
+                    catch (Exception ex) { characterApplyErrors = ex.Message; }
+                }
 
                 // Rest LAST — after the char's stats are applied — so the flask/HP/FP
                 // refill uses the final max values and leaves no gap.
                 try { _restAction?.Invoke(); } catch { }
+
+                if (!string.IsNullOrWhiteSpace(characterApplyErrors))
+                {
+                    var errors = characterApplyErrors;
+                    System.Windows.Application.Current?.Dispatcher?.BeginInvoke(
+                        DispatcherPriority.Normal,
+                        new Action(() =>
+                        {
+                            try { System.Windows.Clipboard.SetDataObject(errors, true); } catch { }
+                            MsgBox.Show(errors + "\n(copied to clipboard)", "Restore Character");
+                        }));
+                }
             }
             finally
             {

@@ -11,7 +11,7 @@ namespace TarnishedTool.Services;
 // character state needs saving or restoring.
 public class CharacterSnapshotService(
     IEquipService equipService, IPlayerService playerService, IFlaskService flaskService,
-    IInventoryService inventoryService)
+    IInventoryService inventoryService, ISpellLoadoutService spellLoadoutService)
     : ICharacterSnapshotService
 {
     public CharacterSnapshot Capture()
@@ -25,6 +25,7 @@ public class CharacterSnapshotService(
             // These bytes do not represent blessings before the DLC layout.
             ScadutreeBlessingLevel = dlcLayout ? playerService.GetScadu() : null,
             ReveredSpiritAshBlessingLevel = dlcLayout ? playerService.GetSpiritAsh() : null,
+            Spells = spellLoadoutService?.Capture(),
             Flasks = flaskService?.CaptureFlasks(),
             Physick = inventoryService?.CapturePhysick(),
             Consumables = inventoryService?.CaptureConsumables(),
@@ -59,6 +60,9 @@ public class CharacterSnapshotService(
 
         if (snapshot.Equipment != null)
             Step("Equipment", () => equipService.ApplyEquipment(snapshot.Equipment));
+
+        if (snapshot.Spells != null)
+            Step("Spells", () => spellLoadoutService?.Apply(snapshot.Spells));
 
         // Flasks after stats: stat changes move max HP/FP, so set the charge
         // allocation once the character is otherwise final. A grace-rest (run last

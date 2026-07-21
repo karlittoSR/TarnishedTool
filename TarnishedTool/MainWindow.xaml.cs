@@ -75,6 +75,7 @@ namespace TarnishedTool
                 new TargetService(_memoryService, _hookManager, playerService, reminderService, chrInsService);
             IEnemyService enemyService = new EnemyService(_memoryService, _hookManager, reminderService);
             ISettingsService settingsService = new SettingsService(_memoryService);
+            _dlcService = new DlcService(_memoryService);
             IEzStateService ezStateService = new EzStateService(_memoryService);
             IItemService itemService = new ItemService(_memoryService);
             IParamRepository paramRepository = new ParamRepository();
@@ -82,16 +83,17 @@ namespace TarnishedTool
             IFlaskService flaskService = new FlaskService(ezStateService, _memoryService);
             IInventoryService inventoryService =
                 new InventoryService(_memoryService, paramService, paramRepository, ezStateService, itemService);
+            ISpellLoadoutService spellLoadoutService =
+                new SpellLoadoutService(_memoryService, _dlcService);
             ICharacterSnapshotService characterSnapshotService =
-                new CharacterSnapshotService(equipService, playerService, flaskService, inventoryService);
+                new CharacterSnapshotService(
+                    equipService, playerService, flaskService, inventoryService, spellLoadoutService);
             ISpEffectService spEffectService = new SpEffectService(_memoryService, reminderService);
             IEmevdService emevdService = new EmevdService(_memoryService);
             IEventLogReader eventLogReader = new EventLogReader(_memoryService);
             IGameTickService gameTickService = new GameTickService(_stateService);
             IAiService aiService = new AiService(_memoryService);
             IAiWindowService aiWindowService = new AiWindowService(aiService, gameTickService, spEffectService);
-
-            _dlcService = new DlcService(_memoryService);
 
             // Create notification service
             IHotkeyNotificationService hotkeyNotificationService = new HotkeyNotificationService();
@@ -251,8 +253,8 @@ namespace TarnishedTool
                         _aobScanner.DoFallbackScan();
                     }
 
-                    // Equip POC: AOB-scanned on every version (the version offset
-                    // tables don't carry these functions), so it stays version-proof.
+                    // Character apply functions are AOB-scanned on every version;
+                    // the version offset tables intentionally do not carry them.
                     _aobScanner.ScanEquipFunctions();
 
 #if DEBUG

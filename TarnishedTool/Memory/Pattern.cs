@@ -579,6 +579,27 @@ namespace TarnishedTool.Memory
             AddressingMode.Absolute
         );
 
+        // The memorized-spell menu goes through a game function which updates
+        // more than the readable EquipMagicData array. Its calling convention
+        // changed with the DLC-era character layout, so keep both signatures
+        // explicit and only scan the one matching the detected build.
+        // pre-DLC: ChangeMagic(EquipMagicItemStruct*)
+        public static readonly Pattern ChangeMagicPreDlc = new(
+            [0x00, 0x83, 0xEC, 0x00, 0x00, 0x8D, 0x00, 0x00, 0x8B, 0x49, 0x08, 0xE8],
+            "?xx??x??xxxx",
+            0,
+            AddressingMode.Absolute
+        );
+
+        // DLC: ChangeMagic(int slot, EquipMagicItemStruct*)
+        public static readonly Pattern ChangeMagicDlc = new(
+            [0x00, 0x89, 0x5C, 0x00, 0x00, 0x00, 0x89, 0x74, 0x00, 0x00, 0x57, 0x00,
+             0x83, 0xEC, 0x00, 0x00, 0x8B, 0xC2, 0x8B, 0xF9, 0x00, 0x8B, 0xC8],
+            "?xx???xx??x?xx??xxxx?xx",
+            0,
+            AddressingMode.Absolute
+        );
+
         public static readonly Pattern MatrixVectorProduct = new(
             [
                 0xE8, 0x00, 0x00, 0x00, 0x00, 0x48, 0x8D, 0x53, 0x20, 0x4C, 0x8B, 0xC7, 0x48, 0x8D, 0x4C, 0x24, 0x40,
