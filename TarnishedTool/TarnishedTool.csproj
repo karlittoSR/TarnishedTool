@@ -341,6 +341,7 @@
         <Compile Include="Services\HotkeyNotificationService.cs" />
         <Compile Include="Models\CharacterSnapshot.cs" />
         <Compile Include="Models\EquipmentSnapshot.cs" />
+        <Compile Include="Models\SavedSegmentLibrary.cs" />
         <Compile Include="Models\FlaskSnapshot.cs" />
         <Compile Include="Models\PhysickSnapshot.cs" />
         <Compile Include="Models\ConsumablesSnapshot.cs" />
@@ -382,6 +383,7 @@
         <Compile Include="ViewModels\ChrInsWindowViewModel.cs" />
         <Compile Include="ViewModels\LineComparisonViewModel.cs" />
         <Compile Include="ViewModels\SavedLinesViewModel.cs" />
+        <Compile Include="ViewModels\SavedSegmentTreeNode.cs" />
         <Compile Include="Models\LineComparisonAttempt.cs" />
         <Compile Include="Models\SavedLine.cs" />
         <Compile Include="Models\SegmentDefinition.cs" />

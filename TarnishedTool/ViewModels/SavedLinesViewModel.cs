@@ -6,6 +6,7 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
+using System.Windows;
 using System.Windows.Input;
 using TarnishedTool.Core;
 using TarnishedTool.Interfaces;
@@ -19,8 +20,15 @@ public class SavedLinesViewModel : BaseViewModel
     private readonly LineComparisonViewModel _lineComparison;
     private readonly ICharacterSnapshotService _characterSnapshotService;
     private readonly string _libraryId;
+    private readonly Dictionary<SavedLine, SavedSegmentLibraryEntry> _libraryEntries = new();
+    private readonly Dictionary<SavedLine, SavedSegmentTreeNode> _nodesByLine = new();
+    private readonly Dictionary<string, SavedSegmentTreeNode> _nodesByFolder =
+        new(StringComparer.OrdinalIgnoreCase);
+    private bool _syncingTreeSelection;
 
     public ObservableCollection<SavedLine> Lines { get; } = new();
+    public ObservableCollection<SavedSegmentFolder> Folders { get; } = new();
+    public ObservableCollection<SavedSegmentTreeNode> RootNodes { get; } = new();
 
     public ICommand LoadCommand { get; }
     public ICommand SaveCurrentCommand { get; }
@@ -56,8 +64,18 @@ public class SavedLinesViewModel : BaseViewModel
         foreach (var weapon in DataLoader.GetWeapons())
             _weaponNames[(uint)weapon.Id - ((uint)weapon.Id % 10000)] = weapon.Name;
 
-        foreach (var line in SavedLinesStore.Load())
-            Lines.Add(line);
+        var library = SavedLinesStore.LoadLibrary();
+        foreach (var folder in library.Folders.OrderBy(folder => folder.Order))
+            Folders.Add(folder);
+
+        // Step 1 keeps the existing flat UI. The entry mapping already retains
+        // folder ownership for the TreeView introduced in step 2.
+        foreach (var entry in library.Segments.OrderBy(entry => entry.Order))
+        {
+            Lines.Add(entry.Segment);
+            _libraryEntries[entry.Segment] = entry;
+        }
+        RebuildTree();
 
         LoadCommand = new DelegateCommand(LoadSelected);
         SaveCurrentCommand = new DelegateCommand(SaveCurrent);
@@ -78,8 +96,245 @@ public class SavedLinesViewModel : BaseViewModel
         {
             if (!SetProperty(ref _selectedLine, value)) return;
             RefreshLineWeapons();
+            if (!_syncingTreeSelection)
+                SelectTreeNode(value != null && _nodesByLine.TryGetValue(value, out var node)
+                    ? node
+                    : null);
         }
     }
+
+    private SavedSegmentTreeNode _selectedNode;
+    public SavedSegmentTreeNode SelectedNode
+    {
+        get => _selectedNode;
+        private set => SetProperty(ref _selectedNode, value);
+    }
+
+    // Called by the TreeView for both mouse and programmatic selection. Selecting
+    // a folder changes only the navigation scope; it never loads or warps.
+    public void SelectTreeNode(SavedSegmentTreeNode node)
+    {
+        if (SelectedNode != null && SelectedNode != node)
+            SelectedNode.IsSelected = false;
+
+        SelectedNode = node;
+        if (node != null)
+        {
+            ExpandAncestors(node);
+            node.IsSelected = true;
+        }
+
+        _syncingTreeSelection = true;
+        SelectedLine = node?.Segment;
+        _syncingTreeSelection = false;
+    }
+
+    private string CurrentFolderId => SelectedNode?.IsFolder == true
+        ? SelectedNode.Folder.Id
+        : SelectedNode?.Entry?.FolderId;
+
+    private void RebuildTree()
+    {
+        var expandedIds = new HashSet<string>(
+            _nodesByFolder.Values.Where(node => node.IsExpanded).Select(node => node.Folder.Id),
+            StringComparer.OrdinalIgnoreCase);
+        var selectedLine = SelectedLine;
+        var selectedFolderId = SelectedNode?.Folder?.Id;
+
+        RootNodes.Clear();
+        _nodesByLine.Clear();
+        _nodesByFolder.Clear();
+
+        foreach (var folder in Folders.Where(folder => folder != null
+                     && !string.IsNullOrWhiteSpace(folder.Id)))
+            if (!_nodesByFolder.ContainsKey(folder.Id))
+                _nodesByFolder[folder.Id] = new SavedSegmentTreeNode(folder);
+
+        foreach (var pair in _nodesByFolder)
+        {
+            var node = pair.Value;
+            if (HasValidParentChain(node.Folder)
+                && !string.IsNullOrWhiteSpace(node.Folder.ParentId)
+                && _nodesByFolder.TryGetValue(node.Folder.ParentId, out var parent))
+            {
+                node.Parent = parent;
+                parent.Children.Add(node);
+            }
+            else
+            {
+                node.Folder.ParentId = null;
+                RootNodes.Add(node);
+            }
+        }
+
+        foreach (var line in Lines)
+        {
+            if (!_libraryEntries.TryGetValue(line, out var entry)) continue;
+            var node = new SavedSegmentTreeNode(entry);
+            _nodesByLine[line] = node;
+            if (!string.IsNullOrWhiteSpace(entry.FolderId)
+                && _nodesByFolder.TryGetValue(entry.FolderId, out var parent))
+            {
+                node.Parent = parent;
+                parent.Children.Add(node);
+            }
+            else
+            {
+                entry.FolderId = null;
+                RootNodes.Add(node);
+            }
+        }
+
+        SortNodes(RootNodes);
+        foreach (var id in expandedIds)
+            if (_nodesByFolder.TryGetValue(id, out var expanded)) expanded.IsExpanded = true;
+
+        if (selectedLine != null && _nodesByLine.TryGetValue(selectedLine, out var selectedLineNode))
+            SelectTreeNode(selectedLineNode);
+        else if (!string.IsNullOrWhiteSpace(selectedFolderId)
+                 && _nodesByFolder.TryGetValue(selectedFolderId, out var selectedFolderNode))
+            SelectTreeNode(selectedFolderNode);
+        else
+            SelectTreeNode(null);
+    }
+
+    private bool HasValidParentChain(SavedSegmentFolder folder)
+    {
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { folder.Id };
+        var parentId = folder.ParentId;
+        while (!string.IsNullOrWhiteSpace(parentId))
+        {
+            if (!seen.Add(parentId) || !_nodesByFolder.TryGetValue(parentId, out var parent))
+                return false;
+            parentId = parent.Folder.ParentId;
+        }
+        return true;
+    }
+
+    private static void SortNodes(ObservableCollection<SavedSegmentTreeNode> nodes)
+    {
+        var ordered = nodes.OrderBy(node => node.Order)
+            .ThenBy(node => node.IsFolder ? 0 : 1)
+            .ToList();
+        nodes.Clear();
+        foreach (var node in ordered)
+        {
+            SortNodes(node.Children);
+            nodes.Add(node);
+        }
+    }
+
+    private static void ExpandAncestors(SavedSegmentTreeNode node)
+    {
+        for (var parent = node?.Parent; parent != null; parent = parent.Parent)
+            parent.IsExpanded = true;
+    }
+
+    public void AddFolder(SavedSegmentTreeNode contextNode)
+    {
+        var parentId = contextNode?.IsFolder == true
+            ? contextNode.Folder.Id
+            : contextNode?.Entry?.FolderId;
+        var name = MsgBox.ShowInput("Folder name:", "", "Add Folder");
+        if (string.IsNullOrWhiteSpace(name)) return;
+        name = name.Trim();
+
+        if (Folders.Any(folder => SameFolder(folder.ParentId, parentId)
+                                  && string.Equals(folder.Name, name, StringComparison.OrdinalIgnoreCase)))
+        {
+            MsgBox.Show("A folder with this name already exists here.", "Add Folder");
+            return;
+        }
+
+        var folder = new SavedSegmentFolder
+        {
+            Id = Guid.NewGuid().ToString("N"),
+            ParentId = parentId,
+            Name = name,
+            Order = NextOrder(parentId),
+        };
+        Folders.Add(folder);
+        if (contextNode?.IsFolder == true) contextNode.IsExpanded = true;
+        Persist();
+        RebuildTree();
+        if (_nodesByFolder.TryGetValue(folder.Id, out var node)) SelectTreeNode(node);
+    }
+
+    public void RenameFolder(SavedSegmentTreeNode node)
+    {
+        if (node?.IsFolder != true) return;
+        var name = MsgBox.ShowInput("New name:", node.Folder.Name, "Rename Folder");
+        if (string.IsNullOrWhiteSpace(name)) return;
+        name = name.Trim();
+
+        if (Folders.Any(folder => folder != node.Folder
+                                  && SameFolder(folder.ParentId, node.Folder.ParentId)
+                                  && string.Equals(folder.Name, name, StringComparison.OrdinalIgnoreCase)))
+        {
+            MsgBox.Show("A folder with this name already exists here.", "Rename Folder");
+            return;
+        }
+
+        node.Folder.Name = name;
+        node.RefreshName();
+        Persist();
+    }
+
+    public void DeleteFolder(SavedSegmentTreeNode node)
+    {
+        if (node?.IsFolder != true) return;
+
+        var folderIds = DescendantFolderIds(node.Folder.Id);
+        var affectedLines = Lines.Where(line => _libraryEntries.TryGetValue(line, out var entry)
+                                                && folderIds.Contains(entry.FolderId ?? string.Empty))
+            .ToList();
+        int childFolderCount = folderIds.Count - 1;
+        string detail = affectedLines.Count == 0 && childFolderCount == 0
+            ? $"Delete folder \"{node.Folder.Name}\"?"
+            : $"Delete folder \"{node.Folder.Name}\" and its {affectedLines.Count} segment(s)"
+              + (childFolderCount > 0 ? $" and {childFolderCount} subfolder(s)" : "") + "?";
+        if (!MsgBox.ShowYesNo(detail, "Delete Folder")) return;
+
+        if (affectedLines.Count > 0) SavedLinesStore.BackupBeforeFolderDelete();
+        foreach (var line in affectedLines)
+        {
+            _lineComparison.DetachDeletedSavedLine(line);
+            Lines.Remove(line);
+            _libraryEntries.Remove(line);
+        }
+        foreach (var folder in Folders.Where(folder => folderIds.Contains(folder.Id)).ToList())
+            Folders.Remove(folder);
+
+        SelectTreeNode(null);
+        Persist();
+        RebuildTree();
+    }
+
+    private HashSet<string> DescendantFolderIds(string rootId)
+    {
+        var result = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { rootId };
+        bool changed;
+        do
+        {
+            changed = false;
+            foreach (var folder in Folders)
+                if (!result.Contains(folder.Id) && result.Contains(folder.ParentId ?? string.Empty))
+                    changed |= result.Add(folder.Id);
+        } while (changed);
+        return result;
+    }
+
+    private int NextOrder(string folderId)
+    {
+        int folderMax = Folders.Where(folder => SameFolder(folder.ParentId, folderId))
+            .Select(folder => folder.Order).DefaultIfEmpty(-1).Max();
+        int segmentMax = _libraryEntries.Values.Where(entry => SameFolder(entry.FolderId, folderId))
+            .Select(entry => entry.Order).DefaultIfEmpty(-1).Max();
+        return Math.Max(folderMax, segmentMax) + 1;
+    }
+
+    private static bool SameFolder(string left, string right) =>
+        string.Equals(left ?? string.Empty, right ?? string.Empty, StringComparison.OrdinalIgnoreCase);
 
     #region Ash of war
 
@@ -194,17 +449,129 @@ public class SavedLinesViewModel : BaseViewModel
     // entries without triggering an unwanted warp.
     public SavedLine SelectRelative(int offset)
     {
-        if (Lines.Count == 0 || offset == 0) return null;
+        if (Application.Current?.Dispatcher?.CheckAccess() == false)
+            return Application.Current.Dispatcher.Invoke(() => SelectRelative(offset));
 
-        int current = SelectedLine == null ? -1 : Lines.IndexOf(SelectedLine);
+        if (offset == 0) return null;
+
+        var folderId = CurrentFolderId;
+        var candidates = (string.IsNullOrWhiteSpace(folderId)
+                ? RootNodes
+                : _nodesByFolder.TryGetValue(folderId, out var folderNode)
+                    ? folderNode.Children
+                    : null)?
+            .Where(node => !node.IsFolder)
+            .OrderBy(node => node.Order)
+            .ToList();
+        if (candidates == null || candidates.Count == 0) return null;
+
+        int current = SelectedLine == null
+            ? -1
+            : candidates.FindIndex(node => node.Segment == SelectedLine);
         int target;
         if (current < 0)
-            target = offset > 0 ? 0 : Lines.Count - 1;
+            target = offset > 0 ? 0 : candidates.Count - 1;
         else
-            target = Math.Max(0, Math.Min(Lines.Count - 1, current + Math.Sign(offset)));
+            target = Math.Max(0, Math.Min(candidates.Count - 1, current + Math.Sign(offset)));
 
-        SelectedLine = Lines[target];
+        SelectedLine = candidates[target].Segment;
         return SelectedLine;
+    }
+
+    public bool CanMoveTreeNode(SavedSegmentTreeNode dragged,
+        SavedSegmentTreeNode target, SavedSegmentDropPlacement placement)
+    {
+        if (dragged == null || dragged == target) return false;
+        if (placement == SavedSegmentDropPlacement.Inside && target?.IsFolder != true)
+            return false;
+        if ((placement == SavedSegmentDropPlacement.Before
+             || placement == SavedSegmentDropPlacement.After) && target == null)
+            return false;
+
+        var newParentId = DropParentId(target, placement);
+        if (!dragged.IsFolder) return true;
+
+        // A folder can never become its own child or a child of one of its
+        // descendants. This also protects the persisted tree from cycles.
+        return string.IsNullOrWhiteSpace(newParentId)
+               || !DescendantFolderIds(dragged.Folder.Id).Contains(newParentId);
+    }
+
+    public bool MoveTreeNode(SavedSegmentTreeNode dragged,
+        SavedSegmentTreeNode target, SavedSegmentDropPlacement placement)
+    {
+        if (!CanMoveTreeNode(dragged, target, placement)) return false;
+
+        var oldParentId = dragged.IsFolder ? dragged.Folder.ParentId : dragged.Entry.FolderId;
+        var newParentId = DropParentId(target, placement);
+
+        if (dragged.IsFolder)
+            dragged.Folder.ParentId = newParentId;
+        else
+            dragged.Entry.FolderId = newParentId;
+
+        var destination = NodesInFolder(newParentId)
+            .Where(node => node != dragged)
+            .OrderBy(node => node.Order)
+            .ThenBy(node => node.IsFolder ? 0 : 1)
+            .ToList();
+
+        int insertionIndex = destination.Count;
+        if (placement == SavedSegmentDropPlacement.Before
+            || placement == SavedSegmentDropPlacement.After)
+        {
+            int targetIndex = destination.IndexOf(target);
+            if (targetIndex < 0) return false;
+            insertionIndex = targetIndex + (placement == SavedSegmentDropPlacement.After ? 1 : 0);
+        }
+        destination.Insert(insertionIndex, dragged);
+        ApplyOrders(destination);
+
+        if (!SameFolder(oldParentId, newParentId))
+            ApplyOrders(NodesInFolder(oldParentId)
+                .Where(node => node != dragged)
+                .OrderBy(node => node.Order)
+                .ThenBy(node => node.IsFolder ? 0 : 1));
+
+        if (placement == SavedSegmentDropPlacement.Inside && target != null)
+            target.IsExpanded = true;
+
+        var movedFolderId = dragged.Folder?.Id;
+        var movedLine = dragged.Segment;
+        Persist();
+        RebuildTree();
+
+        if (movedLine != null && _nodesByLine.TryGetValue(movedLine, out var lineNode))
+            SelectTreeNode(lineNode);
+        else if (!string.IsNullOrWhiteSpace(movedFolderId)
+                 && _nodesByFolder.TryGetValue(movedFolderId, out var folderNode))
+            SelectTreeNode(folderNode);
+        return true;
+    }
+
+    private string DropParentId(SavedSegmentTreeNode target, SavedSegmentDropPlacement placement)
+    {
+        if (placement == SavedSegmentDropPlacement.RootEnd) return null;
+        if (placement == SavedSegmentDropPlacement.Inside) return target?.Folder?.Id;
+        return target?.IsFolder == true ? target.Folder.ParentId : target?.Entry?.FolderId;
+    }
+
+    private IEnumerable<SavedSegmentTreeNode> NodesInFolder(string folderId)
+    {
+        foreach (var folder in Folders.Where(folder => SameFolder(folder.ParentId, folderId)))
+            if (_nodesByFolder.TryGetValue(folder.Id, out var folderNode)) yield return folderNode;
+        foreach (var pair in _libraryEntries.Where(pair => SameFolder(pair.Value.FolderId, folderId)))
+            if (_nodesByLine.TryGetValue(pair.Key, out var lineNode)) yield return lineNode;
+    }
+
+    private static void ApplyOrders(IEnumerable<SavedSegmentTreeNode> nodes)
+    {
+        int order = 0;
+        foreach (var node in nodes)
+        {
+            if (node.IsFolder) node.Folder.Order = order++;
+            else node.Entry.Order = order++;
+        }
     }
 
     private void SaveCurrent()
@@ -228,7 +595,14 @@ public class SavedLinesViewModel : BaseViewModel
             Snapshot = _characterSnapshotService?.Capture()
         };
         Lines.Add(line);
+        _libraryEntries[line] = new SavedSegmentLibraryEntry
+        {
+            FolderId = CurrentFolderId,
+            Order = NextOrder(CurrentFolderId),
+            Segment = line,
+        };
         Persist();
+        RebuildTree();
 
         // Track the freshly saved line so the first time you get on it updates its PB.
         _lineComparison.SetActiveSavedLine(line, ensurePersistentPbRow: true);
@@ -380,6 +754,12 @@ public class SavedLinesViewModel : BaseViewModel
                 line.Name = uniqueName;
 
                 Lines.Add(line);
+                _libraryEntries[line] = new SavedSegmentLibraryEntry
+                {
+                    FolderId = null,
+                    Order = NextOrder(null),
+                    Segment = line,
+                };
                 lastImported = line;
                 imported++;
             }
@@ -387,6 +767,7 @@ public class SavedLinesViewModel : BaseViewModel
             if (imported > 0)
             {
                 Persist();
+                RebuildTree();
                 SelectedLine = lastImported;
             }
 
@@ -557,11 +938,41 @@ public class SavedLinesViewModel : BaseViewModel
         var removed = SelectedLine;
         _lineComparison.DetachDeletedSavedLine(removed);
         Lines.Remove(removed);
+        _libraryEntries.Remove(removed);
         SelectedLine = null;
         Persist();
+        RebuildTree();
     }
 
     public bool Contains(SavedLine line) => line != null && Lines.Contains(line);
 
-    public void Persist() => SavedLinesStore.Save(Lines);
+    public void Persist()
+    {
+        var library = new SavedSegmentLibrary
+        {
+            Folders = Folders.ToList(),
+        };
+
+        foreach (var line in Lines)
+        {
+            if (!_libraryEntries.TryGetValue(line, out var entry))
+            {
+                entry = new SavedSegmentLibraryEntry
+                {
+                    FolderId = null,
+                    Order = NextOrder(null),
+                    Segment = line,
+                };
+                _libraryEntries[line] = entry;
+            }
+            library.Segments.Add(entry);
+        }
+
+        // Forget entries deleted from the visible library.
+        var live = new HashSet<SavedLine>(Lines);
+        foreach (var removed in _libraryEntries.Keys.Where(line => !live.Contains(line)).ToList())
+            _libraryEntries.Remove(removed);
+
+        SavedLinesStore.Save(library);
+    }
 }

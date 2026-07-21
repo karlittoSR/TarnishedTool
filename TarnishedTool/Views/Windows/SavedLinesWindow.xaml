@@ -38,48 +38,184 @@
             </CheckBox>
         </Grid>
 
-        <ListBox x:Name="SavedLinesList"
-                 Grid.Row="2"
-                 Margin="10,0,10,0"
-                 ItemsSource="{Binding Lines}"
-                 SelectedItem="{Binding SelectedLine, Mode=TwoWay}"
-                 SelectionChanged="SavedLinesList_SelectionChanged"
-                 MouseDoubleClick="SavedLinesList_MouseDoubleClick"
-                 AllowDrop="True"
-                 PreviewMouseLeftButtonDown="SavedLinesList_PreviewMouseLeftButtonDown"
-                 PreviewMouseMove="SavedLinesList_PreviewMouseMove"
-                 DragOver="SavedLinesList_DragOver"
-                 Drop="SavedLinesList_Drop"
-                 ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                 ScrollViewer.VerticalScrollBarVisibility="Auto">
-            <ListBox.ItemContainerStyle>
-                <Style TargetType="ListBoxItem">
+        <Grid Grid.Row="2" Margin="10,0,10,0">
+        <TreeView x:Name="SavedSegmentsTree"
+                  ItemsSource="{Binding RootNodes}"
+                  AllowDrop="True"
+                  SelectedItemChanged="SavedSegmentsTree_SelectedItemChanged"
+                  PreviewMouseLeftButtonDown="SavedSegmentsTree_PreviewMouseLeftButtonDown"
+                  PreviewMouseLeftButtonUp="SavedSegmentsTree_PreviewMouseLeftButtonUp"
+                  PreviewMouseMove="SavedSegmentsTree_PreviewMouseMove"
+                  PreviewMouseRightButtonDown="SavedSegmentsTree_PreviewMouseRightButtonDown"
+                  PreviewMouseDoubleClick="SavedSegmentsTree_PreviewMouseDoubleClick"
+                  DragOver="SavedSegmentsTree_DragOver"
+                  DragLeave="SavedSegmentsTree_DragLeave"
+                  Drop="SavedSegmentsTree_Drop"
+                  ContextMenuOpening="SavedSegmentsTree_ContextMenuOpening"
+                  Background="{StaticResource ControlBackgroundBrush}"
+                  Foreground="{StaticResource TextBrush}"
+                  BorderBrush="{StaticResource BorderBrush}"
+                  BorderThickness="1"
+                  ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                  ScrollViewer.VerticalScrollBarVisibility="Auto">
+            <TreeView.ContextMenu>
+                <ContextMenu>
+                    <MenuItem x:Name="AddFolderMenuItem" Header="📁 Add Folder"
+                              Click="AddFolderMenuItem_Click" />
+                    <Separator x:Name="FolderActionsSeparator" Visibility="Collapsed" />
+                    <MenuItem x:Name="RenameFolderMenuItem" Header="Rename Folder"
+                              Visibility="Collapsed" Click="RenameFolderMenuItem_Click" />
+                    <MenuItem x:Name="DeleteFolderMenuItem" Header="Delete Folder"
+                              Visibility="Collapsed" Click="DeleteFolderMenuItem_Click" />
+                </ContextMenu>
+            </TreeView.ContextMenu>
+            <TreeView.ItemContainerStyle>
+                <Style TargetType="TreeViewItem">
+                    <Setter Property="Background" Value="Transparent" />
+                    <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
                     <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-                    <Setter Property="Padding" Value="4,3" />
-                    <Setter Property="ToolTip" Value="Drag to reorder" />
+                    <Setter Property="Padding" Value="3,2" />
+                    <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}" />
+                    <Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}" />
+                    <Setter Property="Template">
+                        <Setter.Value>
+                            <ControlTemplate TargetType="TreeViewItem">
+                                <Grid Background="Transparent">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="18" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                    </Grid.RowDefinitions>
+
+                                    <ToggleButton x:Name="Expander"
+                                                  Grid.Row="0" Grid.Column="0"
+                                                  Width="16" Height="20"
+                                                  Focusable="False"
+                                                  IsChecked="{Binding IsExpanded, RelativeSource={RelativeSource TemplatedParent}}">
+                                        <ToggleButton.Template>
+                                            <ControlTemplate TargetType="ToggleButton">
+                                                <Grid Background="Transparent">
+                                                    <Path x:Name="ClosedArrow"
+                                                          Data="M 5 3 L 10 8 L 5 13"
+                                                          Stroke="{StaticResource TextBrush}"
+                                                          StrokeThickness="1.5"
+                                                          StrokeLineJoin="Round" />
+                                                    <Path x:Name="OpenArrow"
+                                                          Data="M 3 5 L 8 10 L 13 5"
+                                                          Stroke="{StaticResource TextBrush}"
+                                                          StrokeThickness="1.5"
+                                                          StrokeLineJoin="Round"
+                                                          Visibility="Collapsed" />
+                                                </Grid>
+                                                <ControlTemplate.Triggers>
+                                                    <Trigger Property="IsChecked" Value="True">
+                                                        <Setter TargetName="ClosedArrow" Property="Visibility" Value="Collapsed" />
+                                                        <Setter TargetName="OpenArrow" Property="Visibility" Value="Visible" />
+                                                    </Trigger>
+                                                </ControlTemplate.Triggers>
+                                            </ControlTemplate>
+                                        </ToggleButton.Template>
+                                    </ToggleButton>
+
+                                    <Border x:Name="HeaderBorder"
+                                            Grid.Row="0" Grid.Column="1"
+                                            Background="{TemplateBinding Background}"
+                                            Padding="{TemplateBinding Padding}"
+                                            CornerRadius="2">
+                                        <ContentPresenter x:Name="PART_Header"
+                                                          ContentSource="Header"
+                                                          HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" />
+                                    </Border>
+
+                                    <!-- Drop-inside outline is an overlay: unlike changing
+                                         HeaderBorder.BorderThickness, it never participates
+                                         in measurement and cannot shift adjacent rows. -->
+                                    <Border x:Name="DropInsideIndicator"
+                                            Grid.Row="0" Grid.Column="1"
+                                            BorderBrush="#3498db" BorderThickness="1"
+                                            CornerRadius="2" Panel.ZIndex="2"
+                                            IsHitTestVisible="False" Visibility="Collapsed" />
+
+                                    <Border x:Name="DropBeforeIndicator"
+                                            Grid.Row="0" Grid.ColumnSpan="2"
+                                            Height="2" Margin="0,-1,0,0"
+                                            Background="#3498db"
+                                            VerticalAlignment="Top"
+                                            Panel.ZIndex="2" Visibility="Collapsed" />
+                                    <Border x:Name="DropAfterIndicator"
+                                            Grid.Row="0" Grid.ColumnSpan="2"
+                                            Height="2" Margin="0,0,0,-1"
+                                            Background="#3498db"
+                                            VerticalAlignment="Bottom"
+                                            Panel.ZIndex="2" Visibility="Collapsed" />
+
+                                    <ItemsPresenter x:Name="ItemsHost"
+                                                    Grid.Row="1" Grid.Column="1" />
+                                </Grid>
+                                <ControlTemplate.Triggers>
+                                    <Trigger Property="IsExpanded" Value="False">
+                                        <Setter TargetName="ItemsHost" Property="Visibility" Value="Collapsed" />
+                                    </Trigger>
+                                    <Trigger Property="HasItems" Value="False">
+                                        <Setter TargetName="Expander" Property="Visibility" Value="Hidden" />
+                                    </Trigger>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter TargetName="HeaderBorder" Property="Background"
+                                                Value="{StaticResource AccentBrush}" />
+                                    </Trigger>
+                                    <Trigger Property="IsSelected" Value="True">
+                                        <Setter TargetName="HeaderBorder" Property="Background"
+                                                Value="{StaticResource HoverBrush}" />
+                                    </Trigger>
+                                    <Trigger Property="IsEnabled" Value="False">
+                                        <Setter Property="Opacity" Value="0.5" />
+                                    </Trigger>
+                                    <DataTrigger Binding="{Binding IsDropBefore}" Value="True">
+                                        <Setter TargetName="DropBeforeIndicator" Property="Visibility" Value="Visible" />
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding IsDropAfter}" Value="True">
+                                        <Setter TargetName="DropAfterIndicator" Property="Visibility" Value="Visible" />
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding IsDropInside}" Value="True">
+                                        <Setter TargetName="HeaderBorder" Property="Background" Value="#253f55" />
+                                        <Setter TargetName="DropInsideIndicator" Property="Visibility" Value="Visible" />
+                                    </DataTrigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </Setter.Value>
+                    </Setter>
                 </Style>
-            </ListBox.ItemContainerStyle>
-            <ListBox.ItemTemplate>
-                <DataTemplate>
-                    <Grid>
+            </TreeView.ItemContainerStyle>
+            <TreeView.ItemTemplate>
+                <HierarchicalDataTemplate ItemsSource="{Binding Children}">
+                    <Grid MinHeight="20">
                         <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
-                        <TextBlock Grid.Column="0" Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
-                        <TextBlock Grid.Column="1" Text="{Binding SnapshotMarker}" Foreground="#3498db"
-                                   FontWeight="Bold" Margin="6,0,0,0"
-                                   ToolTip="Has a saved character state (gear + stats)" />
+                        <TextBlock Grid.Column="0" Text="{Binding Icon}" Margin="0,0,5,0"
+                                   FontFamily="Segoe UI Emoji" VerticalAlignment="Center" />
+                        <TextBlock Grid.Column="1" Text="{Binding Name}" TextTrimming="CharacterEllipsis"
+                                   VerticalAlignment="Center" />
                         <TextBlock Grid.Column="2" Text="{Binding ReferenceText}" Foreground="#3498db"
-                                   FontWeight="SemiBold" Margin="10,0,0,0" />
+                                   FontWeight="SemiBold" Margin="10,0,0,0" VerticalAlignment="Center" />
                         <TextBlock Grid.Column="3" Text="{Binding BestText}" Foreground="Gold"
-                                   FontWeight="SemiBold" Margin="10,0,0,0" />
+                                   FontWeight="SemiBold" Margin="10,0,0,0" VerticalAlignment="Center" />
                     </Grid>
-                </DataTemplate>
-            </ListBox.ItemTemplate>
-        </ListBox>
+                </HierarchicalDataTemplate>
+            </TreeView.ItemTemplate>
+        </TreeView>
+        <Border x:Name="RootDropIndicator"
+                Height="2" Margin="3,0,3,2"
+                Background="#3498db" VerticalAlignment="Bottom"
+                Panel.ZIndex="3" IsHitTestVisible="False"
+                Visibility="Collapsed" />
+        </Grid>
 
         <!-- Ash of war: chosen per weapon because the mounted ash cannot be read
              back off a weapon, so it has to be recorded with the save. -->

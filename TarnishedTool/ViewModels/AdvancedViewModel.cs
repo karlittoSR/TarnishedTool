@@ -68,8 +68,6 @@ public class AdvancedViewModel : BaseViewModel
         _hotkeyManager = hotkeyManager;
         _notificationService = notificationService;
 
-        RegisterHotkeys();
-
         stateService.Subscribe(State.Loaded, OnGameLoaded);
         stateService.Subscribe(State.NotLoaded, OnGameNotLoaded);
 
@@ -88,6 +86,10 @@ public class AdvancedViewModel : BaseViewModel
         _chrInsWindowViewModel = new ChrInsWindowViewModel(stateService, gameTickService, playerService, chrInsService, aiWindowService);
         _lineComparisonViewModel = new LineComparisonViewModel(
             playerService, stateService, eventService, eventLogReader, characterSnapshotService);
+
+        // Segment hotkeys dereference the comparison view model. Register them
+        // only after that complete object graph (including Saved Segments) exists.
+        RegisterHotkeys();
     }
 
     
