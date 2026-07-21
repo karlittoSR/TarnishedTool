@@ -204,6 +204,22 @@ public class AdvancedViewModel : BaseViewModel
         _hotkeyManager.RegisterAction(HotkeyActions.SetLineStart, () => { SafeExecute(() => _lineComparisonViewModel.SetStart()); _notificationService?.ShowNotification(HotkeyActions.SetLineStart); });
         _hotkeyManager.RegisterAction(HotkeyActions.SetLineEnd, () => { SafeExecute(() => _lineComparisonViewModel.SetEnd()); _notificationService?.ShowNotification(HotkeyActions.SetLineEnd); });
         _hotkeyManager.RegisterAction(HotkeyActions.RestoreLineStart, () => { SafeExecute(() => _lineComparisonViewModel.RestoreToStart()); _notificationService?.ShowNotification(HotkeyActions.RestoreLineStart); });
+        _hotkeyManager.RegisterAction(HotkeyActions.LoadSelectedSavedSegment, () => { SafeExecute(() => _lineComparisonViewModel.LoadSelectedSavedSegment()); _notificationService?.ShowNotification(HotkeyActions.LoadSelectedSavedSegment); });
+        _hotkeyManager.RegisterAction(HotkeyActions.SelectNextSavedSegment, () =>
+        {
+            string name = _lineComparisonViewModel.SelectNextSavedSegment();
+            _notificationService?.ShowCustomNotification(name == null ? "No saved segments" : $"Selected segment: {name}");
+        });
+        _hotkeyManager.RegisterAction(HotkeyActions.SelectPreviousSavedSegment, () =>
+        {
+            string name = _lineComparisonViewModel.SelectPreviousSavedSegment();
+            _notificationService?.ShowCustomNotification(name == null ? "No saved segments" : $"Selected segment: {name}");
+        });
+        _hotkeyManager.RegisterAction(HotkeyActions.RemoveLastSegmentAttempt, () =>
+        {
+            bool removed = _lineComparisonViewModel.RemoveLastSegmentAttempt();
+            _notificationService?.ShowCustomNotification(removed ? "Last attempt removed" : "No session attempt to remove");
+        });
     }
 
     private void SafeExecute(Action action)

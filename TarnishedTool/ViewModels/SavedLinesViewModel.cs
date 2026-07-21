@@ -172,9 +172,14 @@ public class SavedLinesViewModel : BaseViewModel
     // is then restored, so a save is one click (or double-click) from being ready
     // to run — zone reset, character state and all. LoadSavedLine sets the active
     // line first, which is what RestoreToStart reads to apply the snapshot.
-    private void LoadSelected()
+    public void LoadSelected()
     {
         if (SelectedLine == null || !RequireLoadedGame()) return;
+        if (_lineComparison.IsRestoreInProgress)
+        {
+            _lineComparison.ShowRestoreBusyFeedback();
+            return;
+        }
         if (!_lineComparison.LoadSavedLine(SelectedLine))
         {
             MsgBox.Show("This save's line code is invalid and could not be loaded.");
@@ -182,6 +187,24 @@ public class SavedLinesViewModel : BaseViewModel
         }
 
         _lineComparison.RestoreToStart();
+    }
+
+    // Global Previous/Next hotkeys only move the library selection. Loading is
+    // deliberately kept on its own hotkey so runners can inspect or skip over
+    // entries without triggering an unwanted warp.
+    public SavedLine SelectRelative(int offset)
+    {
+        if (Lines.Count == 0 || offset == 0) return null;
+
+        int current = SelectedLine == null ? -1 : Lines.IndexOf(SelectedLine);
+        int target;
+        if (current < 0)
+            target = offset > 0 ? 0 : Lines.Count - 1;
+        else
+            target = Math.Max(0, Math.Min(Lines.Count - 1, current + Math.Sign(offset)));
+
+        SelectedLine = Lines[target];
+        return SelectedLine;
     }
 
     private void SaveCurrent()
@@ -215,7 +238,7 @@ public class SavedLinesViewModel : BaseViewModel
     #region Share saved lines
 
     private const string ExportFormat = "TarnishedTool.SavedSegments";
-    private const int CurrentExportVersion = 2;
+    private const int CurrentExportVersion = 5;
     private static readonly JsonSerializerOptions ExportOptions = new() { WriteIndented = true };
     private static readonly JsonSerializerOptions ImportOptions = new() { PropertyNameCaseInsensitive = true };
 

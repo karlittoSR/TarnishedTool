@@ -275,7 +275,11 @@ public class SettingsViewModel : BaseViewModel
                 new("Open Segment Timer", HotkeyActions.OpenLineComparison),
                 new("Set Line Start", HotkeyActions.SetLineStart),
                 new("Set Line End", HotkeyActions.SetLineEnd),
+                new("Load Selected Segment", HotkeyActions.LoadSelectedSavedSegment),
                 new("Restore to Line Start", HotkeyActions.RestoreLineStart),
+                new("Next Saved Segment", HotkeyActions.SelectNextSavedSegment),
+                new("Previous Saved Segment", HotkeyActions.SelectPreviousSavedSegment),
+                new("Remove Last Segment Attempt", HotkeyActions.RemoveLastSegmentAttempt),
             ],
         };
 

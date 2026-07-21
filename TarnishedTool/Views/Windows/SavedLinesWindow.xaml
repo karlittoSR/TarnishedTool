@@ -10,6 +10,12 @@
                        WindowStyle="None"
                        AllowsTransparency="True"
                        Title="Saved Segments" Height="520" Width="380">
+    <Window.InputBindings>
+        <KeyBinding Key="F2" Command="{Binding RenameCommand}" />
+        <KeyBinding Key="Delete" Command="{Binding DeleteCommand}" />
+        <KeyBinding Key="F5" Command="{Binding UpdateCommand}" />
+        <KeyBinding Key="S" Modifiers="Control" Command="{Binding SaveCurrentCommand}" />
+    </Window.InputBindings>
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="30" />
@@ -37,6 +43,7 @@
                  Margin="10,0,10,0"
                  ItemsSource="{Binding Lines}"
                  SelectedItem="{Binding SelectedLine, Mode=TwoWay}"
+                 SelectionChanged="SavedLinesList_SelectionChanged"
                  MouseDoubleClick="SavedLinesList_MouseDoubleClick"
                  AllowDrop="True"
                  PreviewMouseLeftButtonDown="SavedLinesList_PreviewMouseLeftButtonDown"
@@ -119,7 +126,7 @@
             <Button Grid.Row="0" Grid.Column="1" Content="Save Current" Height="28" Margin="3"
                     IsEnabled="{Binding CanOperate}"
                     Command="{Binding SaveCurrentCommand}"
-                    ToolTip="Save the current segment and character state as a new library entry." />
+                    ToolTip="Save the current segment and character state as a new library entry (Ctrl+S)." />
             <Button Grid.Row="0" Grid.Column="2" Content="Import" Height="28" Margin="3"
                     Command="{Binding ImportFileCommand}"
                     ToolTip="Import one or more complete saved segments from a JSON file." />
@@ -138,7 +145,7 @@
             <Button Grid.Row="1" Grid.Column="0" Content="Update" Height="28" Margin="3"
                     IsEnabled="{Binding CanOperate}"
                     Command="{Binding UpdateCommand}"
-                    ToolTip="Update the selected segment with the current start, finish and character state, keeping its name, PB and reference." />
+                    ToolTip="Update the selected segment with the current start, finish and character state, keeping its name, PB and reference (F5)." />
             <!-- Debug-only: Load already restores and applies the character. Kept
                  collapsed so the per-step apply error report stays reachable. -->
             <Button Grid.Row="1" Grid.Column="3" Content="Apply Char" Height="28" Margin="3"
@@ -146,9 +153,9 @@
                     Command="{Binding ApplyCharacterCommand}"
                     ToolTip="Apply this save's character state (stats then gear) to your character." />
             <Button Grid.Row="1" Grid.Column="1" Content="Rename" Height="28" Margin="3"
-                    Command="{Binding RenameCommand}" />
+                    Command="{Binding RenameCommand}" ToolTip="Rename the selected segment (F2)." />
             <Button Grid.Row="1" Grid.Column="2" Content="Delete" Height="28" Margin="3"
-                    Command="{Binding DeleteCommand}" />
+                    Command="{Binding DeleteCommand}" ToolTip="Delete the selected segment (Delete)." />
         </Grid>
     </Grid>
 </windows:TopmostWindow>

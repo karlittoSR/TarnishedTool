@@ -2,6 +2,8 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Threading;
 using TarnishedTool.Interfaces;
 using TarnishedTool.Memory;
 using TarnishedTool.Models;
@@ -84,65 +86,142 @@ public class EquipService(IMemoryService memoryService, IItemService itemService
 
         var current = ReadEquippedArray(playerGameData);
 
+        // Two historical layouts need opposite one-dword migrations. Version 0
+        // DLC captures used the old pre-DLC addresses and started one item late.
+        // Version 1 pre-DLC captures used the new DLC addresses and started one
+        // item early. Neither migration mutates the saved JSON.
+        bool shiftedLegacy = snapshot.HasShiftedLegacyCapture();
+        bool earlyPreDlcV1 = snapshot.HasEarlyPreDlcV1Capture();
+
         // Target ids by slot for quick lookup. Skip Unarmed/empty ids so a slot the
         // snapshot leaves empty (incl. legacy snapshots that stored Unarmed=110000)
         // is unequipped, never spawned/equipped.
         var target = new Dictionary<int, EquippedItem>();
-        foreach (var item in snapshot.Items)
-            if (!IsEmptySlotId(item.ItemId))
-                target[item.Slot] = item;
+        if (snapshot.Items != null)
+        {
+            foreach (var item in snapshot.Items)
+            {
+                int slot = shiftedLegacy
+                    ? item.Slot + 1
+                    : earlyPreDlcV1 ? item.Slot - 1 : item.Slot;
+                if (IsRestorableSlot(slot) && !IsEmptySlotId(item.ItemId, slot))
+                    target[slot] = item;
+            }
+        }
 
         // Raise the talisman pouch count to cover both current and snapshot while we
         // work, so equip/unequip on any talisman slot is valid; it's set to the
         // snapshot's exact value at the end (re-locking any extra slots).
+        byte targetPouches = System.Math.Min(snapshot.TalismanPouchCount, (byte)3);
         var currentPouches = memoryService.Read<byte>(playerGameData + GameDataMan.TalismanPouchCount);
-        var workingPouches = System.Math.Max(currentPouches, snapshot.TalismanPouchCount);
+        var workingPouches = System.Math.Max(System.Math.Min(currentPouches, (byte)3), targetPouches);
         memoryService.Write(playerGameData + GameDataMan.TalismanPouchCount, workingPouches);
 
+        // First clear every mismatching slot. Re-equipping while walking a stale
+        // pre-change array can move an item out of a later slot and then toggle it
+        // back when that later slot is processed, producing the alternating/swapped
+        // armor and talisman state seen on repeated loads.
         for (int slot = 0; slot < current.Length; slot++)
         {
-            if (slot == HairSlot) continue;
+            if (!IsRestorableSlot(slot)) continue;
+            // Talisman changes are settled serially below. Their equip state can
+            // update a frame after EquipItem returns; mixing their clear/fill
+            // requests into this fast pass lets an older clear land after the new
+            // talisman and leave the slot empty.
+            if (IsTalismanSlot(slot)) continue;
+            // Those two real slots were outside the malformed capture: actual
+            // slot 0 preceded its read window, while actual talisman slot 17 was
+            // mistaken for Hair (captured index 16) and skipped. Preserve both.
+            if (shiftedLegacy && slot == 0) continue;
 
             uint cur = current[slot];
-            bool curFilled = !IsEmptySlotId(cur);
-
-            if (target.TryGetValue(slot, out var wanted))
-            {
-                uint want = wanted.ItemId;
-                if (curFilled && cur == want) continue; // already correct — leave it
-
-                uint fullId = want + CategoryPrefix(slot);
-
-                // Only spawn what the player does not already own. Spawning creates a
-                // FRESH copy, so equipping the one already in the inventory keeps its
-                // ash of war and stops gear being duplicated on every restore.
-                bool owned = IsInInventory(playerGameData, fullId);
-
-                if (!owned)
-                {
-                    // A spawned weapon otherwise gets its CLASS default skill, not the
-                    // one it was carrying — the mounted ash lives on the item instance
-                    // and cannot be read back, so the snapshot carries a hand-authored
-                    // gem id instead (see EquippedItem.AshOfWarId). -1 keeps the old
-                    // behaviour, which is what every un-authored weapon gets.
-                    itemService.SpawnItem((int)fullId, 1, wanted.AshOfWarId, false, 1);
-                }
-
-                Equip(fullId, slot);
-            }
-            else if (curFilled)
-            {
-                // Snapshot leaves this slot empty → unequip by toggling the current item.
+            bool curFilled = !IsEmptySlotId(cur, slot);
+            bool alreadyWanted = target.TryGetValue(slot, out var wanted) && cur == wanted.ItemId;
+            if (curFilled && !alreadyWanted)
                 Equip(cur + CategoryPrefix(slot), slot);
+        }
+
+        // Read the post-clear state before filling targets; never make decisions
+        // using the array captured before the game moved/unequipped items.
+        current = ReadEquippedArray(playerGameData);
+
+        var pending = new List<(int Slot, uint FullId)>();
+        var spawnedIds = new HashSet<uint>();
+        foreach (var pair in target)
+        {
+            int slot = pair.Key;
+            var wanted = pair.Value;
+            uint want = wanted.ItemId;
+            if (!IsEmptySlotId(current[slot], slot) && current[slot] == want) continue;
+
+            uint fullId = want + CategoryPrefix(slot);
+            pending.Add((slot, fullId));
+
+            // Only spawn what the player does not already own. Spawning creates a
+            // FRESH copy, so equipping the one already in the inventory keeps its
+            // ash of war and stops gear being duplicated on every restore.
+            if (!IsInInventory(playerGameData, fullId))
+            {
+                // A spawned weapon otherwise gets its CLASS default skill, not the
+                // one it was carrying. A hand-authored gem id is used when present.
+                itemService.SpawnItem((int)fullId, 1, wanted.AshOfWarId, false, 1);
+                spawnedIds.Add(fullId);
             }
         }
 
-        // Lock the pouch count to exactly what the snapshot had.
-        memoryService.Write(playerGameData + GameDataMan.TalismanPouchCount, snapshot.TalismanPouchCount);
+        // ItemSpawn returns before the inventory entry is always visible to
+        // find_inventoryid. Poll the real inventory (all spawned items together)
+        // for at most one second; this normally completes on the next game frame.
+        // Never call Equip for an id that still is not visible, because the game's
+        // failed lookup otherwise supplies a garbage inventory index.
+        WaitForInventoryItems(playerGameData, spawnedIds);
 
-        memoryService.Write(playerGameData + GameDataMan.ChrAsmArmStyle, snapshot.ArmStyle);
-        for (int i = 0; i < GameDataMan.WepSlotSelCount && i < snapshot.WeaponSlotSelections.Length; i++)
-            memoryService.Write(playerGameData + GameDataMan.ChrAsmWepSlotSel + i * 4, snapshot.WeaponSlotSelections[i]);
+        foreach (var entry in pending)
+        {
+            if (IsTalismanSlot(entry.Slot)) continue;
+            if (!IsInInventory(playerGameData, entry.FullId)) continue;
+            Equip(entry.FullId, entry.Slot);
+        }
+
+        // The opposite malformed windows omitted opposite ends of the talisman
+        // range: DLC legacy omitted slot 17; pre-DLC v1 omitted slot 20.
+        int preservedTalismanSlot = shiftedLegacy ? 17 : earlyPreDlcV1 ? 20 : -1;
+        RestoreTalismanSlots(playerGameData, target, preservedTalismanSlot);
+
+        // Lock the pouch count to exactly what the snapshot had.
+        memoryService.Write(playerGameData + GameDataMan.TalismanPouchCount, targetPouches);
+
+        var selections = snapshot.WeaponSlotSelections;
+        if (earlyPreDlcV1)
+        {
+            // Its first stored selection is the real pre-DLC ArmStyle dword.
+            if (selections != null && selections.Length > 0
+                && selections[0] >= 0 && selections[0] <= 2)
+                memoryService.Write(
+                    playerGameData + GameDataMan.ChrAsmArmStyle, (byte)selections[0]);
+        }
+        else if (!shiftedLegacy && snapshot.ArmStyle <= 2)
+        {
+            memoryService.Write(playerGameData + GameDataMan.ChrAsmArmStyle, snapshot.ArmStyle);
+        }
+
+        if (selections != null)
+        {
+            int sourceCount = System.Math.Min(selections.Length, GameDataMan.WepSlotSelCount);
+            for (int source = 0; source < sourceCount; source++)
+            {
+                if (earlyPreDlcV1 && source == 0) continue;
+
+                int destination = shiftedLegacy
+                    ? source + 1
+                    : earlyPreDlcV1 ? source - 1 : source;
+                if (destination >= GameDataMan.WepSlotSelCount) break;
+
+                int selection = selections[source];
+                if (selection < 0 || selection > 2) continue;
+                memoryService.Write(playerGameData + GameDataMan.ChrAsmWepSlotSel + destination * 4, selection);
+            }
+        }
     }
 
     // The ChrAsm array stores "Unarmed" (an empty weapon slot) as this weapon id.
@@ -152,12 +231,16 @@ public class EquipService(IMemoryService memoryService, IItemService itemService
     // longbow/rapier). Empty slots otherwise read as 0 or 0xFFFFFFFF.
     private const uint UnarmedWeaponId = 110000;
 
-    private static bool IsEmptySlotId(uint id) =>
-        id == 0 || id == 0xFFFFFFFF || id == UnarmedWeaponId;
+    private static bool IsEmptySlotId(uint id, int slot) =>
+        id == 0 || id == 0xFFFFFFFF || (slot >= 0 && slot <= 5 && id == UnarmedWeaponId);
+
+    private static bool IsRestorableSlot(int slot) =>
+        (slot >= 0 && slot <= 9) || (slot >= 12 && slot <= 15) || (slot >= 17 && slot <= 20);
+
+    private static bool IsTalismanSlot(int slot) => slot >= 17 && slot <= 20;
 
     // ChrAsm stores bare param ids; the spawn/equip functions want the category-
     // prefixed id, keyed by slot type.
-    private const int HairSlot = 16;
     private static uint CategoryPrefix(int slot) => slot switch
     {
         >= 12 and <= 15 => 0x10000000, // armor (Protector)
@@ -169,15 +252,22 @@ public class EquipService(IMemoryService memoryService, IItemService itemService
     // control block (grip + active-armament selections).
     public EquipmentSnapshot CaptureEquipment()
     {
-        var snapshot = new EquipmentSnapshot();
+        var snapshot = new EquipmentSnapshot
+        {
+            LayoutVersion = EquipmentSnapshot.CurrentLayoutVersion,
+            SourceGameLayout = GameDataMan.UsesDlcCharacterLayout
+                ? CharacterDataLayout.Dlc
+                : CharacterDataLayout.PreDlc,
+        };
         var playerGameData = ResolvePlayerGameData();
         if (playerGameData == 0) return snapshot;
 
         var current = ReadEquippedArray(playerGameData);
         for (int slot = 0; slot < current.Length; slot++)
         {
+            if (!IsRestorableSlot(slot)) continue;
             uint id = current[slot];
-            if (!IsEmptySlotId(id))
+            if (!IsEmptySlotId(id, slot))
                 snapshot.Items.Add(new EquippedItem { Slot = slot, ItemId = id });
         }
 
@@ -210,7 +300,7 @@ public class EquipService(IMemoryService memoryService, IItemService itemService
 
     // True if the player already holds this exact (category-prefixed) item id.
     // Walks the same EquipInventoryData entry array the consumables capture uses;
-    // entries are 20 bytes with the item id at +0x04 (see Offsets.cs).
+    // the runtime-specific stride and item-id field are documented in Offsets.cs.
     private bool IsInInventory(nint playerGameData, uint fullItemId)
     {
         var inv = playerGameData + GameDataMan.EquipInventoryData;
@@ -232,6 +322,125 @@ public class EquipService(IMemoryService memoryService, IItemService itemService
         }
         return false;
     }
+
+    private void WaitForInventoryItems(nint playerGameData, HashSet<uint> itemIds)
+    {
+        if (itemIds == null || itemIds.Count == 0) return;
+
+        var timer = Stopwatch.StartNew();
+        while (timer.ElapsedMilliseconds < 1000)
+        {
+            bool allVisible = true;
+            foreach (uint itemId in itemIds)
+            {
+                if (IsInInventory(playerGameData, itemId)) continue;
+                allVisible = false;
+                break;
+            }
+
+            if (allVisible) return;
+            Thread.Sleep(10);
+        }
+    }
+
+    // Talisman equip/unequip requests settle asynchronously. Handle those four
+    // slots separately: clear a mismatching slot and observe it become empty before
+    // filling it, then observe the requested id before moving on. Correct slots are
+    // only read, never toggled. A second pass catches inventory entries which become
+    // visible just after an unequip without spawning another copy.
+    private void RestoreTalismanSlots(
+        nint playerGameData,
+        Dictionary<int, EquippedItem> target,
+        int preservedSlot)
+    {
+        for (int pass = 0; pass < 2; pass++)
+        {
+            for (int slot = 17; slot <= 20; slot++)
+            {
+                // The malformed old capture omitted actual talisman slot 17, so
+                // preserving it is the only non-destructive legacy behaviour.
+                if (slot == preservedSlot) continue;
+
+                bool hasTarget = target.TryGetValue(slot, out var wanted);
+                uint expected = hasTarget ? wanted.ItemId : 0;
+                uint current = ReadEquippedSlot(playerGameData, slot);
+                if ((hasTarget && current == expected) ||
+                    (!hasTarget && IsEmptySlotId(current, slot)))
+                    continue;
+
+                if (!IsEmptySlotId(current, slot))
+                {
+                    Equip(current + CategoryPrefix(slot), slot);
+                    WaitForTalismanSlot(playerGameData, slot, 0, expectEmpty: true);
+                }
+            }
+
+            for (int slot = 17; slot <= 20; slot++)
+            {
+                if (slot == preservedSlot) continue;
+                if (!target.TryGetValue(slot, out var wanted)) continue;
+
+                uint current = ReadEquippedSlot(playerGameData, slot);
+                if (current == wanted.ItemId) continue;
+                if (!IsEmptySlotId(current, slot)) continue;
+
+                uint fullItemId = wanted.ItemId + CategoryPrefix(slot);
+                if (!IsInInventory(playerGameData, fullItemId)) continue;
+
+                Equip(fullItemId, slot);
+                WaitForTalismanSlot(
+                    playerGameData, slot, wanted.ItemId, expectEmpty: false);
+            }
+
+            Thread.Sleep(25);
+            if (TalismanSlotsMatch(playerGameData, target, preservedSlot)) return;
+        }
+    }
+
+    private bool TalismanSlotsMatch(
+        nint playerGameData,
+        Dictionary<int, EquippedItem> target,
+        int preservedSlot)
+    {
+        for (int slot = 17; slot <= 20; slot++)
+        {
+            if (slot == preservedSlot) continue;
+
+            uint current = ReadEquippedSlot(playerGameData, slot);
+            if (target.TryGetValue(slot, out var wanted))
+            {
+                if (current != wanted.ItemId) return false;
+            }
+            else if (!IsEmptySlotId(current, slot))
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private bool WaitForTalismanSlot(
+        nint playerGameData, int slot, uint expectedItemId, bool expectEmpty)
+    {
+        var timer = Stopwatch.StartNew();
+        do
+        {
+            uint current = ReadEquippedSlot(playerGameData, slot);
+            bool matches = expectEmpty
+                ? IsEmptySlotId(current, slot)
+                : current == expectedItemId;
+            if (matches) return true;
+
+            Thread.Sleep(10);
+        }
+        while (timer.ElapsedMilliseconds < 250);
+
+        return false;
+    }
+
+    private uint ReadEquippedSlot(nint playerGameData, int slot) =>
+        memoryService.Read<uint>(
+            playerGameData + GameDataMan.ChrAsmEquippedList + slot * sizeof(uint));
 
     // Reads all EquipSlotCount ChrAsm equipped ids (0xFFFFFFFF/0 = empty).
     private uint[] ReadEquippedArray(nint playerGameData)

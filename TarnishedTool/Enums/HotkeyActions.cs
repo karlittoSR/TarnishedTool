@@ -214,4 +214,8 @@ public enum HotkeyActions
     SetLineStart,
     SetLineEnd,
     RestoreLineStart,
+    SelectNextSavedSegment,
+    SelectPreviousSavedSegment,
+    RemoveLastSegmentAttempt,
+    LoadSelectedSavedSegment,
 }

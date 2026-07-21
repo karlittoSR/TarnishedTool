@@ -11,6 +11,11 @@ namespace TarnishedTool.Services
 {
     public class TravelService(IMemoryService memoryService, HookManager hookManager) : ITravelService
     {
+        // WarpToBlockId temporarily owns shared code-cave storage and two global
+        // hooks. Concurrent warps would overwrite each other's destination and
+        // uninstall hooks while the other warp is still using them.
+        private readonly object _blockWarpLock = new();
+
         public void Warp(Grace grace)
         {
             var bytes = AsmLoader.GetAsmBytes(AsmScript.GraceWarp);
@@ -25,6 +30,12 @@ namespace TarnishedTool.Services
         }
 
         public void WarpToBlockId(Position position)
+        {
+            lock (_blockWarpLock)
+                WarpToBlockIdCore(position);
+        }
+
+        private void WarpToBlockIdCore(Position position)
         {
             int area = (int)(position.BlockId >> 24) & 0xFF;
             int block = (int)(position.BlockId >> 16) & 0xFF;
@@ -106,17 +117,30 @@ namespace TarnishedTool.Services
             memoryService.WriteBytes(angleCode, bytes);
             memoryService.Write(angleCode + 0x7 + 3, angleOffsetInStruct);
 
-            hookManager.InstallHook(warpCode.ToInt64(), coordHook, [0x0F, 0x11, 0x80, 0xA0, 0x0A, 0x00, 0x00]);
-            hookManager.InstallHook(angleCode.ToInt64(), angleHook, [0x0F, 0x11, 0x80, 0xB0, 0x0A, 0x00, 0x00]);
+            bool coordHookInstalled = false;
+            bool angleHookInstalled = false;
+            try
+            {
+                hookManager.InstallHook(warpCode.ToInt64(), coordHook,
+                    [0x0F, 0x11, 0x80, 0xA0, 0x0A, 0x00, 0x00]);
+                coordHookInstalled = true;
+                hookManager.InstallHook(angleCode.ToInt64(), angleHook,
+                    [0x0F, 0x11, 0x80, 0xB0, 0x0A, 0x00, 0x00]);
+                angleHookInstalled = true;
 
-            var isFadedPtr = memoryService.Read<nint>(MenuMan.Base) + MenuMan.IsFading;
-            var fadeBit = (byte)MenuMan.FadeBitFlags.IsFadeScreen;
+                var isFadedPtr = memoryService.Read<nint>(MenuMan.Base) + MenuMan.IsFading;
+                var fadeBit = (byte)MenuMan.FadeBitFlags.IsFadeScreen;
 
-            WaitForCondition(() => memoryService.IsBitSet(isFadedPtr, fadeBit));
-            WaitForCondition(() => !memoryService.IsBitSet(isFadedPtr, fadeBit));
-
-            hookManager.UninstallHook(warpCode.ToInt64());
-            hookManager.UninstallHook(angleCode.ToInt64());
+                WaitForCondition(() => memoryService.IsBitSet(isFadedPtr, fadeBit));
+                WaitForCondition(() => !memoryService.IsBitSet(isFadedPtr, fadeBit));
+            }
+            finally
+            {
+                if (coordHookInstalled)
+                    try { hookManager.UninstallHook(warpCode.ToInt64()); } catch { }
+                if (angleHookInstalled)
+                    try { hookManager.UninstallHook(angleCode.ToInt64()); } catch { }
+            }
         }
 
         private void WaitForCondition(Func<bool> condition, int timeoutMs = 10000, int pollMs = 50)

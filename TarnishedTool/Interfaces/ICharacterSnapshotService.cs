@@ -6,7 +6,7 @@ namespace TarnishedTool.Interfaces;
 
 public interface ICharacterSnapshotService
 {
-    // Captures the current character (equipment + stats + rune level).
+    // Captures the current character, including DLC blessing levels.
     CharacterSnapshot Capture();
 
     // Applies a snapshot: stats, equipment, flasks, consumables, physick. Each

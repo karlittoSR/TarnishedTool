@@ -1,8 +1,17 @@
 //
 
 using System.Collections.Generic;
+using System.Text.Json.Serialization;
 
 namespace TarnishedTool.Models;
+
+[JsonConverter(typeof(JsonStringEnumConverter))]
+public enum CharacterDataLayout
+{
+    Unknown,
+    PreDlc,
+    Dlc,
+}
 
 // One equipped item: the equip-function slot id and the bare param id (no
 // category prefix, as stored in ChrAsm).
@@ -28,6 +37,19 @@ public class EquippedItem
 // two-handing and the active-weapon selection.
 public class EquipmentSnapshot
 {
+    // Version 2 marks captures made with version-aware pre-DLC/DLC offsets.
+    // During the version 1 transition, the same marker could be written by a
+    // correct DLC capture or by a pre-DLC capture using DLC offsets; the explicit
+    // source layout now distinguishes them. Version 0 snapshots remain supported.
+    public const int CurrentLayoutVersion = 2;
+    public int LayoutVersion { get; set; }
+
+    // The game layout that produced this capture. Equipment is stored as semantic
+    // slot ids and is portable once normalized, but retaining the source layout
+    // makes historical one-dword capture migrations unambiguous across game
+    // versions. Serialized as "PreDlc" / "Dlc" for readable exports.
+    public CharacterDataLayout SourceGameLayout { get; set; }
+
     public List<EquippedItem> Items { get; set; } = new();
 
     // ChrAsm ArmStyle byte (one-hand / two-hand grip).
@@ -37,9 +59,33 @@ public class EquipmentSnapshot
     // LeftBolt, RightBolt — which of the 3 slots per hand is currently active.
     public int[] WeaponSlotSelections { get; set; } = new int[6];
 
-    // Unlocked talisman slots (0-4) at capture time. Restored before equipping
+    // Talisman Pouches owned (0-3) at capture time. The player always has one
+    // base slot, for a total of one to four usable talisman slots. Restored before equipping
     // talismans so all captured talisman slots are valid on the target character.
     public byte TalismanPouchCount { get; set; }
+
+    // The broken capture began one dword late. Reserved slot 11 or an invalid
+    // sixth active-slot value identifies that layout without changing older,
+    // correctly-authored snapshots that also predate LayoutVersion.
+    public bool HasShiftedLegacyCapture()
+    {
+        if (SourceGameLayout == CharacterDataLayout.PreDlc) return false;
+        if (LayoutVersion != 0) return false;
+        if (SourceGameLayout == CharacterDataLayout.Dlc) return true;
+        if (Items != null && Items.Exists(item => item.Slot == 11)) return true;
+
+        return WeaponSlotSelections != null
+            && WeaponSlotSelections.Length >= 6
+            && (WeaponSlotSelections[5] < 0 || WeaponSlotSelections[5] > 2);
+    }
+
+    // Layout version 1 was produced while DLC addresses were temporarily used on
+    // pre-DLC builds. The explicit source marker is authoritative. ArmStyle is a
+    // fallback signature for old imports that predate the marker.
+    public bool HasEarlyPreDlcV1Capture() =>
+        LayoutVersion == 1
+        && (SourceGameLayout == CharacterDataLayout.PreDlc
+            || (SourceGameLayout == CharacterDataLayout.Unknown && ArmStyle > 2));
 
     // Carries hand-authored ash-of-war ids over from a previous snapshot, so
     // re-capturing (Update) does not wipe them. Matched on the BASE weapon id, so

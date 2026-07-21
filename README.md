@@ -45,7 +45,7 @@ This fork focuses on reliability and workflow improvements for speedrunners: saf
 * Timing is automatic and standardized: enter the start radius, leave it to begin, then reach the finish radius or trigger the configured flag to stop. Position checks run every 16 ms.
 * The draggable, **stay-on-top** window keeps up to eight session attempts with editable names and deltas. A saved personal best is protected and shown in **gold**; a benchmark imported from another runner is kept separately as a read-only blue **Reference**.
 * **Reset to Start** restores the exact starting position and saved character setup, resets nearby enemies, refills HP/FP and flasks, and revives nearby bosses through boss-size-aware reload ranges.
-* **Saved Segments** stores named segments with their complete definition and character snapshot: positions/radii or finish flag, equipment, stats, flasks, physick, consumables, and per-weapon Ash of War choices.
+* **Saved Segments** stores named segments with their complete definition and character snapshot: positions/radii or finish flag, equipment, stats, **Scadutree and Revered Spirit Ash blessing levels**, flasks, physick, consumables, and per-weapon Ash of War choices.
 * **JSON sharing** can export the selected segment or the complete library. Imports preserve every segment field, skip equivalent definitions, keep the sender's best as a reference, and maintain the recipient's personal PB independently. Versioned exports from the same library round-trip both times exactly.
 * Saved segments live in `%AppData%\TarnishedTool\lines.json`; legacy `lines.txt` libraries migrate automatically.
 

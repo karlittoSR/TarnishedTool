@@ -12,6 +12,14 @@ namespace TarnishedTool.Views.Windows;
 
 public partial class SavedLinesWindow : TopmostWindow
 {
+    // Keep a hotkey-driven selection visible when the list is longer than the
+    // window. Mouse selection gets the same harmless behavior.
+    private void SavedLinesList_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (sender is ListBox list && list.SelectedItem != null)
+            list.ScrollIntoView(list.SelectedItem);
+    }
+
     // Double-clicking an item loads it (same as the Load button).
     private void SavedLinesList_MouseDoubleClick(object sender, MouseButtonEventArgs e)
     {

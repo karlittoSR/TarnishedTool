@@ -15,8 +15,8 @@ namespace TarnishedTool.Services;
 
 // Reads and restores the two character pieces that live in the goods system:
 // the Wondrous Physick mix (inline in PlayerGameData) and consumable counts
-// (walked from the EquipInventoryData entry array). Both layouts were derived on
-// v1.07; see the offset comments in Offsets.cs.
+// (walked from the EquipInventoryData entry array). See the verified live-layout
+// offset comments in Offsets.cs.
 public class InventoryService(
     IMemoryService memoryService,
     IParamService paramService,
@@ -69,8 +69,11 @@ public class InventoryService(
 
     public ConsumablesSnapshot CaptureConsumables()
     {
-        var snapshot = new ConsumablesSnapshot();
-        foreach (var (goodId, quantity) in ReadHeldGoods())
+        var snapshot = new ConsumablesSnapshot
+        {
+            LayoutVersion = ConsumablesSnapshot.CurrentLayoutVersion
+        };
+        foreach (var (goodId, quantity) in ReadHeldGoods(GameDataMan.InventoryEntrySize))
         {
             if (!IsRestorableConsumable(goodId)) continue;
             snapshot.Items.Add(new ConsumableItem { GoodId = goodId, Quantity = quantity });
@@ -92,7 +95,10 @@ public class InventoryService(
         foreach (var item in snapshot.Items)
             target[item.GoodId] = item.Quantity;
 
-        var seen = ReadHeldGoods().ToList();
+        int entrySize = snapshot.LayoutVersion >= ConsumablesSnapshot.CurrentLayoutVersion
+            ? GameDataMan.InventoryEntrySize
+            : GameDataMan.LegacyInventoryEntrySize;
+        var seen = ReadHeldGoods(entrySize).ToList();
 
         // Trim or remove what's held now, then top up the rest.
         var held = new HashSet<uint>();
@@ -121,7 +127,7 @@ public class InventoryService(
         // Re-read and report only what failed to land, so a silent partial restore
         // cannot go unnoticed. Entries the filter rejects are skipped — legacy
         // snapshots hold non-consumables we deliberately no longer touch.
-        var after = ReadHeldGoods().ToDictionary(g => g.GoodId, g => g.Quantity);
+        var after = ReadHeldGoods(entrySize).ToDictionary(g => g.GoodId, g => g.Quantity);
         foreach (var kvp in target)
         {
             if (!IsRestorableConsumable(kvp.Key)) continue;
@@ -134,7 +140,7 @@ public class InventoryService(
         // slot to the actual inventory stack, so every restored slot renders "0"
         // even when the item is held. The binding appears to need the entry's
         // ga_item handle (entry+0x00, e.g. 0xB00006C2), which is not stored
-        // adjacent to the slot — the physick tears at +0x674 bound the region, so
+        // adjacent to the slot — the physick tears bound the region, so
         // the bar cannot simply be a wider stride. QuickSlots is still captured so
         // the data is there if the binding is ever worked out.
         return log.ToString();
@@ -178,7 +184,7 @@ public class InventoryService(
 
 
     // Walks the EquipInventoryData entry array and yields every goods stack.
-    private IEnumerable<(uint GoodId, int Quantity)> ReadHeldGoods()
+    private IEnumerable<(uint GoodId, int Quantity)> ReadHeldGoods(int entrySize)
     {
         var pgd = ResolvePlayerGameData();
         if (pgd == 0) yield break;
@@ -191,12 +197,12 @@ public class InventoryService(
         count = Math.Min(count, MaxInventoryEntries);
 
         byte[] buffer;
-        try { buffer = memoryService.ReadBytes(entries, count * GameDataMan.InventoryEntrySize); }
+        try { buffer = memoryService.ReadBytes(entries, count * entrySize); }
         catch { yield break; }
 
         for (int i = 0; i < count; i++)
         {
-            int at = i * GameDataMan.InventoryEntrySize;
+            int at = i * entrySize;
             uint itemId = BitConverter.ToUInt32(buffer, at + GameDataMan.InventoryEntryItemId);
             if ((itemId & GameDataMan.ItemCategoryMask) != GameDataMan.GoodsCategoryPrefix) continue;
 

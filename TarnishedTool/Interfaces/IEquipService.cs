@@ -17,7 +17,7 @@ public interface IEquipService
     // Equips an item already present in the player's inventory into the given
     // ChrAsm equipment slot. itemId is the category-prefixed id (same form used
     // by SpawnItem). Slot ids: 0=L-hand1, 1=R-hand1, 6=arrow1, 7=bolt1,
-    // 12=head, 13=chest, 14=legs, 15=hands, 17-20=talismans.
+    // 12=head, 13=chest, 14=arms, 15=legs, 17-20=talismans.
     void Equip(uint itemId, int equipSlot);
 
     // Discovery helper: offsets (from PlayerGameData) whose dword equals value.

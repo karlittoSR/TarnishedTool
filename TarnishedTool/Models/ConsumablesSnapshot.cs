@@ -16,6 +16,12 @@ public class ConsumableItem
 // materials, spells, remembrances or spirit ashes.
 public class ConsumablesSnapshot
 {
+    // Version 1 was captured from the corrected, runtime-specific inventory
+    // stride. Version 0 means an existing snapshot from the original 20-byte
+    // reader and keeps that same reader when restored for backward compatibility.
+    public const int CurrentLayoutVersion = 1;
+    public int LayoutVersion { get; set; }
+
     public List<ConsumableItem> Items { get; set; } = new();
 
     // Which consumable sits in each quick-item bar slot (bare goods ids, NoItem

@@ -14,15 +14,22 @@ public class CharacterSnapshotService(
     IInventoryService inventoryService)
     : ICharacterSnapshotService
 {
-    public CharacterSnapshot Capture() => new()
+    public CharacterSnapshot Capture()
     {
-        Equipment = equipService.CaptureEquipment(),
-        Stats = playerService.GetStats(),
-        RuneLevel = playerService.GetRuneLevel(),
-        Flasks = flaskService?.CaptureFlasks(),
-        Physick = inventoryService?.CapturePhysick(),
-        Consumables = inventoryService?.CaptureConsumables(),
-    };
+        bool dlcLayout = GameDataMan.UsesDlcCharacterLayout;
+        return new CharacterSnapshot
+        {
+            Equipment = equipService.CaptureEquipment(),
+            Stats = playerService.GetStats(),
+            RuneLevel = playerService.GetRuneLevel(),
+            // These bytes do not represent blessings before the DLC layout.
+            ScadutreeBlessingLevel = dlcLayout ? playerService.GetScadu() : null,
+            ReveredSpiritAshBlessingLevel = dlcLayout ? playerService.GetSpiritAsh() : null,
+            Flasks = flaskService?.CaptureFlasks(),
+            Physick = inventoryService?.CapturePhysick(),
+            Consumables = inventoryService?.CaptureConsumables(),
+        };
+    }
 
     public string Apply(CharacterSnapshot snapshot)
     {
@@ -42,6 +49,14 @@ public class CharacterSnapshotService(
         if (snapshot.Stats != null)
             Step("Stats", () => ApplyStats(snapshot.Stats));
 
+        if (GameDataMan.UsesDlcCharacterLayout && snapshot.ScadutreeBlessingLevel.HasValue)
+            Step("Scadutree Blessing", () => playerService.SetScadu(
+                Clamp(snapshot.ScadutreeBlessingLevel.Value, 0, 20)));
+
+        if (GameDataMan.UsesDlcCharacterLayout && snapshot.ReveredSpiritAshBlessingLevel.HasValue)
+            Step("Revered Spirit Ash Blessing", () => playerService.SetSpiritAsh(
+                Clamp(snapshot.ReveredSpiritAshBlessingLevel.Value, 0, 10)));
+
         if (snapshot.Equipment != null)
             Step("Equipment", () => equipService.ApplyEquipment(snapshot.Equipment));
 
@@ -58,7 +73,12 @@ public class CharacterSnapshotService(
                 if (!string.IsNullOrWhiteSpace(report)) errors.AppendLine("[consumables]\n" + report);
             });
 
-        if (snapshot.Physick != null)
+        // The same one-dword-late legacy capture that shifted equipment also read
+        // Physick from the wrong region. Its tear values cannot be reconstructed,
+        // so preserve the current mix until that segment is updated/re-captured.
+        bool invalidPreDlcV1Physick = snapshot.Equipment?.HasEarlyPreDlcV1Capture() == true;
+        bool invalidLegacyDlcPhysick = snapshot.Equipment?.HasShiftedLegacyCapture() == true;
+        if (snapshot.Physick != null && !invalidPreDlcV1Physick && !invalidLegacyDlcPhysick)
             Step("Physick", () => inventoryService?.ApplyPhysick(snapshot.Physick));
 
         return errors.ToString();
@@ -77,4 +97,7 @@ public class CharacterSnapshotService(
         playerService.SetStat((int)GameDataMan.PlayerGameDataOffsets.Faith, stats.Faith);
         playerService.SetStat((int)GameDataMan.PlayerGameDataOffsets.Arcane, stats.Arcane);
     }
+
+    private static int Clamp(int value, int minimum, int maximum) =>
+        value < minimum ? minimum : value > maximum ? maximum : value;
 }

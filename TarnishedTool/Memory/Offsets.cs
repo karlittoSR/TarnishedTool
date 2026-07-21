@@ -651,6 +651,17 @@ namespace TarnishedTool.Memory
 
             public const int PlayerGameData = 0x8;
 
+            // Shadow of the Erdtree moved several fields in PlayerGameData. Keep
+            // the two layouts explicit: using the DLC addresses on an older game
+            // build corrupts ChrAsm equipment state and can crash the game on the
+            // next restore.
+            public static bool UsesDlcCharacterLayout => Version switch
+            {
+                Version2_2_0 or Version2_2_3 or Version2_3_0 or Version2_4_0
+                    or Version2_5_0 or Version2_6_0 or Version2_6_1 or Version2_6_2 => true,
+                _ => false,
+            };
+
             // Offset from PlayerGameData to the EquipInventoryData used by the
             // equip/find-inventory-id game functions. Equip POC — validate per
             // version (sourced from an older ER build).
@@ -660,61 +671,62 @@ namespace TarnishedTool.Memory
             // index matches the equip-function slot id, so capture/re-apply are
             // symmetric. Layout (bare param ids, no category prefix):
             //   0-5   weapons  L1,R1,L2,R2,L3,R3
-            //   6-11  ammo     Arrow1,Bolt1,Arrow2,Bolt2,Arrow3,Bolt3
+            //   6-9   ammo     Arrow1,Bolt1,Arrow2,Bolt2
+            //   10-11 reserved / non-equipment
             //   12-15 armor    Head,Chest,Arms,Legs
-            //   16    Hair
-            //   17-21 talismans 1-5
-            // Derived on v1.07 (ChrAsm at PGD+0x328, array at ChrAsm+0x74).
-            // PlayerGameData layout is treated as version-stable here, same as the
-            // stat offsets above.
-            public const int ChrAsmEquippedList = 0x39C;
+            //   16    reserved / hair
+            //   17-20 talismans 1-4 (21 is an unused fifth binary slot)
+            // Verified at +0x39C on v1.07 and +0x398 on DLC-era builds.
+            public static int ChrAsmEquippedList => UsesDlcCharacterLayout ? 0x398 : 0x39C;
             public const int EquipSlotCount = 22;
 
-            // ChrAsm control block (base = PGD + 0x328): grip + active-armament
-            // selection. Needed to restore two-handing and which weapon is active.
-            public const int ChrAsmArmStyle = 0x328;      // byte: one-hand / two-hand grip
-            public const int ChrAsmWepSlotSel = 0x32C;    // 6 x int32: L, R, LArrow, RArrow, LBolt, RBolt
+            // ChrAsm control block: grip + six active-armament selections. It is
+            // 28 bytes total (one dword followed by six dwords). The old offsets
+            // started one dword late and treated the following inventory handle as
+            // the sixth selection.
+            public static int ChrAsmArmStyle => UsesDlcCharacterLayout ? 0x324 : 0x328;
+            public static int ChrAsmWepSlotSel => UsesDlcCharacterLayout ? 0x328 : 0x32C;
             public const int WepSlotSelCount = 6;
 
-            // Number of unlocked talisman slots (0-4). Gates which talisman equip
+            // Number of Talisman Pouches owned (0-3). Gates which talisman equip
             // slots (17-20) are valid, so a snapshot must restore it before
             // equipping talismans.
             public const int TalismanPouchCount = 0xC6;   // byte
 
             // Quick-item bar: 10 goods-prefixed slots inline in PlayerGameData
-            // (0xFFFFFFFF = empty). Confirmed on v1.07 — the first bar item (Kukri)
-            // scanned to +0x630. The pouch follows at +0x658 and the physick tears
-            // sit after it at +0x674, so the 10-slot write stops well clear of both.
-            public const int QuickItemSlots = 0x630;
+            // (0xFFFFFFFF = empty). Verified at +0x630 on v1.07 and +0x650 on
+            // DLC-era builds.
+            public static int QuickItemSlots => UsesDlcCharacterLayout ? 0x650 : 0x630;
             public const int QuickItemSlotCount = 10;
 
             // Flask of Wondrous Physick: the two mixed crystal tears, stored inline
             // in PlayerGameData as goods-prefixed ids (GoodsCategoryPrefix | goodId),
-            // 0xFFFFFFFF when the slot is empty. Derived on v1.07 by scanning for a
-            // known mixed pair (Crimson 11002 -> +0x674, Cerulean 11004 -> +0x678).
+            // 0xFFFFFFFF when the slot is empty. Verified at +0x674/+0x678 on
+            // v1.07 and +0x694/+0x698 on DLC-era builds.
             // NOTE: the quick-item bar occupies the range just before these.
-            public const int PhysickTear1 = 0x674;
-            public const int PhysickTear2 = 0x678;
+            public static int PhysickTear1 => UsesDlcCharacterLayout ? 0x694 : 0x674;
+            public static int PhysickTear2 => UsesDlcCharacterLayout ? 0x698 : 0x678;
 
             // Goods inventory, reached through the EquipInventoryData struct
             // (PlayerGameData + EquipInventoryData). The struct is a series of
             // {pointer(8), count(4), capacity(4)} blocks; the first block is the
             // main inventory.
             //
-            // Entries are 20 bytes (NOT 16) and start at the buffer base:
+            // Entries are 24 bytes in DLC-era builds and 20 bytes before them.
+            // They start at the buffer base:
             //   +0x00 ga_item handle (category 0xB0… for goods)
             //   +0x04 item id (category-prefixed: 0x0 weapon, 0x10000000 armor,
             //         0x20000000 accessory, 0x40000000 goods)
             //   +0x08 quantity
             //   +0x0C display/sort id
-            //   +0x10 padding (reads 0xFFFFFFFF)
-            // Verified on v1.07: Kukri at byte 0x230 = entry 28, Exalted Flesh at
-            // 0x26C = entry 31, Memory of Grace at 0x00 = entry 0 — all exact
-            // multiples of 20. A 16-byte stride misaligns every entry after the
-            // first, which silently reduced capture to a few coincidental matches.
+            //   +0x10/+0x14 bookkeeping/padding
+            // Live v2.6.2 verification: accessory 1041 occurs on exact 24-byte
+            // boundaries. Walking 20 bytes only hits every sixth real entry and
+            // made ownership checks repeatedly grant items that were already held.
             public const int InventoryEntriesPtr = 0x10;   // qword: entries array
             public const int InventoryCount = 0x18;        // dword: used entries
-            public const int InventoryEntrySize = 0x14;
+            public const int LegacyInventoryEntrySize = 0x14;
+            public static int InventoryEntrySize => UsesDlcCharacterLayout ? 0x18 : LegacyInventoryEntrySize;
             public const int InventoryEntryItemId = 0x04;  // u32, category-prefixed
             public const int InventoryEntryQuantity = 0x08; // u32
 

@@ -44,10 +44,8 @@ public class LineComparisonViewModel : BaseViewModel
     // machine is suppressed until it finishes, then the Tick re-arms cleanly (player
     // back at the start, clock 0). _reArmPending is set by the background task so the
     // re-arm runs on the game-tick thread.
-    private bool _resetInProgress;
-    private bool _reArmPending;
-    private DateTime _resetStart;
-    private static readonly TimeSpan ResetTimeout = TimeSpan.FromSeconds(20);
+    private volatile bool _resetInProgress;
+    private volatile bool _reArmPending;
 
     private enum Phase { Idle, Armed, AtStart, Running, Finished }
 
@@ -131,6 +129,8 @@ public class LineComparisonViewModel : BaseViewModel
     #endregion
 
     public ObservableCollection<LineComparisonAttempt> Attempts { get; } = new();
+
+    public bool IsRestoreInProgress => _resetInProgress;
 
     #region Properties
 
@@ -326,6 +326,11 @@ public class LineComparisonViewModel : BaseViewModel
     public void RestoreToStart()
     {
         if (_start == null) return;
+        if (_resetInProgress)
+        {
+            ShowRestoreBusyFeedback();
+            return;
+        }
 
         // The zone reset is always attempted — no opt-in toggle. ResetZoneInPlace
         // already decides for itself whether the destination has a boss: if it does
@@ -338,7 +343,6 @@ public class LineComparisonViewModel : BaseViewModel
         // exact start → apply char → rest — to avoid a racing second warp. Suppress
         // the timer meanwhile; the Tick re-arms once _reArmPending is set.
         _resetInProgress = true;
-        _resetStart = DateTime.Now;
         ReArm(); // show Armed / 00:00 immediately
 
         var start = _start;
@@ -381,6 +385,39 @@ public class LineComparisonViewModel : BaseViewModel
                 _resetInProgress = false;
             }
         });
+    }
+
+    public void LoadSelectedSavedSegment()
+    {
+        _savedLinesViewModel.LoadSelected();
+    }
+
+    public void ShowRestoreBusyFeedback() => ShowFeedback("Restore already in progress");
+
+    public string SelectNextSavedSegment() =>
+        _savedLinesViewModel.SelectRelative(1)?.Name;
+
+    public string SelectPreviousSavedSegment() =>
+        _savedLinesViewModel.SelectRelative(-1)?.Name;
+
+    // This is intentionally the literal bottom row, not the highest attempt
+    // number. Pruned/DNF runs can make those differ. PB/reference rows are
+    // protected and therefore never removed by this shortcut.
+    public bool RemoveLastSegmentAttempt()
+    {
+        var last = Attempts.LastOrDefault();
+        if (last == null || last.IsProtected)
+        {
+            ShowFeedback("No session attempt to remove");
+            return false;
+        }
+
+        if (ReferenceEquals(SelectedAttempt, last))
+            SelectedAttempt = null;
+        Attempts.Remove(last);
+        RecomputeDeltas();
+        ShowFeedback("Last attempt removed");
+        return true;
     }
 
     private void ShowFeedback(string message)
@@ -797,8 +834,6 @@ public class LineComparisonViewModel : BaseViewModel
             // Fall back to clearing if the reset somehow never completes.
             if (_resetInProgress)
             {
-                if (DateTime.Now - _resetStart > ResetTimeout)
-                    _resetInProgress = false;
                 return;
             }
 

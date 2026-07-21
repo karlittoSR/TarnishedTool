@@ -263,7 +263,11 @@ namespace TarnishedTool.Services
                 HotkeyActions.OpenLineComparison => "Segment Timer",
                 HotkeyActions.SetLineStart => "Set Line Start",
                 HotkeyActions.SetLineEnd => "Set Line End",
+                HotkeyActions.LoadSelectedSavedSegment => "Load Selected Segment",
                 HotkeyActions.RestoreLineStart => "Restore to Line Start",
+                HotkeyActions.SelectNextSavedSegment => "Next Saved Segment",
+                HotkeyActions.SelectPreviousSavedSegment => "Previous Saved Segment",
+                HotkeyActions.RemoveLastSegmentAttempt => "Remove Last Segment Attempt",
                 _ => action.ToString()
             };
         }

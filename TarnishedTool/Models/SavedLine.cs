@@ -88,8 +88,8 @@ public class SavedLine : INotifyPropertyChanged
         ? $"Ref {TimeFormatter.Mmssmmm(_referenceMs)}"
         : "";
 
-    // Optional character state (equipment + stats + rune level) captured when the
-    // line was saved. Null for position-only lines and for legacy entries.
+    // Optional character state (equipment, stats, DLC blessings, resources) captured
+    // when the segment was saved. Null for definition-only and legacy entries.
     private CharacterSnapshot _snapshot;
     public CharacterSnapshot Snapshot
     {

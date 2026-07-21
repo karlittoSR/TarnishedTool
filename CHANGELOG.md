@@ -6,7 +6,7 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 - **Segment Timer event-flag finishes.** A segment still starts from a position, but can now finish either inside a positional radius or when a chosen event flag transitions to ON/OFF. **Scan** opens the existing Event Logger without interfering with an active timer listener.
-- **Complete character snapshots for Saved Segments.** Saves can restore equipment, stats, rune level, flasks, physick, consumables, and the configured Ash of War for weapons that must be spawned.
+- **Complete character snapshots for Saved Segments.** Saves can restore equipment, stats, rune level, Scadutree and Revered Spirit Ash blessing levels, flasks, physick, consumables, and the configured Ash of War for weapons that must be spawned.
 - **Boss-aware Reset to Start.** Restoring resets nearby enemies, refills HP/FP and flasks, and revives/reloads bosses using normal, large, and giant proximity tiers; long-distance restores use a loading warp.
 - **Personal PB and imported Reference separation.** A sender's best is a protected blue benchmark while the recipient builds an independent gold PB. Same-library exports preserve both values exactly.
 - **Versioned JSON sharing.** Export either one selected segment or the complete library. The importer accepts current envelopes, earlier JSON arrays, and legacy segment codes.
@@ -19,6 +19,8 @@ All notable changes to this project will be documented in this file.
 - Saved libraries now use `%AppData%\TarnishedTool\lines.json`; existing `lines.txt` data migrates automatically.
 
 ### Fixed
+- Corrected DLC-era equipment, active-slot, quick-item and Physick memory layouts; repeated segment loads no longer alternate or shift armor and talismans.
+- Corrected the DLC-era inventory-entry stride so owned equipment is detected instead of being granted repeatedly; legacy consumable snapshots retain their original reader for safe restores.
 - Loading, renaming, updating, importing, or clearing a saved segment no longer erases its gold time.
 - **Update** now applies changed positions, radii, finish type/flag, and character state while preserving the segment's identity and comparison times.
 - Restore ordering is deterministic: zone reset/warp, exact position, character snapshot, then grace refill. This avoids post-warp falls, stale equipment, incorrect resources, and Ash of War replacement errors.
