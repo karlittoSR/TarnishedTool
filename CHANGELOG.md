@@ -2,11 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
-## [v1.3.0] - 2026-07-21
+## [v1.3.0] - 2026-08-16
 
 ### Added
 - **Segment Timer event-flag finishes.** A segment still starts from a position, but can now finish either inside a positional radius or when a chosen event flag transitions to ON/OFF. **Scan** opens the existing Event Logger without interfering with an active timer listener.
 - **Complete character snapshots for Saved Segments.** Saves can restore equipment, stats, rune level, Scadutree and Revered Spirit Ash blessing levels, flasks, physick, consumables, and the configured Ash of War for weapons that must be spawned.
+- **Memorized spells in character snapshots.** The full fourteen-slot memorized-spell loadout and the selected slot are captured and restored through the game's own Memorize Spell path, so the spell list and its dependent caches stay consistent. Empty slots round-trip as empty, and restore never writes past the character's unlocked memory-slot capacity.
+- **Folders for Saved Segments.** Create, rename, nest and delete folders, and drag segments or folders to move and reorder them. Folders are stored by stable id, so renaming or moving one never rewrites the segments inside it, and the single-segment export format is unchanged.
 - **Boss-aware Reset to Start.** Restoring resets nearby enemies, refills HP/FP and flasks, and revives/reloads bosses using normal, large, and giant proximity tiers; long-distance restores use a loading warp.
 - **Personal PB and imported Reference separation.** A sender's best is a protected blue benchmark while the recipient builds an independent gold PB. Same-library exports preserve both values exactly.
 - **Versioned JSON sharing.** Export either one selected segment or the complete library. The importer accepts current envelopes, earlier JSON arrays, and legacy segment codes.
