@@ -210,6 +210,7 @@ public enum HotkeyActions
     DisableKbForNoClip,
     AllDiscardable,
     NoRoll,
+    SlopeIndicator,
     OpenLineComparison,
     SetLineStart,
     SetLineEnd,

@@ -80,6 +80,7 @@ namespace TarnishedTool.Services
                 HotkeyActions.NoDamage => "No Damage",
                 HotkeyActions.NoHit => "No Hit",
                 HotkeyActions.NoRoll => "No Roll",
+                HotkeyActions.SlopeIndicator => "Slope Indicator",
                 HotkeyActions.InfiniteStamina => "Infinite Stamina",
                 HotkeyActions.InfiniteConsumables => "Infinite Consumables",
                 HotkeyActions.InfiniteFp => "Infinite FP",

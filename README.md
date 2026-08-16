@@ -39,6 +39,12 @@ This fork focuses on reliability and workflow improvements for speedrunners: saf
 * The overlay is display-only and does not change Repeat Last Act or Force Act state.
 * A **hotkey binding** for the Acts Overlay toggle is available in the Settings tab.
 
+### Slope Indicator
+* Toggle **Slope Indicator** in the Player tab to open a small draggable overlay dot that reads the ground you are running over, so you can tell at a glance whether a jump is worth it.
+* **Green** = uphill and **blue** = flat — a jump gains time. **Red** = downhill — a jump loses time. **Grey** = standing still or just loaded, no reading yet.
+* The reading is the slope along your direction of travel (rise over distance covered), averaged over the last second, so it is the same on foot, sprinting or on Torrent, and it does not flicker on stairs, roots or single-frame physics pops.
+* Hover the dot for the exact gradient. Overlay position is saved between sessions, and the toggle is bindable to a **hotkey** in the Settings tab.
+
 ### Segment Timer
 * Open **Segment Timer** in the Advanced tab to practise a boss, skip, or movement segment using **in-game time** — no LiveSplit needed.
 * The start is always positional. The finish can be another position or an **Event Flag** transition; the built-in **Scan** button opens the Event Logger to help find the flag ID.

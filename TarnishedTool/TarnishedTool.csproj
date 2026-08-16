@@ -371,6 +371,7 @@
         <Compile Include="Utilities\EnumUtil.cs" />
         <Compile Include="Utilities\PatchManager.cs" />
         <Compile Include="Utilities\PositionUtils.cs" />
+        <Compile Include="Utilities\SlopeTracker.cs" />
         <Compile Include="Utilities\DataLoader.cs" />
         <Compile Include="Utilities\ExeManager.cs" />
         <Compile Include="Utilities\HotkeyManager.cs" />
@@ -535,6 +536,9 @@
         </Compile>
         <Compile Include="Views\Windows\DpsOverlayWindow.xaml.cs">
           <DependentUpon>DpsOverlayWindow.xaml</DependentUpon>
+        </Compile>
+        <Compile Include="Views\Windows\SlopeOverlayWindow.xaml.cs">
+          <DependentUpon>SlopeOverlayWindow.xaml</DependentUpon>
         </Compile>
         <Compile Include="Views\Windows\InfoOverlayWindow.xaml.cs">
           <DependentUpon>InfoOverlayWindow.xaml</DependentUpon>
@@ -716,6 +720,10 @@
             <SubType>Designer</SubType>
         </Page>
         <Page Include="Views\Windows\DpsOverlayWindow.xaml">
+            <Generator>MSBuild:Compile</Generator>
+            <SubType>Designer</SubType>
+        </Page>
+        <Page Include="Views\Windows\SlopeOverlayWindow.xaml">
             <Generator>MSBuild:Compile</Generator>
             <SubType>Designer</SubType>
         </Page>

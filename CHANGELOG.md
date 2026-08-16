@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v1.4.0] - 2026-08-17
+
+### Added
+- **Slope Indicator.** A new Player-tab checkbox opens a small draggable overlay dot that reads the terrain under the player, so a runner can see whether a jump gains time: green uphill and blue on flat ground (jump gains), red downhill (jump loses), grey while standing still or right after a load. The reading is the slope along the direction of travel — rise over the horizontal distance actually covered — averaged across the last second, so it is independent of walking, sprinting or riding Torrent and does not flicker on stairs, roots or single-frame physics pops. Warps and map-block changes reset the reading instead of registering as a cliff. Hovering the dot shows the exact gradient, the overlay position is remembered, and the toggle is bindable to a hotkey.
+
 ## [v1.3.0] - 2026-08-16
 
 ### Added

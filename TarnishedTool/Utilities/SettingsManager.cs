@@ -64,6 +64,9 @@ public class SettingsManager
     public double DpsOverlayLeft { get; set; }
     public double DpsOverlayTop { get; set; }
     public bool ShowDpsOverlay { get; set; }
+    public double SlopeOverlayLeft { get; set; }
+    public double SlopeOverlayTop { get; set; }
+    public bool ShowSlopeOverlay { get; set; }
     public bool EnableHotkeys { get; set; }
     public bool RememberPlayerSpeed { get; set; }
     public float PlayerSpeed { get; set; }

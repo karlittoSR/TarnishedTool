@@ -228,6 +228,10 @@
                     <CheckBox Content="No Roll"
                               IsChecked="{Binding IsNoRollEnabled}"
                               Margin="0,2" />
+                    <CheckBox Content="Slope Indicator"
+                              ToolTip="Draggable overlay dot: green uphill, blue flat (jump gains time), red downhill (jump loses time)"
+                              IsChecked="{Binding IsSlopeIndicatorEnabled}"
+                              Margin="0,2" />
                 </StackPanel>
 
                 <StackPanel Grid.Column="1">

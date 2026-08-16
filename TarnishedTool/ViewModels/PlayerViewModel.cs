@@ -2,12 +2,14 @@
 using System.Globalization;
 using System.Linq;
 using System.Windows.Input;
+using System.Windows.Media;
 using TarnishedTool.Core;
 using TarnishedTool.Enums;
 using TarnishedTool.GameIds;
 using TarnishedTool.Interfaces;
 using TarnishedTool.Models;
 using TarnishedTool.Utilities;
+using TarnishedTool.Views.Windows;
 using static TarnishedTool.Memory.Offsets;
 
 namespace TarnishedTool.ViewModels
@@ -28,6 +30,14 @@ namespace TarnishedTool.ViewModels
 
         private readonly CharacterState _saveState1 = new();
         private readonly CharacterState _saveState2 = new();
+
+        private readonly SlopeTracker _slopeTracker = new();
+        private SlopeOverlayWindow _slopeOverlayWindow;
+
+        private static readonly Brush SlopeUphillBrush = Brushes.LimeGreen;
+        private static readonly Brush SlopeFlatBrush = Brushes.DodgerBlue;
+        private static readonly Brush SlopeDownhillBrush = Brushes.OrangeRed;
+        private static readonly Brush SlopeUnknownBrush = Brushes.DimGray;
 
         private readonly HotkeyManager _hotkeyManager;
         private readonly IEventService _eventService;
@@ -711,6 +721,42 @@ namespace TarnishedTool.ViewModels
             set => SetProperty(ref _showPlayerLocation, value);
         }
 
+        private bool _isSlopeIndicatorEnabled;
+
+        public bool IsSlopeIndicatorEnabled
+        {
+            get => _isSlopeIndicatorEnabled;
+            set
+            {
+                if (!SetProperty(ref _isSlopeIndicatorEnabled, value)) return;
+
+                _slopeTracker.Reset();
+                UpdateSlopeIndicator();
+
+                if (_isSlopeIndicatorEnabled) OpenSlopeOverlay();
+                else CloseSlopeOverlay();
+
+                SettingsManager.Default.ShowSlopeOverlay = value;
+                SettingsManager.Default.Save();
+            }
+        }
+
+        private Brush _slopeIndicatorBrush = SlopeUnknownBrush;
+
+        public Brush SlopeIndicatorBrush
+        {
+            get => _slopeIndicatorBrush;
+            private set => SetProperty(ref _slopeIndicatorBrush, value);
+        }
+
+        private string _slopeIndicatorTooltip = "Slope: --";
+
+        public string SlopeIndicatorTooltip
+        {
+            get => _slopeIndicatorTooltip;
+            private set => SetProperty(ref _slopeIndicatorTooltip, value);
+        }
+
         private bool _isFasterDeathEnabled;
 
         public bool IsFasterDeathEnabled
@@ -765,6 +811,7 @@ namespace TarnishedTool.ViewModels
             IsFasterDeathEnabled = false;
             IsHpLocked = false;
             IsNoRollEnabled = false;
+            IsSlopeIndicatorEnabled = false;
             IsFpRegenEnabled = false;
             IsHotEnabled = false;
             IsSetRfbsOnLoadEnabled = false;
@@ -783,6 +830,16 @@ namespace TarnishedTool.ViewModels
             _gameTickService.Subscribe(PlayerTick);
             _pauseUpdates = false;
             IsDlcAvailable = _dlcService.IsDlcAvailable;
+
+            _slopeTracker.Reset();
+            UpdateSlopeIndicator();
+
+            if (SettingsManager.Default.ShowSlopeOverlay && !_isSlopeIndicatorEnabled)
+            {
+                _isSlopeIndicatorEnabled = true;
+                OnPropertyChanged(nameof(IsSlopeIndicatorEnabled));
+                OpenSlopeOverlay();
+            }
         }
 
         private void OnFadedIn()
@@ -829,6 +886,8 @@ namespace TarnishedTool.ViewModels
         {
             AreOptionsEnabled = false;
             _gameTickService.Unsubscribe(PlayerTick);
+            _slopeTracker.Reset();
+            UpdateSlopeIndicator();
         }
 
         private void OnNewGameStart()
@@ -897,6 +956,8 @@ namespace TarnishedTool.ViewModels
             _hotkeyManager.RegisterAction(HotkeyActions.FpRegen, () => { IsFpRegenEnabled = !IsFpRegenEnabled; });
             _hotkeyManager.RegisterAction(HotkeyActions.LockHp, () => { IsHpLocked = !IsHpLocked; });
             _hotkeyManager.RegisterAction(HotkeyActions.NoRoll, () => { IsNoRollEnabled = !IsNoRollEnabled; });
+            _hotkeyManager.RegisterAction(HotkeyActions.SlopeIndicator,
+                () => { IsSlopeIndicatorEnabled = !IsSlopeIndicatorEnabled; _notificationService?.ShowNotification(HotkeyActions.SlopeIndicator, IsSlopeIndicatorEnabled); });
         }
 
         private void SafeExecute(Action action)
@@ -921,11 +982,62 @@ namespace TarnishedTool.ViewModels
             SpiritAsh = _playerService.GetSpiritAsh();
             CurrentAnimation = _playerService.GetCurrentAnimation();
             if (ShowPlayerLocation) MapLocation = _playerService.GetMapLocation();
+            if (IsSlopeIndicatorEnabled) TrackSlope();
 
             if (_currentRuneLevel == newRuneLevel) return;
             RuneLevel = newRuneLevel;
             _currentRuneLevel = newRuneLevel;
             LoadStats();
+        }
+
+        private void TrackSlope()
+        {
+            var position = _playerService.CapturePosition();
+            // Absolute coordinates so crossing an overworld grid boundary, which shifts the
+            // map coordinates by a whole 256-unit cell, does not read as a cliff.
+            _slopeTracker.Add(PositionUtils.ToAbsolute(position.Coords, position.BlockId));
+            UpdateSlopeIndicator();
+        }
+
+        private void UpdateSlopeIndicator()
+        {
+            SlopeIndicatorBrush = _slopeTracker.State switch
+            {
+                SlopeState.Uphill => SlopeUphillBrush,
+                SlopeState.Flat => SlopeFlatBrush,
+                SlopeState.Downhill => SlopeDownhillBrush,
+                _ => SlopeUnknownBrush
+            };
+
+            SlopeIndicatorTooltip = _slopeTracker.State switch
+            {
+                SlopeState.Uphill => $"Uphill — jump gains time ({_slopeTracker.Gradient:P0})",
+                SlopeState.Flat => $"Flat — jump gains time ({_slopeTracker.Gradient:P0})",
+                SlopeState.Downhill => $"Downhill — jump loses time ({_slopeTracker.Gradient:P0})",
+                _ => "Slope: -- (keep moving to read the ground)"
+            };
+        }
+
+        private void OpenSlopeOverlay()
+        {
+            if (_slopeOverlayWindow != null) return;
+            _slopeOverlayWindow = new SlopeOverlayWindow
+            {
+                DataContext = this
+            };
+            _slopeOverlayWindow.Closed += (s, e) =>
+            {
+                _slopeOverlayWindow = null;
+                IsSlopeIndicatorEnabled = false;
+            };
+            _slopeOverlayWindow.Show();
+        }
+
+        private void CloseSlopeOverlay()
+        {
+            if (_slopeOverlayWindow == null || !_slopeOverlayWindow.IsVisible) return;
+            _slopeOverlayWindow.Close();
+            _slopeOverlayWindow = null;
         }
 
         private void TryApplyHot()

@@ -59,6 +59,7 @@ public class SettingsViewModel : BaseViewModel
                 new("No Damage", HotkeyActions.NoDamage),
                 new("No Hit", HotkeyActions.NoHit),
                 new("No Roll", HotkeyActions.NoRoll),
+                new("Slope Indicator", HotkeyActions.SlopeIndicator),
                 new("Infinite Stamina", HotkeyActions.InfiniteStamina),
                 new("Infinite Consumables", HotkeyActions.InfiniteConsumables),
                 new("Infinite Arrows", HotkeyActions.InfiniteArrows),
