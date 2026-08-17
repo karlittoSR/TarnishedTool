@@ -25,16 +25,17 @@ public enum SlopeState
 // physics pops that would otherwise flip the colour constantly.
 public sealed class SlopeTracker
 {
-    private const double WindowSeconds = 1.0;
+    private const double WindowSeconds = 0.5;
 
     // A reading needs this much history behind it, otherwise the first few ticks after
     // enabling the overlay would classify off two samples.
-    private const double MinWindowSeconds = 0.35;
+    private const double MinWindowSeconds = 0.175;
 
     // Horizontal distance that must be covered inside the window before the gradient
     // means anything. Below it the player is essentially stationary and the division
-    // amplifies idle-animation jitter into wild slopes.
-    private const float MinPathLength = 0.6f;
+    // amplifies idle-animation jitter into wild slopes. Scaled with WindowSeconds so it
+    // stays the same minimum speed (~0.6 units/second) whatever the window length.
+    private const float MinPathLength = 0.3f;
 
     // ~3.4 degrees. Flatter than this counts as neutral ground, where a jump still gains
     // time, so it shares the "go" side of the indicator with uphill.
