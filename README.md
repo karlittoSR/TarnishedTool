@@ -42,8 +42,8 @@ This fork focuses on reliability and workflow improvements for speedrunners: saf
 ### Slope Indicator
 * Toggle **Slope Indicator** in the Player tab to open a small draggable overlay dot that reads the ground you are running over, so you can tell at a glance whether a jump is worth it.
 * **Green** = uphill and **blue** = flat — a jump gains time. **Red** = downhill — a jump loses time. **Grey** = standing still or just loaded, no reading yet.
-* The reading is the slope along your direction of travel (rise over distance covered), averaged over the last second, so it is the same on foot, sprinting or on Torrent, and it does not flicker on stairs, roots or single-frame physics pops.
-* Hover the dot for the exact gradient. Overlay position is saved between sessions, and the toggle is bindable to a **hotkey** in the Settings tab.
+* The reading is the slope along your direction of travel (rise over distance covered), averaged over the last half second, so it is the same on foot, sprinting or on Torrent, and it does not flicker on stairs, roots or single-frame physics pops.
+* The dot starts in the middle of the screen until you drag it. Hover it for the exact gradient. Its position is saved between sessions, and the toggle is bindable to a **hotkey** in the Settings tab.
 
 ### Segment Timer
 * Open **Segment Timer** in the Advanced tab to practise a boss, skip, or movement segment using **in-game time** — no LiveSplit needed.
