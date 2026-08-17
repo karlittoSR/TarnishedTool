@@ -10,19 +10,20 @@
         Background="Transparent"
         ResizeMode="NoResize">
 
-    <Border Background="#8C000000"
-            CornerRadius="16"
-            Padding="6"
-            ToolTip="{Binding SlopeIndicatorTooltip, Mode=OneWay}"
-            ToolTipService.InitialShowDelay="300">
+    <!-- Transparent, so only the dot is visible. The panel still hit-tests, which keeps
+         the whole window draggable and leaves room for the dot's glow to render unclipped. -->
+    <Grid Background="Transparent"
+          ToolTip="{Binding SlopeIndicatorTooltip, Mode=OneWay}"
+          ToolTipService.InitialShowDelay="300">
         <Ellipse Width="20"
                  Height="20"
+                 Margin="6"
                  Fill="{Binding SlopeIndicatorBrush, Mode=OneWay}"
-                 Stroke="#40FFFFFF"
+                 Stroke="#59000000"
                  StrokeThickness="1">
             <Ellipse.Effect>
                 <DropShadowEffect ShadowDepth="0" BlurRadius="6" Color="Black" Opacity="1" />
             </Ellipse.Effect>
         </Ellipse>
-    </Border>
+    </Grid>
 </Window>
