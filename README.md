@@ -39,6 +39,12 @@ This fork focuses on reliability and workflow improvements for speedrunners: saf
 * The overlay is display-only and does not change Repeat Last Act or Force Act state.
 * A **hotkey binding** for the Acts Overlay toggle is available in the Settings tab.
 
+### Auto Force Acts
+* Check **Auto** next to the Force Acts button in the Target tab to have the act sequence re-applied automatically when you retry the same boss, instead of pressing the button or the hotkey before every attempt.
+* The sequence is only replayed on a target sharing the **NpcThinkParam** of your last manual force. Acts are indices into that param, so a second phase with a different moveset is skipped rather than fed acts that mean something else.
+* It is also only replayed on a **fresh fight** — a new enemy instance or a boss back at full HP — so unlocking and relocking mid fight does not restart the sequence.
+* Checking the box never affects the target you are currently locked on, only the next one. To follow a different boss, force the sequence manually once on it and Auto tracks that boss from then on.
+
 ### Slope Indicator
 * Toggle **Slope Indicator** in the Player tab to open a small draggable overlay dot that reads the ground you are running over, so you can tell at a glance whether a jump is worth it.
 * **Green** = uphill and **blue** = flat — a jump gains time. **Red** = downhill — a jump loses time. **Grey** = standing still or just loaded, no reading yet.

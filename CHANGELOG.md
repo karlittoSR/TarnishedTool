@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v1.4.1] - 2026-08-18
+
+### Added
+- **Auto Force Acts.** A new **Auto** checkbox next to the Force Acts button re-applies the configured act sequence by itself when the same boss is retried, so testing a strategy no longer means pressing the button or the hotkey before every attempt. A target is only eligible when it shares the `NpcThinkParamId` of the last manual force — act numbers are indices into that param, so a second phase with another moveset is skipped rather than fed meaningless acts — and only on a fresh fight, meaning a new instance or a boss back at full HP, so unlocking and relocking mid fight changes nothing. Checking the box never affects the target currently locked on, only the next one.
+
 ## [v1.4.0] - 2026-08-17
 
 ### Added
