@@ -48,6 +48,9 @@ namespace TarnishedTool.ViewModels
         private int _managedForceActSequenceIndex;
         private int _managedForceActSequenceLastSeenAct;
         private bool _isManagedForceActSequenceActive;
+        private bool _isAutoForceActSequenceArmed;
+        private int? _autoForceActSequenceThinkParamId;
+        private nint _autoForceActSequenceLastAppliedChrIns;
 
         public TargetViewModel(ITargetService targetService, IStateService stateService, IEnemyService enemyService,
             IAttackInfoService attackInfoService, HotkeyManager hotkeyManager, ISpEffectService spEffectService,
@@ -843,6 +846,19 @@ namespace TarnishedTool.ViewModels
             set => SetProperty(ref _actSequence, value);
         }
 
+        private bool _isAutoForceActSequenceEnabled;
+
+        public bool IsAutoForceActSequenceEnabled
+        {
+            get => _isAutoForceActSequenceEnabled;
+            set
+            {
+                if (!SetProperty(ref _isAutoForceActSequenceEnabled, value)) return;
+                // Only the next target gets the sequence, never the one currently focused.
+                _isAutoForceActSequenceArmed = false;
+            }
+        }
+
         private bool _isShowDefensesEnabled;
 
         public bool IsShowDefensesEnabled
@@ -1208,6 +1224,7 @@ namespace TarnishedTool.ViewModels
             if (!IsTargetValid())
             {
                 IsValidTarget = false;
+                _isAutoForceActSequenceArmed = true;
                 return;
             }
 
@@ -1215,6 +1232,7 @@ namespace TarnishedTool.ViewModels
             nint chrIns = _targetService.GetTargetChrIns();
             if (chrIns != _currentTargetChrIns)
             {
+                _isAutoForceActSequenceArmed = true;
                 _actHistPrev0 = 0;
                 _actHistPrev1 = 0;
                 _lastHistAct = 0;
@@ -1253,6 +1271,7 @@ namespace TarnishedTool.ViewModels
                 RefreshResistancesWindow();
             }
 
+            ApplyAutoForceActSequence(chrIns);
 
             CurrentHealth = _targetService.GetCurrentHp();
             MaxHealth = _targetService.GetMaxHp();
@@ -1307,6 +1326,8 @@ namespace TarnishedTool.ViewModels
         {
             StopManagedForceActSequence();
             _enemyService.UnhookForceAct();
+            _autoForceActSequenceThinkParamId = _targetService.GetNpcThinkParamId();
+            _autoForceActSequenceLastAppliedChrIns = _targetService.GetTargetChrIns();
             _managedForceActSequence = acts;
             _managedForceActSequenceIndex = 0;
             _managedForceActSequenceLastSeenAct = _targetService.GetLastAct();
@@ -1482,37 +1503,83 @@ namespace TarnishedTool.ViewModels
             if (now - _forceActSequenceLastExecuted < ForceActSequenceCooldown) return;
             _forceActSequenceLastExecuted = now;
 
+            _isAutoForceActSequenceArmed = false;
+
+            if (!TryParseActSequence(out int[] acts, out string error))
+            {
+                MsgBox.Show(error);
+                return;
+            }
+
+            IsRepeatActEnabled = false;
+
+            StartManagedForceActSequence(acts);
+        }
+
+        private void ApplyAutoForceActSequence(nint chrIns)
+        {
+            if (!_isAutoForceActSequenceEnabled || !_isAutoForceActSequenceArmed) return;
+            if (_isManagedForceActSequenceActive) return;
+
+            _isAutoForceActSequenceArmed = false;
+
+            if (!IsAutoForceActSequenceTargetEligible(chrIns)) return;
+            if (!TryParseActSequence(out int[] acts, out _)) return;
+
+            IsRepeatActEnabled = false;
+
+            StartManagedForceActSequence(acts);
+        }
+
+        private bool IsAutoForceActSequenceTargetEligible(nint chrIns)
+        {
+            // Acts are indices into the target NpcThinkParam, so they only mean something on the
+            // enemy the sequence was forced on. A second phase usually swaps the think param.
+            if (_autoForceActSequenceThinkParamId.HasValue &&
+                _targetService.GetNpcThinkParamId() != _autoForceActSequenceThinkParamId.Value)
+                return false;
+
+            // Only replay on a fresh fight, so unlocking and relocking mid fight changes nothing.
+            if (chrIns != _autoForceActSequenceLastAppliedChrIns) return true;
+
+            int maxHp = _targetService.GetMaxHp();
+            return maxHp > 0 && _targetService.GetCurrentHp() >= maxHp;
+        }
+
+        private bool TryParseActSequence(out int[] acts, out string error)
+        {
+            acts = Array.Empty<int>();
+
             if (string.IsNullOrWhiteSpace(ActSequence))
             {
-                MsgBox.Show("Sequence of acts is empty");
-                return;
+                error = "Sequence of acts is empty";
+                return false;
             }
 
-            string actSequence = ActSequence.Trim();
-            string[] parts = actSequence.Split(' ');
+            string[] parts = ActSequence.Trim().Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
             if (parts.Length > 10)
             {
-                MsgBox.Show("Sequence can contain at most 10 acts");
-                return;
+                error = "Sequence can contain at most 10 acts";
+                return false;
             }
 
-            int[] acts = new int[parts.Length];
+            var parsed = new int[parts.Length];
 
             for (int i = 0; i < parts.Length; i++)
             {
                 if (!int.TryParse(parts[i], NumberStyles.Integer, CultureInfo.InvariantCulture, out int act) ||
                     act < 0 || act > 99)
                 {
-                    MsgBox.Show("Invalid act: " + parts[i]);
-                    return;
+                    error = "Invalid act: " + parts[i];
+                    return false;
                 }
 
-                acts[i] = act;
+                parsed[i] = act;
             }
 
-            IsRepeatActEnabled = false;
-
-            StartManagedForceActSequence(acts);
+            acts = parsed;
+            error = null;
+            return true;
         }
 
         private void OpenDefenseWindow()

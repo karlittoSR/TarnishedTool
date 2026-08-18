@@ -783,7 +783,13 @@
                                        VerticalAlignment="Center" FontWeight="Bold" FontSize="10" />
                         </Border>
 
-                        <TextBlock FontSize="16" Text="Dist:" Margin="40,10,0,0" />
+                        <CheckBox Content="Auto" Margin="15,0,0,0" VerticalAlignment="Center"
+                                  IsChecked="{Binding IsAutoForceActSequenceEnabled}"
+                                  IsEnabled="{Binding AreOptionsEnabled}"
+                                  ToolTip="Automatically re-apply the sequence when you retry the same boss, no need to press the button or the keybind again &#x0A;Only targets sharing the NpcThinkParam of your last manual force are eligible, so a second phase with another moveset is skipped &#x0A;Only replayed on a fresh fight: unlocking and relocking mid fight changes nothing &#x0A;The sequence is never applied to the target currently focused when you check this box"
+                                  ToolTipService.InitialShowDelay="100" />
+
+                        <TextBlock FontSize="16" Text="Dist:" Margin="25,10,0,0" />
                         <TextBlock Text="{Binding Dist, StringFormat={}{0:F2}}" Width="40" FontSize="16"
                                    TextAlignment="Right" Margin="5,10,0,0" />
                     </StackPanel>
