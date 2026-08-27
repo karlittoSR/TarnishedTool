@@ -16,8 +16,13 @@ namespace TarnishedTool.Services
         // uninstall hooks while the other warp is still using them.
         private readonly object _blockWarpLock = new();
 
+        // A warp runs shellcode that calls game functions dereferencing the loaded
+        // world. Firing one from the main menu or a loading screen crashes the game,
+        // so every warp entry point checks this first.
         public void Warp(Grace grace)
         {
+            if (!GameWorld.IsReady(memoryService)) return;
+
             var bytes = AsmLoader.GetAsmBytes(AsmScript.GraceWarp);
             AsmHelper.WriteAbsoluteAddresses(bytes, new[]
             {
@@ -31,6 +36,11 @@ namespace TarnishedTool.Services
 
         public void WarpToBlockId(Position position)
         {
+            if (!GameWorld.IsReady(memoryService)) return;
+
+            // BlockId 0 is not a real map — an unset position, never a destination.
+            if (position.BlockId == 0) return;
+
             lock (_blockWarpLock)
                 WarpToBlockIdCore(position);
         }

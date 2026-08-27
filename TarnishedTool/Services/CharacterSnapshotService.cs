@@ -1,4 +1,4 @@
-//
+﻿//
 
 using TarnishedTool.Interfaces;
 using TarnishedTool.Models;
@@ -35,6 +35,12 @@ public class CharacterSnapshotService(
     public string Apply(CharacterSnapshot snapshot)
     {
         if (snapshot == null) return string.Empty;
+
+        // Applying goes through the game's own equip/memorize functions, which are
+        // called on a remote thread and dereference the player. Outside the game
+        // world that is a guaranteed crash.
+        if (!playerService.IsInGameWorld())
+            return "Character not applied: the game is not in-world.";
 
         var errors = new System.Text.StringBuilder();
 

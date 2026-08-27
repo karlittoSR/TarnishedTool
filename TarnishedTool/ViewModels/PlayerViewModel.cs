@@ -1120,6 +1120,10 @@ namespace TarnishedTool.ViewModels
 
         private void SavePosition(object parameter)
         {
+            // Nothing to capture outside the game world: the slot would be filled
+            // with garbage read from a null or half-built player.
+            if (!_playerService.IsInGameWorld()) return;
+
             int index = Convert.ToInt32(parameter);
             var state = index == 0 ? _saveState1 : _saveState2;
             if (index == 0) IsPos1Saved = true;
@@ -1138,6 +1142,9 @@ namespace TarnishedTool.ViewModels
 
         private void RestorePosition(object parameter)
         {
+            // Restoring from the main menu or during a load crashes the game.
+            if (!_playerService.IsInGameWorld()) return;
+
             int index = Convert.ToInt32(parameter);
 
             if (index == 0 && !IsPos1Saved) return;

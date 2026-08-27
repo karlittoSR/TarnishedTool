@@ -1,4 +1,4 @@
-//
+﻿//
 
 using System;
 using System.Collections.Generic;
@@ -326,6 +326,16 @@ public class LineComparisonViewModel : BaseViewModel
     public void RestoreToStart()
     {
         if (_start == null) return;
+
+        // The reset warps, revives bosses and applies a character snapshot, all of
+        // which need a loaded world. From the main menu (hotkey path, which does not
+        // go through the library's "load into the game first" check) it crashes the game.
+        if (!_playerService.IsInGameWorld())
+        {
+            ShowFeedback("Load into the game first");
+            return;
+        }
+
         if (_resetInProgress)
         {
             ShowRestoreBusyFeedback();

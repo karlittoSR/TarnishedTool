@@ -374,7 +374,8 @@
         <Compile Include="Utilities\SlopeTracker.cs" />
         <Compile Include="Utilities\DataLoader.cs" />
         <Compile Include="Utilities\ExeManager.cs" />
-        <Compile Include="Utilities\HotkeyManager.cs" />
+        <Compile Include="Utilities\GameWorld.cs" />
+    <Compile Include="Utilities\HotkeyManager.cs" />
         <Compile Include="Utilities\MsgBox.cs" />
         <Compile Include="Utilities\DiagnosticsLogger.cs" />
         <Compile Include="Utilities\SettingsManager.cs" />

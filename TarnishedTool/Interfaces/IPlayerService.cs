@@ -12,6 +12,9 @@ public interface IPlayerService
     void SetPlayerPos(Vector3 pos);
     Vector3 GetTorrentPos();
     void SetTorrentPos(Vector3 pos);
+    // False on the main menu and during a loading screen. Everything that moves
+    // the player must check this first — see GameWorld.IsReady.
+    bool IsInGameWorld();
     void SavePos(int index);
     void RestorePos(int index);
     void RestorePos(Position savedPos);

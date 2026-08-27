@@ -83,6 +83,8 @@ namespace TarnishedTool.Services
             return memoryService.Read<uint>(gameDataMan + GameDataMan.Igt);
         }
 
+        public bool IsInGameWorld() => GameWorld.IsReady(memoryService);
+
         public void RestorePos(int index) => RestorePos(_positions[index]);
 
         public void RestorePos(Position savedPos) => RestorePosCore(savedPos, blockOnWarp: false);
@@ -97,6 +99,13 @@ namespace TarnishedTool.Services
 
         private void RestorePosCore(Position savedPos, bool blockOnWarp)
         {
+            // A restore fired from the main menu or during a load crashes the game.
+            if (!IsInGameWorld()) return;
+
+            // BlockId 0 is not a real map: it means the slot was never filled, and
+            // warping there crashes the game.
+            if (savedPos.BlockId == 0) return;
+
             var currentPos = GetPlayerPosition();
 
             uint currentArea = (currentPos.BlockId >> 24) & 0xFF;
