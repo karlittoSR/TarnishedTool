@@ -3,7 +3,7 @@
   <h1 style="display: inline; vertical-align: middle; margin-left: 10px;">TarnishedTool — Speedrun Edition</h1>
 </div>
 
-<p>A fork of <a href="https://github.com/borgCode/TarnishedTool">Tarnished Tool</a> by borgCode, tailored for speedrun session workflow. Adds clean session management (Detach), richer in-game hotkey feedback, and quality-of-life improvements for runners.</p>
+<p>A fork of <a href="https://github.com/borgCode/TarnishedTool">Tarnished Tool</a> by borgCode, tailored for speedrun session workflow. Adds clean session management, richer in-game hotkey feedback, and quality-of-life improvements for runners.</p>
 
 [![Latest Release](https://img.shields.io/github/v/release/karlittoSR/TarnishedTool.svg)](https://github.com/karlittoSR/TarnishedTool/releases/latest)
 
@@ -17,10 +17,9 @@
 
 This fork focuses on reliability and workflow improvements for speedrunners: safer session cleanup, predictable hotkey behavior, and small utilities that make practice and runs easier.
 
-### Clean Session Management (Detach)
-* **Detach button** — resets all active toggles, uninstalls all hooks, frees the code cave and releases the game process in one click, leaving the game in a vanilla state ready for a run.
-* The Detach button is only enabled when the player is **in-world** (prevents crashes from null pointers on the main menu).
-* **Closing the tool** (red X / Alt+F4) only saves window settings — it does **not** reset game state. Always use the Detach button before closing if you want the game left in a clean vanilla state.
+### Clean Session Management
+* **Closing the tool** (red X / Alt+F4) resets all active toggles, uninstalls all hooks, frees the code cave and releases the game process, leaving the game in a vanilla state ready for a run.
+* Nothing ever blocks the tool from closing. When the game sits on the main menu the world pointers are null, so toggle values are not written back — hooks, the code cave and the loading-screen title are still restored, and the process handle is released.
 
 ### Hotkey Notifications
 * Every hotkey now shows an **ON / OFF toast notification** (green / red) instead of a generic one-shot popup.

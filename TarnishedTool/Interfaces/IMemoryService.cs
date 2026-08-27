@@ -38,6 +38,5 @@ public interface IMemoryService
     void FreeMem(nint addr);
 
     void StartAutoAttach();
-    void ManualDetach();
-    void EnableAutoAttach();
+    void Detach();
 }

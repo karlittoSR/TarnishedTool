@@ -34,7 +34,6 @@ namespace TarnishedTool.Services
 
         private const string ProcessName = "eldenring";
         private bool _disposed;
-        private bool _manuallyDetached;
 
         private Timer _autoAttachTimer;
         
@@ -243,22 +242,14 @@ namespace TarnishedTool.Services
             _autoAttachTimer.Start();
         }
 
-        public void ManualDetach()
+        public void Detach()
         {
-            if (ProcessHandle != IntPtr.Zero)
-            {
-                Kernel32.CloseHandle(ProcessHandle);
-                ProcessHandle = IntPtr.Zero;
-                TargetProcess = null;
-                IsAttached = false;
-            }
+            if (ProcessHandle == IntPtr.Zero) return;
 
-            _manuallyDetached = true;
-        }
-
-        public void EnableAutoAttach()
-        {
-            _manuallyDetached = false;
+            Kernel32.CloseHandle(ProcessHandle);
+            ProcessHandle = IntPtr.Zero;
+            TargetProcess = null;
+            IsAttached = false;
         }
 
         private void TryAttachToProcess()
@@ -271,15 +262,10 @@ namespace TarnishedTool.Services
                     ProcessHandle = IntPtr.Zero;
                     TargetProcess = null;
                     IsAttached = false;
-                    _manuallyDetached = false;
                 }
 
                 return;
             }
-
-            // Don't auto-reattach if manually detached
-            if (_manuallyDetached)
-                return;
 
             var processes = Process.GetProcessesByName(ProcessName);
             if (processes.Length > 0 && !processes[0].HasExited)

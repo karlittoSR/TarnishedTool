@@ -45,12 +45,6 @@
                         Click="LaunchGame_Click"
                         Margin="0,0,10,0"
                         VerticalAlignment="Center"/>
-                <Button x:Name="DetachButton" Content="Detach"
-                        Click="Detach_Click"
-                        Margin="0,0,10,0"
-                        VerticalAlignment="Center"
-                        Visibility="Collapsed"
-                        ToolTip="Reset all modifications and detach from game (for speedrun sessions)"/>
                 <TextBlock x:Name="IsAttachedText" Text=""
                            HorizontalAlignment="Right" VerticalAlignment="Center"
                            Width="100"

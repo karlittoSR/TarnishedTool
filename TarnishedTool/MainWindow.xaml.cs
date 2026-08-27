@@ -231,12 +231,6 @@ namespace TarnishedTool
                 IsAttachedText.Text = "Attached to game";
                 IsAttachedText.Foreground = (SolidColorBrush)Application.Current.Resources["AttachedBrush"];
 
-                LaunchGameButton.IsEnabled = false;
-                DetachButton.Visibility = Visibility.Visible;
-                // Only enable Detach when the player is actually in-world (WorldChrMan.PlayerIns != 0).
-                // Prevents writing to null pointers on the main menu after a quitout.
-                DetachButton.IsEnabled = _loaded;
-
                 if (!_attachedTime.HasValue)
                 {
                     _attachedTime = DateTime.Now;
@@ -316,9 +310,6 @@ namespace TarnishedTool
                 _stateService.Publish(State.Detached);
                 IsAttachedText.Text = "Not attached";
                 IsAttachedText.Foreground = (SolidColorBrush)Application.Current.Resources["NotAttachedBrush"];
-                LaunchGameButton.IsEnabled = true;
-                DetachButton.Visibility = Visibility.Collapsed;
-                DetachButton.IsEnabled = false;
             }
         }
 
@@ -335,26 +326,11 @@ namespace TarnishedTool
         {
             if (_memoryService.IsAttached)
             {
-                if (_loaded)
-                {
-                    // Stop the timer and keyboard hook before resetting so no pending
-                    // BeginInvoke actions can re-enable features after our reset completes.
-                    _gameLoadedTimer.Stop();
-                    _hotkeyManager.Stop();
-                    DetachFromGame();
-                }
-                else
-                {
-                    // On the main menu after a quitout, memory pointers are null so patches
-                    // cannot be reversed. Block close and ask the user to go back in-game first.
-                    e.Cancel = true;
-                    MsgBox.Show(
-                        "The game is currently on the main menu.\n\n" +
-                        "Active patches cannot be reversed from the main menu. " +
-                        "Please load back into the game and use the Detach button to restore a clean vanilla state before closing.",
-                        "Detach Required Before Closing");
-                    return;
-                }
+                // Stop the timer and keyboard hook before resetting so no pending
+                // BeginInvoke actions can re-enable features after our reset completes.
+                _gameLoadedTimer.Stop();
+                _hotkeyManager.Stop();
+                RestoreVanillaState();
             }
 
             var bounds = WindowState == WindowState.Normal
@@ -379,19 +355,12 @@ namespace TarnishedTool
                    && top < vBottom - minVisibleY;
         }
 
-        private void LaunchGame_Click(object sender, RoutedEventArgs e)
-        {
-            _memoryService.EnableAutoAttach();
+        private void LaunchGame_Click(object sender, RoutedEventArgs e) =>
             Task.Run(ExeManager.LaunchGame);
-        }
 
-        private void Detach_Click(object sender, RoutedEventArgs e)
-        {
-            if (!_memoryService.IsAttached) return;
-            DetachFromGame();
-        }
-
-        private void DetachFromGame()
+        // Restores everything the tool changed in the game process. Runs when the tool
+        // closes so the game is left in a clean vanilla state.
+        private void RestoreVanillaState()
         {
             // Reset each ViewModel individually so a failure in one doesn't prevent the others.
             // Only write vanilla values back to memory when the game world is loaded (player pointer valid).
@@ -422,7 +391,7 @@ namespace TarnishedTool
             }
             catch { }
 
-            _memoryService.ManualDetach();
+            _memoryService.Detach();
 
             // Always reset UI toggles so checkboxes reflect vanilla state,
             // even when memory writes were skipped (e.g. main menu after quitout).
