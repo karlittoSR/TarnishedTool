@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v1.4.2] - 2026-08-27
+
+### Changed
+- **The Detach button is gone.** It existed back when detaching cleanly from the game looked possible; it is not, so the button and everything it implied went with it. **Launch Game** is now always available instead of being greyed out while attached, and nothing can stop the tool from closing — the "load back in before closing" popup is gone. Closing still restores the game: toggles back to vanilla, hooks uninstalled, code cave freed, loading-screen title restored, process handle released.
+
+### Fixed
+- **Restoring a position outside the game world no longer crashes the game.** A restore from the main menu, or during the loading screen of a quitout, fired a cross-area warp: the shellcode calls a game function that dereferences a world that is not there. Every action that moves the player — restore position, grace / boss / custom warps, segment reset, character snapshot apply — now checks that the world is loaded *and* that no loading screen is covering it, since the player pointer can already be non-null while the world is still being built.
+- **An empty position slot is no longer a valid destination.** Saving a position from the main menu used to fill the slot with zeroes and mark it as saved; restoring it then warped to map `0`, which does not exist, and crashed the game. Saving outside the world is now refused, and a warp to block id `0` is rejected.
+
 ## [v1.4.1] - 2026-08-18
 
 ### Added
