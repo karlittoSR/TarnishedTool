@@ -2,12 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
-## [v1.4.2] - 2026-08-27
+## [v1.4.2] - 2026-08-28
+
+### Added
+- **Address report on every attach.** Each attach writes the complete list of resolved game addresses to `%APPDATA%\TarnishedTool\diagnostics.log`, as module-relative offsets — the exact form the version tables store — along with the ones that came back empty. Supporting the next game patch now starts by reading that file.
 
 ### Changed
 - **The Detach button is gone.** It existed back when detaching cleanly from the game looked possible; it is not, so the button and everything it implied went with it. **Launch Game** is now always available instead of being greyed out while attached, and nothing can stop the tool from closing — the "load back in before closing" popup is gone. Closing still restores the game: toggles back to vanilla, hooks uninstalled, code cave freed, loading-screen title restored, process handle released.
+- **A new game version is now handled as information, not an error.** Elden Ring 1.17 (file version `2.7.0.0`) has no offset table yet, so the tool locates addresses by pattern scan. The notice saying so used to be a modal popup raised *before* that scan, blocking the very scan it announced until dismissed, naming the version as "null", and reappearing on every single attach. It now comes after the scan, names the build, lists the affected features in plain language, and is shown once per game version.
+- **Features whose addresses cannot be found are greyed out** instead of staying clickable and doing nothing: Lock HP, Set FPS cap, Freeze Health, Inject AI Script, and the ChrIns window's per-entity Warp. They bind to the resolved address itself, so they come back on their own the day a version table covers the build.
 
 ### Fixed
+- **The tool no longer calls addresses it could not resolve.** A few addresses have no pattern and exist only in the per-version tables; on a build with no table they stayed at zero, and the shellcode paths ran `call 0` — which crashes the game. Rest on Warp, the local-to-map coordinate conversion and the AI script injection all did this the day the game updated to 1.17.
+- **Saved fallback addresses are no longer replayed across game versions.** They were kept as absolute addresses with no record of the build they came from, so after a game patch a failed pattern fell back to the previous version's address and installed a patch in the middle of unrelated code. They are now stamped with the game version, stored module-relative, and dropped when the build changes.
 - **Restoring a position outside the game world no longer crashes the game.** A restore from the main menu, or during the loading screen of a quitout, fired a cross-area warp: the shellcode calls a game function that dereferences a world that is not there. Every action that moves the player — restore position, grace / boss / custom warps, segment reset, character snapshot apply — now checks that the world is loaded *and* that no loading screen is covering it, since the player pointer can already be non-null while the world is still being built.
 - **An empty position slot is no longer a valid destination.** Saving a position from the main menu used to fill the slot with zeroes and mark it as saved; restoring it then warped to map `0`, which does not exist, and crashed the game. Saving outside the world is now refused, and a warp to block id `0` is rejected.
 

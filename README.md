@@ -21,6 +21,11 @@ This fork focuses on reliability and workflow improvements for speedrunners: saf
 * **Closing the tool** (red X / Alt+F4) resets all active toggles, uninstalls all hooks, frees the code cave and releases the game process, leaving the game in a vanilla state ready for a run.
 * Nothing ever blocks the tool from closing. When the game sits on the main menu the world pointers are null, so toggle values are not written back — hooks, the code cave and the loading-screen title are still restored, and the process handle is released.
 
+### Game Version Handling
+* When Elden Ring updates before the tool has an address table for the new build, addresses are located by **pattern scan** instead, and the tool keeps working.
+* Features whose addresses cannot be located on that build are **greyed out** rather than silently doing nothing, and nothing the tool cannot resolve is ever called — an unresolved address used to mean a game crash.
+* Every attach writes a full address report to `%APPDATA%\TarnishedTool\diagnostics.log`, and the "new game version" notice appears once per game build.
+
 ### Hotkey Notifications
 * Every hotkey now shows an **ON / OFF toast notification** (green / red) instead of a generic one-shot popup.
 * All notification labels use human-readable names (no raw enum names).
