@@ -168,6 +168,8 @@ public class AiService : IAiService
 
     public void InjectAiScript(byte[] script)
     {
+        if (Functions.LuaDoString == 0 || WorldAiManagerImp.Base == IntPtr.Zero) return;
+
         var bytes = AsmLoader.GetAsmBytes(AsmScript.LuaDoString);
         var luaState = _memoryService.FollowPointers(WorldAiManagerImp.Base, WorldAiManagerImp.LuaState, true);
 

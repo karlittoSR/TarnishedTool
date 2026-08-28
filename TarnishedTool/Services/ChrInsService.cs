@@ -369,6 +369,8 @@ public class ChrInsService(IMemoryService memoryService) : IChrInsService
 
     private Vector3 ConvertLocalCoordsToMapCoords(Vector3 localPos, uint blockId)
     {
+        if (Functions.LocalToMapCoords == 0) return Vector3.Zero;
+
         var output = CodeCaveOffsets.Base + (int)CodeCaveOffsets.LocalToMap.Output;
         var input = CodeCaveOffsets.Base + (int)CodeCaveOffsets.LocalToMap.Input;
         var pBlockId = CodeCaveOffsets.Base + (int)CodeCaveOffsets.LocalToMap.BlockId;

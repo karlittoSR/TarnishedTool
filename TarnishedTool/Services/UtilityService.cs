@@ -193,11 +193,22 @@ namespace TarnishedTool.Services
             memoryService.Write(playerIns + WorldChrMan.PlayerInsOffsets.DisplayStablePos, isEnabled);
         }
 
-        public void SetFps(int fps) =>
+        // The frame-cap address has no pattern, so it is unknown on a game build the
+        // tool has no table for. Writing then lands a few bytes into the module
+        // header, and reading gives a division by zero.
+        public void SetFps(int fps)
+        {
+            if (Patches.FpsCap == IntPtr.Zero) return;
             memoryService.Write(Patches.FpsCap + 0x3, 1f / fps);
+        }
 
-        public int GetFps() =>
-            (int)Math.Round(1f / memoryService.Read<float>(Patches.FpsCap + 0x3));
+        public int GetFps()
+        {
+            if (Patches.FpsCap == IntPtr.Zero) return 0;
+
+            var frameTime = memoryService.Read<float>(Patches.FpsCap + 0x3);
+            return frameTime > 0f ? (int)Math.Round(1f / frameTime) : 0;
+        }
 
         private void WriteJumpIntercept(IntPtr jumpInterceptCode)
         {

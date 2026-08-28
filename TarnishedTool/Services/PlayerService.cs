@@ -264,6 +264,12 @@ namespace TarnishedTool.Services
 
         public void RefreshFromStorage()
         {
+            // A handful of addresses have no pattern and come from the version
+            // tables alone, so on a game build the tool does not know yet they stay
+            // unresolved. Calling one from shellcode means `call 0`: the feature has
+            // to sit out, not take the game down with it.
+            if (Functions.RefreshFromStorage == 0) return;
+
             var bytes = AsmLoader.GetAsmBytes(AsmScript.RefreshFromStorage);
             AsmHelper.WriteAbsoluteAddress(bytes, Functions.RefreshFromStorage, 0x4 + 2);
             memoryService.AllocateAndExecute(bytes);
@@ -414,6 +420,8 @@ namespace TarnishedTool.Services
 
         public void ToggleLockHp(bool isEnabled)
         {
+            if (Hooks.PlayerLockHp == 0) return;
+
             var playerLockHp = CodeCaveOffsets.Base + CodeCaveOffsets.PlayerLockHp;
 
             if (isEnabled)

@@ -208,6 +208,8 @@ namespace TarnishedTool.Services
 
         public void ToggleNoHeal(bool isNoHealEnabled)
         {
+            if (Hooks.NoHeal == 0) return;
+
             var code = CodeCaveOffsets.Base + CodeCaveOffsets.NoHeal;
             if (isNoHealEnabled)
             {
