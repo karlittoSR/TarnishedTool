@@ -57,6 +57,9 @@ public class SettingsManager
     public double DefensesWindowWidth { get; set; }
     public double DefensesWindowLeft { get; set; }
     public double DefensesWindowTop { get; set; }
+    // The game version the unknown-version notice was last shown for, so it
+    // appears once after a game patch instead of on every attach.
+    public string UnknownVersionNoticeShownFor { get; set; } = "";
     public string HotkeyActionIds { get; set; } = "";
     public double IgtOverlayLeft { get; set; }
     public double IgtOverlayTop { get; set; }

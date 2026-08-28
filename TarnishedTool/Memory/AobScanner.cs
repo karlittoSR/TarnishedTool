@@ -5,6 +5,7 @@ using System.IO;
 using System.Threading.Tasks;
 using TarnishedTool.Interfaces;
 using TarnishedTool.Services;
+using TarnishedTool.Utilities;
 using static TarnishedTool.Memory.Offsets;
 
 namespace TarnishedTool.Memory
@@ -20,13 +21,31 @@ namespace TarnishedTool.Memory
             Directory.CreateDirectory(appData);
             string savePath = Path.Combine(appData, "backup_addresses.txt");
 
+            // Saved addresses only mean anything on the build they were found on.
+            // A game patch moves everything, so replaying the previous version's
+            // addresses would install patches in the middle of unrelated code --
+            // the file is stamped with the game version and dropped when it does
+            // not match. Offsets are stored module-relative so a different module
+            // base between launches is harmless.
+            var gameVersion = PatchManager.DetectedFileVersion ?? "unknown";
+
             ConcurrentDictionary<string, long> saved = new ConcurrentDictionary<string, long>();
             if (File.Exists(savePath))
             {
-                foreach (string line in File.ReadAllLines(savePath))
+                var lines = File.ReadAllLines(savePath);
+                if (lines.Length > 0 && lines[0] == $"version={gameVersion}")
                 {
-                    string[] parts = line.Split('=');
-                    saved[parts[0]] = Convert.ToInt64(parts[1], 16);
+                    foreach (string line in lines)
+                    {
+                        string[] parts = line.Split('=');
+                        if (parts.Length != 2 || parts[0] == "version") continue;
+                        saved[parts[0]] = Convert.ToInt64(parts[1], 16);
+                    }
+                }
+                else
+                {
+                    DiagnosticsLogger.Log(
+                        $"Saved addresses are from another game version, discarding them (now on {gameVersion}).");
                 }
             }
 
@@ -163,6 +182,7 @@ namespace TarnishedTool.Memory
 
             using (var writer = new StreamWriter(savePath))
             {
+                writer.WriteLine($"version={gameVersion}");
                 foreach (var pair in saved)
                     writer.WriteLine($"{pair.Key}={pair.Value:X}");
             }
@@ -358,12 +378,13 @@ namespace TarnishedTool.Memory
         private void TryPatternWithFallback(string name, Pattern pattern, Action<IntPtr> setter,
             ConcurrentDictionary<string, long> saved)
         {
+            long moduleBase = memoryService.BaseAddress;
             var addr = FindAddressByPattern(pattern);
 
-            if (addr == IntPtr.Zero && saved.TryGetValue(name, out var value))
-                addr = new IntPtr(value);
+            if (addr == IntPtr.Zero && saved.TryGetValue(name, out var rva))
+                addr = new IntPtr(moduleBase + rva);
             else if (addr != IntPtr.Zero)
-                saved[name] = addr.ToInt64();
+                saved[name] = addr.ToInt64() - moduleBase;
 
             setter(addr);
         }

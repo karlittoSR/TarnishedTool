@@ -242,7 +242,8 @@ namespace TarnishedTool
 
                 if (!_hasCheckedPatch)
                 {
-                    if (!PatchManager.Initialize(_memoryService))
+                    var knownVersion = PatchManager.Initialize(_memoryService);
+                    if (!knownVersion)
                     {
                         _aobScanner.DoFallbackScan();
                     }
@@ -251,10 +252,44 @@ namespace TarnishedTool
                     // the version offset tables intentionally do not carry them.
                     _aobScanner.ScanEquipFunctions();
 
+                    AddressReport.Write(
+                        PatchManager.DetectedFileVersion, _memoryService.BaseAddress, !knownVersion);
+
+                    // The addresses are known only now, so let the controls bound to
+                    // them re-evaluate: what could not be found greys out.
+                    FeatureSupport.Refresh();
+
 #if DEBUG
                     Console.WriteLine($@"Base: 0x{(long)_memoryService.BaseAddress:X}");
 #endif
                     _hasCheckedPatch = true;
+
+                    // Reported after the scan, never before: the notice is modal, and
+                    // raising it from Offsets.Initialize blocked the very scan it
+                    // announces until the user clicked OK. Shown once per game
+                    // version -- it is news the day the game updates, and nagging
+                    // every single launch after that.
+                    if (!knownVersion &&
+                        SettingsManager.Default.UnknownVersionNoticeShownFor != PatchManager.DetectedFileVersion)
+                    {
+                        SettingsManager.Default.UnknownVersionNoticeShownFor = PatchManager.DetectedFileVersion;
+                        SettingsManager.Default.Save();
+
+                        var unavailable = FeatureSupport.UnavailableFeatures();
+                        var missingList = unavailable.Count > 0
+                            ? "These could not be located on this build and are disabled:\n  \u2022 " +
+                              string.Join("\n  \u2022 ", unavailable) + "\n\nEverything else works.\n\n"
+                            : "";
+
+                        MsgBox.Show(
+                            $"The game updated to {PatchManager.DetectedFileVersion}, which this version of " +
+                            "the tool has no address table for, so the addresses were located by pattern " +
+                            $"scan instead.\n\n{missingList}" +
+                            "This notice is shown once per game version. A full address report is in:\n" +
+                            $"{DiagnosticsLogger.LogPath}\n\n" +
+                            "Please report this game version on GitHub.",
+                            "New game version");
+                    }
                 }
 
                 

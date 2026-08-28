@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using TarnishedTool.Enums;
 using TarnishedTool.Utilities;
 using static TarnishedTool.Enums.GameVersion;
@@ -47,9 +47,10 @@ namespace TarnishedTool.Memory
 
             if (!_version.HasValue)
             {
-                MsgBox.Show(
-                    $@"Unknown patch version: {_version}, please report it on GitHub. Scanning for addresses instead.",
-                    "Unknown patch version");
+                // No popup here: this runs before the fallback pattern scan, and a
+                // modal dialog would block the very scan it announces. The caller
+                // reports it once the scan is done.
+                DiagnosticsLogger.Log($"Unknown game version {fileVersion}: falling back to a pattern scan.");
                 return false;
             }
 
