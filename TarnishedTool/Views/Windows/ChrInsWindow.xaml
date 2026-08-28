@@ -5,6 +5,7 @@
                        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
                        xmlns:controls="clr-namespace:TarnishedTool.Controls"
                        xmlns:windows="clr-namespace:TarnishedTool.Views.Windows"
+                       xmlns:utilities="clr-namespace:TarnishedTool.Utilities"
                        mc:Ignorable="d"
                        Style="{StaticResource DefaultWindowStyle}"
                        WindowStyle="None"
@@ -147,6 +148,7 @@
                                               IsChecked="{Binding IsDrawBackstabEnabled}"
                                               Margin="5,0,0,0"/>
                                     <Button Content="Warp" Command="{Binding WarpCommand}"
+                                            IsEnabled="{Binding Path=(utilities:FeatureSupport.IsChrInsWarpSupported)}"
                                             Margin="5,0,0,0"/>
                                     <Button Content="Open Goals" Command="{Binding OpenAiWindowCommand}"
                                             Margin="5,0,0,0" />

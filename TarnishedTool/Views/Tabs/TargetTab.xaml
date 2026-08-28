@@ -5,6 +5,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:xctk="http://schemas.xceed.com/wpf/xaml/toolkit"
              xmlns:converters="clr-namespace:TarnishedTool.Converters"
+             xmlns:utilities="clr-namespace:TarnishedTool.Utilities"
              mc:Ignorable="d">
     <UserControl.Resources>
         <converters:HealthFillConverter x:Key="HealthFillConverter" />
@@ -168,6 +169,7 @@
                                 <MultiBinding Converter="{StaticResource BooleanAndConverter}">
                                     <Binding Path="AreOptionsEnabled" />
                                     <Binding Path="IsValidTarget" />
+                                    <Binding Path="(utilities:FeatureSupport.IsFreezeHealthSupported)" />
                                 </MultiBinding>
                             </CheckBox.IsEnabled>
                         </CheckBox>

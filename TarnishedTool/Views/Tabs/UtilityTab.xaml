@@ -5,6 +5,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:xctk="http://schemas.xceed.com/wpf/xaml/toolkit"
              xmlns:converters="clr-namespace:TarnishedTool.Converters"
+             xmlns:utilities="clr-namespace:TarnishedTool.Utilities"
              mc:Ignorable="d"
              d:DesignHeight="720" d:DesignWidth="600">
 
@@ -48,8 +49,13 @@
                             Width="80"
                             Minimum="1"
                             Maximum="1000"
-                            IsEnabled="{Binding AreOptionsEnabled}"
                             BorderBrush="#3F3F46">
+                            <xctk:IntegerUpDown.IsEnabled>
+                                <MultiBinding Converter="{StaticResource BooleanAndConverter}">
+                                    <Binding Path="AreOptionsEnabled" />
+                                    <Binding Path="(utilities:FeatureSupport.IsFpsCapSupported)" />
+                                </MultiBinding>
+                            </xctk:IntegerUpDown.IsEnabled>
                         </xctk:IntegerUpDown>
                         <TextBlock Margin="10,3,20,0" Text="Set FPS cap"></TextBlock>
                         <Button Content="Instant Quitout"

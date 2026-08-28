@@ -7,6 +7,7 @@
              xmlns:converters="clr-namespace:TarnishedTool.Converters"
              xmlns:controls="clr-namespace:TarnishedTool.Controls"
              xmlns:xcad="http://schemas.xceed.com/wpf/xaml/avalondock"
+             xmlns:utilities="clr-namespace:TarnishedTool.Utilities"
              mc:Ignorable="d"
              d:DesignHeight="700" d:DesignWidth="600">
     <UserControl.Resources>
@@ -47,10 +48,15 @@
                         Content="Lock HP"
                         ToolTip="Lock Current HP, Functions similar to ERTool's Max/1HP Toggles"
                         IsChecked="{Binding IsHpLocked}"
-                        IsEnabled="{Binding AreOptionsEnabled}"
                         Margin="3,0,4,0"
-                        Width="67"
-                        />
+                        Width="67">
+                        <CheckBox.IsEnabled>
+                            <MultiBinding Converter="{StaticResource BooleanAndConverter}">
+                                <Binding Path="AreOptionsEnabled" />
+                                <Binding Path="(utilities:FeatureSupport.IsLockHpSupported)" />
+                            </MultiBinding>
+                        </CheckBox.IsEnabled>
+                    </CheckBox>
                     <Button
                         Content="RFBS"
                         Command="{Binding SetRfbsCommand}"
