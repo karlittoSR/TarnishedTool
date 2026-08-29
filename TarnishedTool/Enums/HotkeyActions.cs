@@ -219,4 +219,7 @@ public enum HotkeyActions
     SelectPreviousSavedSegment,
     RemoveLastSegmentAttempt,
     LoadSelectedSavedSegment,
+    DrawStance,
+    DrawBackstab,
+    SpeedBuff
 }

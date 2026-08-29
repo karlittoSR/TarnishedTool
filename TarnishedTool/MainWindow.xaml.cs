@@ -25,7 +25,6 @@ namespace TarnishedTool
         private readonly IMemoryService _memoryService;
         private readonly IStateService _stateService;
         private readonly IDlcService _dlcService;
-        private readonly AoBScanner _aobScanner;
         private HookManager _hookManager;
         private HotkeyManager _hotkeyManager;
         private IReminderService _reminderService;
@@ -53,7 +52,6 @@ namespace TarnishedTool
             }
             else WindowStartupLocation = WindowStartupLocation.CenterScreen;
 
-            _aobScanner = new AoBScanner(_memoryService);
             _stateService = new StateService(_memoryService);
 
             _hookManager = new HookManager(_memoryService, _stateService);
@@ -94,6 +92,7 @@ namespace TarnishedTool
             IGameTickService gameTickService = new GameTickService(_stateService);
             IAiService aiService = new AiService(_memoryService);
             IAiWindowService aiWindowService = new AiWindowService(aiService, gameTickService, spEffectService);
+            IDamageService damageService = new DamageService(_memoryService, _hookManager, reminderService);
 
             // Create notification service
             IHotkeyNotificationService hotkeyNotificationService = new HotkeyNotificationService();
@@ -102,7 +101,7 @@ namespace TarnishedTool
                 playerService, _stateService, hotkeyManager,
                 eventService, spEffectService, emevdService,
                 _dlcService, ezStateService, gameTickService, paramService,
-                hotkeyNotificationService
+                damageService, hotkeyNotificationService
             );
             _playerViewModel = playerViewModel;
 
@@ -139,7 +138,7 @@ namespace TarnishedTool
                 utilityService, _stateService, ezStateService,
                 playerService, hotkeyManager, playerViewModel,
                 _dlcService, spEffectService, flaskService, paramService,
-                hotkeyNotificationService, _memoryService
+                emevdService, hotkeyNotificationService, _memoryService
             );
             _utilityViewModel = utilityViewModel;
             utilityViewModel.SetTargetViewModel(targetViewModel);
@@ -171,7 +170,7 @@ namespace TarnishedTool
             );
 
             SettingsViewModel settingsViewModel = new SettingsViewModel(
-                settingsService, hotkeyManager, _stateService, activateOnLaunchViewModel
+                settingsService, hotkeyManager, _stateService, activateOnLaunchViewModel, reminderService
             );
 
             var playerTab = new PlayerTab(playerViewModel);
@@ -243,14 +242,16 @@ namespace TarnishedTool
                 if (!_hasCheckedPatch)
                 {
                     var knownVersion = PatchManager.Initialize(_memoryService);
+                    var aobScanner = new AobScanner(_memoryService);
                     if (!knownVersion)
                     {
-                        _aobScanner.DoFallbackScan();
+                        aobScanner.QueueFallbackPatterns();
+                        aobScanner.Run();
                     }
 
                     // Character apply functions are AOB-scanned on every version;
                     // the version offset tables intentionally do not carry them.
-                    _aobScanner.ScanEquipFunctions();
+                    aobScanner.ScanEquipFunctions();
 
                     AddressReport.Write(
                         PatchManager.DetectedFileVersion, _memoryService.BaseAddress, !knownVersion);
@@ -260,6 +261,7 @@ namespace TarnishedTool
                     FeatureSupport.Refresh();
 
 #if DEBUG
+                    Print(_memoryService.BaseAddress);
                     Console.WriteLine($@"Base: 0x{(long)_memoryService.BaseAddress:X}");
 #endif
                     _hasCheckedPatch = true;
@@ -297,7 +299,7 @@ namespace TarnishedTool
                 {
                     _memoryService.AllocCodeCave();
 #if DEBUG
-                    Console.WriteLine($@"Code cave: 0x{CodeCaveOffsets.Base.ToInt64():X}");
+                    Console.WriteLine($@"Code cave: 0x{(long)CodeCaveOffsets.Base:X}");
 #endif
                     _stateService.Publish(State.Attached);
                     _hasAllocatedMemory = true;

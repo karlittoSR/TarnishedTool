@@ -161,6 +161,21 @@ namespace TarnishedTool.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to 48 b9 00 00 00 00 00 00 00 00   movabs rcx,0x0
+        ///ba 00 00 00 00                  mov    edx,0x0
+        ///48 83 ec 28                     sub    rsp,0x28
+        ///48 b8 00 00 00 00 00 00 00 00   movabs rax,0x0
+        ///ff d0                           call   rax
+        ///48 83 c4 28                     add    rsp,0x28
+        ///c3                               ret.
+        /// </summary>
+        internal static string AiRequestAttackCooldown {
+            get {
+                return ResourceManager.GetString("AiRequestAttackCooldown", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Value,Name
         ///-2,TARGET_NONE
         ///-1,TARGET_SELF
@@ -492,6 +507,79 @@ namespace TarnishedTool.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to 670135
+        ///670132
+        ///670133
+        ///670131
+        ///670134
+        ///670130
+        ///670330
+        ///670332
+        ///670331
+        ///670333
+        ///670334
+        ///670731
+        ///670730
+        ///670614
+        ///670611
+        ///670612
+        ///670610
+        ///670616
+        ///670615
+        ///670613
+        ///670625
+        ///670624
+        ///670622
+        ///670620
+        ///670621
+        ///670623
+        ///670626
+        ///670633
+        ///670632
+        ///670630
+        ///670631
+        ///670634
+        ///670652
+        ///670651
+        ///670650
+        ///670671
+        ///670670
+        ///670740
+        ///670741
+        ///670742
+        ///670743
+        ///670744
+        ///670745
+        ///670746
+        ///670747
+        ///670231
+        ///670232
+        ///670233
+        ///670530
+        ///670531
+        ///670532
+        ///670534
+        ///670535
+        ///670536
+        ///670537
+        ///670539
+        ///670352
+        ///670351
+        ///670353
+        ///670354
+        ///670750
+        ///670160
+        ///670161
+        ///670162
+        /// [rest of string was truncated]&quot;;.
+        /// </summary>
+        internal static string BaseSummoningPools {
+            get {
+                return ResourceManager.GetString("BaseSummoningPools", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to 0,400022E9,Abandoned Merchant&apos;s Bell Bearing,1,1
         ///0,400022D4,Bernahl&apos;s Bell Bearing,1,1
         ///0,400022EE,Blackguard&apos;s Bell Bearing,1,1
@@ -538,6 +626,24 @@ namespace TarnishedTool.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to 80 3d 00 00 00 00 01    cmp    BYTE PTR [rip+0x0],0x1        # 7 &lt;_main+0x7&gt;
+        ///75 40                   jne    49 &lt;skip&gt;
+        ///45 84 c9                test   r9b,r9b
+        ///74 3b                   je     49 &lt;skip&gt;
+        ///3b 15 00 00 00 00       cmp    edx,DWORD PTR [rip+0x0]        # 14 &lt;_main+0x14&gt;
+        ///75 33                   jne    49 &lt;skip&gt;
+        ///41 53                   push   r11
+        ///48 8b 05 00 00 00 00    mov    rax,QWORD PTR [rip+0x0]        # 1f &lt;_main+0x1f&gt;
+        ///48 8b 80 00 00 00 00    mov    rax,QWORD PTR [rax+0x0]
+        ///4c 8b 19       [rest of string was truncated]&quot;;.
+        /// </summary>
+        internal static string CancelSpeedBuff {
+            get {
+                return ResourceManager.GetString("CancelSpeedBuff", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to ChrId,Name
         ///0000,Player
         ///2010,Blaidd
@@ -569,6 +675,17 @@ namespace TarnishedTool.Properties {
         internal static string ChrNames {
             get {
                 return ResourceManager.GetString("ChrNames", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to 60360
+        ///60350
+        ///60370.
+        /// </summary>
+        internal static string Colosseums {
+            get {
+                return ResourceManager.GetString("Colosseums", resourceCulture);
             }
         }
         
@@ -679,6 +796,25 @@ namespace TarnishedTool.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to 41 83 be 28 02 00 00 00       cmp    [r14+0x228], 0
+        ///0f 8e a0 00 00 00             jle    done
+        ///50                            push   rax
+        ///51                            push   rcx
+        ///9c                            pushfq
+        ///48 83 ec 20                   sub    rsp, 0x20
+        ///f3 0f 7f 04 24                movdqu [rsp], xmm0
+        ///f3 0f 7f 4c 24 10             movdqu [rsp+0x10], xmm1
+        ///49 8b 8e e0 01 00 00          mov    rcx, [r14+0x1e0]
+        ///48 85 c9                      test   rcx, rcx
+        ///74 46                         je     us [rest of string was truncated]&quot;;.
+        /// </summary>
+        internal static string DamageMultiplier {
+            get {
+                return ResourceManager.GetString("DamageMultiplier", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to 50                      push   rax
         ///48 8b 41 10             mov    rax,QWORD PTR [rcx+0x10]
         ///48 3b 05 00 00 00 00    cmp    rax,QWORD PTR [rip+0x0]        # c &lt;_main+0xc&gt;
@@ -721,6 +857,77 @@ namespace TarnishedTool.Properties {
         internal static string DLCMaps {
             get {
                 return ResourceManager.GetString("DLCMaps", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to 670842
+        ///670843
+        ///670841
+        ///670851
+        ///670854
+        ///670853
+        ///670850
+        ///670852
+        ///670940
+        ///670941
+        ///670942
+        ///670943
+        ///670909
+        ///670953
+        ///670956
+        ///670955
+        ///670950
+        ///670951
+        ///670952
+        ///670945
+        ///670831
+        ///670830
+        ///670814
+        ///670815
+        ///670860
+        ///670960
+        ///670961
+        ///670813
+        ///670870
+        ///670970
+        ///670871
+        ///670980
+        ///670880
+        ///670908
+        ///670908
+        ///670901
+        ///670907
+        ///670907
+        ///670806
+        ///670805
+        ///670800
+        ///670801
+        ///670801
+        ///670902
+        ///670902
+        ///670906
+        ///670906
+        ///670802
+        ///670802
+        ///670912
+        ///670912
+        ///670808
+        ///670809
+        ///670804
+        ///670807
+        ///670913
+        ///670900
+        ///670911
+        ///670904
+        ///670910
+        ///670903
+        ///670930
+        ///670812.
+        /// </summary>
+        internal static string DlcSummoningPools {
+            get {
+                return ResourceManager.GetString("DlcSummoningPools", resourceCulture);
             }
         }
         
@@ -2869,13 +3076,13 @@ namespace TarnishedTool.Properties {
         /// <summary>
         ///   Looks up a localized string similar to ID,Name
         ///0,
-        ///1,
+        ///1,No Skill
         ///10,No Skill
         ///100,Lion&apos;s Claw
         ///101,Impaling Thrust
         ///102,Piercing Fang
         ///103,Spinning Slash
-        ///104,%null%
+        ///104,
         ///105,Charge Forth
         ///106,Stamp (Upward Cut)
         ///107,Stamp (Sweep)
@@ -2892,11 +3099,12 @@ namespace TarnishedTool.Properties {
         ///118,Loretta&apos;s Slash
         ///119,Poison Moth Flight
         ///120,Spinning Weapon
-        ///121,%null%
+        ///121,
         ///122,Storm Assault
         ///123,Stormcaller
         ///124,Sword Dance
-        ///125,Spinning Chain        /// [rest of string was truncated]&quot;;.
+        ///125,Spinning Chain
+        ///200 [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string ParamEntries_SwordArtsParam {
             get {
@@ -3135,6 +3343,23 @@ namespace TarnishedTool.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to 48 89 5c 24 10          mov    QWORD PTR [rsp+0x10],rbx
+        ///48 8b 05 00 00 00 00    mov    rax,QWORD PTR [rip+0x0]        # c &lt;_main+0xc&gt;
+        ///48 8b 80 00 00 00 00    mov    rax,QWORD PTR [rax+0x0]
+        ///48 3b 41 18             cmp    rax,QWORD PTR [rcx+0x18]
+        ///0f 85 00 00 00 00       jne    1d &lt;_main+0x1d&gt;
+        ///80 3d 00 00 00 00 01    cmp    BYTE PTR [rip+0x0],0x1        # 24 &lt;_main+0x24&gt;
+        ///74 19                   je     3f &lt;continue&gt;
+        ///48 8b 05 00 00 00 00    mov    rax,QWORD PTR [rip+0x0]        # 2d &lt;_main+0x2d&gt;
+        ///48 8b 80 [rest of string was truncated]&quot;;.
+        /// </summary>
+        internal static string SpeedBuff {
+            get {
+                return ResourceManager.GetString("SpeedBuff", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to 0,40033838,Albinauric Ashes,1,600,1
         ///0,40033068,Ancestral Follower Ashes,1,600,1
         ///1,4021CC58,Ancient Dragon Florissax,1,600,1
@@ -3190,6 +3415,83 @@ namespace TarnishedTool.Properties {
         internal static string TargetNoStagger {
             get {
                 return ResourceManager.GetString("TargetNoStagger", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to 411
+        ///412
+        ///413
+        ///424
+        ///426
+        ///431
+        ///432
+        ///433
+        ///434
+        ///435
+        ///442
+        ///449
+        ///455
+        ///459
+        ///460
+        ///481
+        ///482
+        ///486
+        ///490
+        ///495
+        ///504
+        ///509
+        ///512
+        ///513
+        ///514
+        ///544
+        ///550
+        ///650
+        ///651
+        ///663
+        ///665
+        ///675
+        ///676
+        ///730
+        ///731
+        ///732
+        ///733
+        ///734
+        ///735
+        ///736
+        ///737
+        ///740
+        ///741
+        ///744
+        ///750
+        ///752
+        ///766
+        ///774
+        ///782
+        ///786
+        ///797
+        ///808
+        ///810
+        ///813
+        ///815
+        ///821
+        ///823
+        ///831
+        ///834
+        ///852
+        ///853
+        ///872
+        ///884
+        ///886
+        ///911
+        ///954
+        ///958
+        ///960
+        ///967.
+        /// </summary>
+        internal static string TimeActIds {
+            get {
+                return ResourceManager.GetString("TimeActIds", resourceCulture);
             }
         }
         

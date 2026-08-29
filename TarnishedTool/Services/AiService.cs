@@ -69,7 +69,7 @@ public class AiService : IAiService
         var mapCapacity =
             _memoryService.Read<ulong>(dequeHandle + ChrIns.AiThinkOffsets.DequeInternalOffsets.MapCapacity);
 
-        if (blockMap == IntPtr.Zero || mapCapacity == 0) return childGoals;
+        if (blockMap == 0 || mapCapacity == 0) return childGoals;
 
         var endIdx = startIdx + count;
 
@@ -79,10 +79,10 @@ public class AiService : IAiService
             var slotIndex = (int)(i & 1);
 
             var block = _memoryService.Read<nint>(blockMap + (nint)(blockIdx * 8));
-            if (block == IntPtr.Zero) continue;
+            if (block == 0) continue;
 
             var childGoal = _memoryService.Read<nint>(block + slotIndex * 8);
-            if (childGoal == IntPtr.Zero) continue;
+            if (childGoal == 0) continue;
             childGoals.Add(childGoal);
         }
 
@@ -182,6 +182,24 @@ public class AiService : IAiService
         ]);
         _memoryService.AllocateAndExecute(bytes);
         _memoryService.FreeMem(scriptPtr);
+    }
+    
+        public void RequestAttackCooldown(nint aiThink, uint attackId)
+    {
+        var funcAddr = Functions.AiRequestAttackCooldown;
+        if (funcAddr == 0) return;
+
+        var bytes = AsmLoader.GetAsmBytes(AsmScript.AiRequestAttackCooldown);
+
+        AsmHelper.WriteAbsoluteAddresses(bytes, [
+            (aiThink, 2),
+            ((nint)funcAddr, 21)
+        ]);
+        AsmHelper.WriteImmediateDwords(bytes, [
+            ((int)attackId, 11)
+        ]);
+
+        _memoryService.AllocateAndExecute(bytes);
     }
 
     #endregion

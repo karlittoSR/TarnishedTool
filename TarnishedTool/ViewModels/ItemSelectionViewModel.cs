@@ -25,6 +25,7 @@ public class ItemSelectionViewModel : BaseViewModel
     public int SelectedItemUpgradeType => (SelectedItem as Weapon)?.UpgradeType ?? -1;
 
     private bool _hasDlc;
+    private bool _hasTarnishedPack;
     private string _preSearchCategory;
     private bool _isSearchActive;
 
@@ -46,9 +47,10 @@ public class ItemSelectionViewModel : BaseViewModel
         SelectedCategory = _categories.FirstOrDefault();
     }
 
-    public void SetDlcAvailable(bool hasDlc)
+    public void SetDlcAvailable(bool hasDlc, bool hasTarnishedPack)
     {
         _hasDlc = hasDlc;
+        _hasTarnishedPack = hasTarnishedPack;
         UpdateItemsList();
     }
 
@@ -324,8 +326,7 @@ public class ItemSelectionViewModel : BaseViewModel
         }
 
         var items = _itemsByCategory[_selectedCategory];
-        Items = new ObservableCollection<Item>(
-            _hasDlc ? items : items.Where(i => !i.IsDlc));
+        Items = new ObservableCollection<Item>(items.Where(IsItemAvailable));
         SelectedItem = Items.FirstOrDefault();
     }
 
@@ -334,12 +335,14 @@ public class ItemSelectionViewModel : BaseViewModel
         var filtered = _allItems.Where(i =>
             _compareInfo.IndexOf(i.Name, _searchText, CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace) >= 0);
 
-        if (!_hasDlc)
-            filtered = filtered.Where(i => !i.IsDlc);
+        filtered = filtered.Where(IsItemAvailable);
 
         Items = new ObservableCollection<Item>(filtered);
         SelectedItem = Items.FirstOrDefault();
     }
+    
+    private bool IsItemAvailable(Item i) =>
+    (_hasDlc || !i.IsDlc) && (_hasTarnishedPack || !i.IsTarnishedPack);
 
     // Adding logic for smithing and somber upgrades
     private void ConfigureForWeapon(Weapon weapon)

@@ -22,6 +22,7 @@ This fork focuses on reliability and workflow improvements for speedrunners: saf
 * Nothing ever blocks the tool from closing. When the game sits on the main menu the world pointers are null, so toggle values are not written back — hooks, the code cave and the loading-screen title are still restored, and the process handle is released.
 
 ### Game Version Handling
+* **Elden Ring 1.17 (`2.7.0.0`) is supported** by a full address table, from upstream V1.2.0.
 * When Elden Ring updates before the tool has an address table for the new build, addresses are located by **pattern scan** instead, and the tool keeps working.
 * Features whose addresses cannot be located on that build are **greyed out** rather than silently doing nothing, and nothing the tool cannot resolve is ever called — an unresolved address used to mean a game crash.
 * Every attach writes a full address report to `%APPDATA%\TarnishedTool\diagnostics.log`, and the "new game version" notice appears once per game build.
@@ -91,8 +92,10 @@ This tool offers plenty of features such as:
 * Boss Revives (with the option to revive back to first encounter)
 * Many options for the locked on target.
 * Warping out of uncleared dungeons / during combat.
-* Adjusting Game Speed.
+* Adjusting Game Speed, and speeding the game up while buffing (Speedy Buffing).
 * Adjusting FPS Cap.
+* Damage multiplier, with separate outgoing and incoming factors.
+* Disable Cutscenes, no menu delay, and no quitout message.
 * No Clip (works with keyboard and mouse)
 * Free Cam.
 * Rendering Settings such as: Hitbox View, Event view, Sound view, Ragdolls, High/Low Hit, Map Tiles, and more.
@@ -101,7 +104,9 @@ This tool offers plenty of features such as:
 * Item Spawn / Mass Spawn / Item preset creation (With the ability to spawn a loadout or a weapon on game start)
 * Changing Weather & Day Time.
 * Event Flags checking, activating, and deactivating.
-* Unlocking All Affinites & Gestures.
+* Unlocking All Affinites, and picking exactly which Gestures to unlock.
+* Unlocking Summoning Pools and Colosseums.
+* Breaking nearby objects.
 * Useful flag scripts like skipping Metyr's Questline, deactivating the snowfield mausoleum, and toggling the DLC clear flag.
 * Events Logger.
 * Applying / Removing and seeing the Player's Active SpEffects.
@@ -130,3 +135,4 @@ This tool offers plenty of features such as:
 - [Bender](https://www.twitch.tv/benderzgreat) - For lots of thorough testing and feedback
 - [axd1x8a](https://github.com/axd1x8a), [nex3](https://github.com/nex3) and [ndahn](https://github.com/ndahn) - For working on Elden Ring's ParamDefs and [vawser](https://github.com/vawser) for both working on the ParamDefs as well as giving permissions to borrow them from [Smithbox](https://github.com/vawser/Smithbox).
 - [ooloh](https://www.youtube.com/@ooloh/) - For adding Dusk to Set Time.
+- [The Grand Archives](https://github.com/The-Grand-Archives) - For Character/Team Type Enums.

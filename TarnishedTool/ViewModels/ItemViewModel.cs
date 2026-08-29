@@ -29,6 +29,8 @@ public class ItemViewModel : BaseViewModel
     private readonly List<Item> _allItems;
 
     private readonly Dictionary<string, LoadoutTemplate> _customLoadoutTemplates;
+    
+    private const long TarnishedPackOwnershipEvent = 6953;
 
     public ItemSelectionViewModel ItemSelection { get; }
 
@@ -219,9 +221,14 @@ public class ItemViewModel : BaseViewModel
         _hotkeyManager.RegisterAction(HotkeyActions.CreateLoadout, () => { OpenCreateLoadoutWindow(); _notificationService?.ShowNotification(HotkeyActions.CreateLoadout); });
     }
 
+    private bool _ownsTarnishedPack;
+    
+    
+
     private void OnGameLoaded()
     {
         AreOptionsEnabled = true;
+        
     }
 
     private void OnGameNotLoaded()
@@ -232,7 +239,8 @@ public class ItemViewModel : BaseViewModel
     private void OnGameFirstLoaded()
     {
         var hasDlc = _dlcService.IsDlcAvailable;
-        ItemSelection.SetDlcAvailable(hasDlc);
+        _ownsTarnishedPack = _eventService.GetEvent(TarnishedPackOwnershipEvent);
+        ItemSelection.SetDlcAvailable(hasDlc, _ownsTarnishedPack);
     }
 
     private void OnNewGameStart()
@@ -369,6 +377,7 @@ public class ItemViewModel : BaseViewModel
         var hasDlc = _dlcService.IsDlcAvailable;
 
         if (!hasDlc) items = items.Where(i => !i.IsDlc).ToList();
+        if (!_ownsTarnishedPack) items = items.Where(i => !i.IsTarnishedPack).ToList();
 
         bool needsDelay = SelectedMassSpawnCategory is "Cookbooks" or "Crystal Tears";
         bool isWeapons = SelectedMassSpawnCategory == "Weapons";
@@ -429,7 +438,8 @@ public class ItemViewModel : BaseViewModel
             _itemsByCategory,
             _allAshesOfWar,
             _customLoadoutTemplates,
-            _dlcService.IsDlcAvailable);
+            _dlcService.IsDlcAvailable,
+             _ownsTarnishedPack);
 
         if (window.ShowDialog() == true)
             RefreshLoadouts();

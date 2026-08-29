@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.Numerics;
+using System.Runtime.InteropServices;
 using TarnishedTool.Enums;
 using TarnishedTool.Interfaces;
 using TarnishedTool.Memory;
@@ -22,7 +23,7 @@ public class ChrInsService(IMemoryService memoryService) : IChrInsService
 
     public List<ChrInsEntry> GetNearbyChrInsEntries()
     {
-        var worldChrMan = memoryService.Read<IntPtr>(WorldChrMan.Base);
+        var worldChrMan = memoryService.Read<nint>(WorldChrMan.Base);
         nint begin = memoryService.Read<nint>(worldChrMan + WorldChrMan.ChrInsByUpdatePrioBegin);
         nint end = memoryService.Read<nint>(worldChrMan + WorldChrMan.ChrInsByUpdatePrioEnd);
 
@@ -88,7 +89,7 @@ public class ChrInsService(IMemoryService memoryService) : IChrInsService
         var targetingSystem =
             memoryService.Read<nint>(GetAiThinkPtr(chrIns) + ChrIns.AiThinkOffsets.TargetingSystem);
         var flags = targetingSystem + (int)ChrIns.TargetingSystemOffsets.DebugDrawFlags;
-        memoryService.SetBitValue((IntPtr)flags + ChrIns.BlueTargetView.Offset, ChrIns.BlueTargetView.Bit,
+        memoryService.SetBitValue(flags + ChrIns.BlueTargetView.Offset, ChrIns.BlueTargetView.Bit,
             isTargetViewEnabled);
     }
 
@@ -97,7 +98,7 @@ public class ChrInsService(IMemoryService memoryService) : IChrInsService
         var targetingSystem =
             memoryService.Read<nint>(GetAiThinkPtr(chrIns) + ChrIns.AiThinkOffsets.TargetingSystem);
         var flags = targetingSystem + (int)ChrIns.TargetingSystemOffsets.DebugDrawFlags;
-        return memoryService.IsBitSet((IntPtr)flags + ChrIns.BlueTargetView.Offset,
+        return memoryService.IsBitSet(flags + ChrIns.BlueTargetView.Offset,
             ChrIns.BlueTargetView.Bit);
     }
 
@@ -251,7 +252,7 @@ public class ChrInsService(IMemoryService memoryService) : IChrInsService
     public bool IsNoDeathEnabled(nint chrIns) =>
         memoryService.IsBitSet(GetChrDataFlags(chrIns), (int)ChrIns.ChrDataBitFlags.NoDeath);
 
-    public IntPtr ChrInsByHandle(int handle)
+    public nint ChrInsByHandle(int handle)
     {
         int poolIndex = (handle >> 20) & 0xFF;
         int slotIndex = handle & 0xFFFFF;
@@ -289,7 +290,7 @@ public class ChrInsService(IMemoryService memoryService) : IChrInsService
     public uint GetBlockId(nint chrIns) =>
         memoryService.Read<uint>(chrIns + ChrIns.BlockId);
 
-    public void ToggleNoGravity(IntPtr chrIns, bool isEnabled) =>
+    public void ToggleNoGravity(nint chrIns, bool isEnabled) =>
         memoryService.Write(GetChrPhysicsPtr(chrIns) + (int)ChrIns.ChrPhysicsOffsets.NoGravity, isEnabled);
 
     public void SetDrawCritView(nint chrIns, bool enabled) =>
@@ -312,24 +313,24 @@ public class ChrInsService(IMemoryService memoryService) : IChrInsService
 
     private ChrInsEntry ParseEntry(byte[] buffer, int offset)
     {
-        IntPtr chrIns = (IntPtr)BitConverter.ToInt64(buffer, offset);
+        nint chrIns = MemoryMarshal.Read<nint>(buffer.AsSpan(offset));
 
         return new ChrInsEntry(chrIns);
     }
 
-    private IntPtr GetChrInsFlagsPtr(IntPtr chrIns) =>
+    private nint GetChrInsFlagsPtr(nint chrIns) =>
         memoryService.FollowPointers(chrIns, [ChrIns.Flags], false, false);
 
-    private IntPtr GetChrPhysicsPtr(IntPtr chrIns) =>
+    private nint GetChrPhysicsPtr(nint chrIns) =>
         memoryService.FollowPointers(chrIns, ChrIns.ChrPhysicsModule, true, false);
 
-    private IntPtr GetChrCtrlFlagsPtr(IntPtr chrIns) =>
+    private nint GetChrCtrlFlagsPtr(nint chrIns) =>
         memoryService.FollowPointers(chrIns, [ChrIns.ChrCtrl, ..ChrIns.ChrCtrlFlags], false, false);
 
-    private IntPtr GetChrDataPtr(IntPtr chrIns) =>
+    private nint GetChrDataPtr(nint chrIns) =>
         memoryService.FollowPointers(chrIns, ChrIns.ChrDataModule, true, false);
 
-    private IntPtr GetAiThinkPtr(IntPtr chrIns) =>
+    private nint GetAiThinkPtr(nint chrIns) =>
         memoryService.FollowPointers(chrIns, ChrIns.AiThink, true, false);
 
     private nint GetChrSuperArmorPtr(nint chrIns) =>
@@ -381,10 +382,10 @@ public class ChrInsService(IMemoryService memoryService) : IChrInsService
 
         var bytes = AsmLoader.GetAsmBytes(AsmScript.LocalToMapCoords);
         AsmHelper.WriteRelativeOffsets(bytes, [
-            (code.ToInt64(), output.ToInt64(), 0x7, 0x0 + 3),
-            (code.ToInt64() + 0x7, input.ToInt64(), 0x7, 0x7 + 3),
-            (code.ToInt64() + 0xE, pBlockId.ToInt64(), 0x7, 0xE + 3),
-            (code.ToInt64() + 0x19, Functions.LocalToMapCoords, 0x5, 0x19 + 1)
+            (code, output, 0x7, 0x0 + 3),
+            (code + 0x7, input, 0x7, 0x7 + 3),
+            (code + 0xE, pBlockId, 0x7, 0xE + 3),
+            (code + 0x19, Functions.LocalToMapCoords, 0x5, 0x19 + 1)
         ]);
 
         memoryService.WriteBytes(code, bytes);
@@ -392,6 +393,31 @@ public class ChrInsService(IMemoryService memoryService) : IChrInsService
 
         return memoryService.Read<Vector3>(output);
     }
+
+    public int GetChrType(nint chrIns)
+    {
+        var chrManipulator = memoryService.Read<nint>(chrIns + ChrIns.ChrManipulator);
+        return memoryService.Read<int>(chrManipulator + ChrIns.ChrManipulatorOffsets.ChrType);
+    }
+    
+    public void SetChrType(nint chrIns, int value)
+    {
+        var chrManipulator = memoryService.Read<nint>(chrIns + ChrIns.ChrManipulator);
+        memoryService.Write(chrManipulator + ChrIns.ChrManipulatorOffsets.ChrType, value);
+    }
+    
+    public int GetCharacterType(nint chrIns) =>
+        memoryService.Read<int>(chrIns + ChrIns.CharacterType);
+    
+    
+    public void SetCharacterType(nint chrIns, int value) =>
+        memoryService.Write(chrIns + ChrIns.CharacterType, value);
+    
+    public int GetTeamType(nint chrIns) =>
+        memoryService.Read<byte>(chrIns + ChrIns.TeamType);
+    
+    public void SetTeamType(nint chrIns, int value) =>
+        memoryService.Write(chrIns + ChrIns.TeamType, (byte)value);
 
     #endregion
 }

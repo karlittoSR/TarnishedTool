@@ -2,6 +2,39 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v1.5.0] - 2026-08-29
+
+Upstream Tarnished Tool v1.1.0, v1.1.1 and V1.2.0 merged into the fork — everything below comes from [borgCode/TarnishedTool](https://github.com/borgCode/TarnishedTool) unless stated otherwise. The Speedrun Edition features are unchanged.
+
+### Added
+- **Elden Ring 1.17 (`2.7.0.0`) is a supported build.** It now has a complete address table, so the tool no longer falls back to a pattern scan on it and no feature is greyed out. The scan fallback, the address report and the "new game version" notice stay for whatever patch comes next.
+- **Speedy Buffing** (Player tab) — speeds the game up while buffing, with an **Allow in Combat** option. Bindable to a hotkey.
+- **Damage multiplier** — separate outgoing and incoming factors, team-aware, with a hotkey reminder when it is left on.
+- **FP options** — read and set current/max FP from the Player tab, alongside the existing HP controls.
+- **Disable Cutscenes**, **No menu delay** and **No quitout message** (the message shown when the game did not exit cleanly), the last two guarded so they do not patch the wrong bytes on older game builds.
+- **Break Nearby Objects** button (Utility tab).
+- **Unlock Summoning Pools** and **Unlock All Colosseums** (Event tab).
+- **Unlock Gestures is now a selection window** — pick the gestures you want instead of all of them. The hotkey still unlocks everything in one press.
+- **No Godrick's Great Rune healing / FP restoration on load.**
+- **Player Identity** section (Advanced tab) — PlayerGameData character type, character type and team type, for the case where nothing in the world can be interacted with.
+- **Tarnished Pack support** — updated param entries and the new item IDs, with the horse skins flagged to avoid an online ban.
+- Extra entries in **Activate on Launch**: Reset Enemies with Rest, Speedy Buffing, Disable Cutscenes.
+- **Accept Macros**, **Hotkey Reminder** and **Show Used Hotkeys** checkboxes, folded into the fork's hotkey panel layout.
+
+### Changed
+- **The AOB scanner was rewritten upstream** into a single queued pass over the module: patterns are anchored on their rarest byte pair and matched in one sweep instead of one full scan per pattern. Missing patterns were filled in so a future game patch has more to fall back on. The fork's version-stamped, module-relative backup file is preserved on top of it — saved addresses are still dropped when the game build changes rather than replayed into unrelated code.
+- The equip and memorized-spell function lookups keep their own scanner: one of them needs several candidate matches and a proof step, which the queued engine cannot express.
+- Addresses are `nint` throughout instead of `long`/`IntPtr` mixes.
+- The code cave grew from `0x5000` to `0x6000`: upstream's damage-multiplier and speedy-buffing regions claimed `0x4200`–`0x4900`, so the fork's equip and spell scratch space moved to `0x5000`.
+
+### Fixed
+- **Failures to attach to the game.**
+- **Boss warp and revive for Adan, Fire Giant and Bayle.**
+- **The error message when invading NPCs**, caused by the character-type fixes.
+- **Missing whetblade events.**
+- **Show Used Hotkeys** listed only the Player tab; it now lists every tab.
+- Several broken hotkey bindings.
+
 ## [v1.4.2] - 2026-08-28
 
 ### Added

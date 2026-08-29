@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Numerics;
 using System.Threading.Tasks;
@@ -36,6 +38,25 @@ namespace TarnishedTool.Services
             new(0, Vector3.Zero, 0f)
         ];
 
+        private SpeedBuffMode _currentMode = SpeedBuffMode.Off;
+        
+        private static readonly byte[] BuffPrefixTable = BuildBuffPrefixTable();
+        
+        private static byte[] BuildBuffPrefixTable()
+        {
+            var table = new byte[1024];
+
+            foreach (int id in DataLoader.GetSimpleList(
+                         "TimeActIds",
+                         s => int.Parse(s, CultureInfo.InvariantCulture)))
+            {
+                table[id] = 1;
+            }
+
+            return table;
+        }
+
+        
         public MapLocation GetMapLocation()
         {
             var playerIns = GetPlayerIns();
@@ -134,7 +155,8 @@ namespace TarnishedTool.Services
                     memoryService.Write(physicsPtr + (int)ChrIns.ChrPhysicsOffsets.NoGravity, true);
 
                 memoryService.Write(coordsPtr, memoryService.Read<Vector3>(coordsPtr) + delta);
-                memoryService.Write(GetPlayerIns() + WorldChrMan.PlayerInsOffsets.CurrentMapAngle, savedPos.Angle);
+                memoryService.Write(GetPlayerIns() + WorldChrMan.PlayerInsOffsets.CurrentMapAngle,
+                    savedPos.Angle);
                 memoryService.Write(physicsPtr + (int)ChrIns.ChrPhysicsOffsets.Angle1, savedPos.PhysicsAngle1);
                 memoryService.Write(physicsPtr + (int)ChrIns.ChrPhysicsOffsets.Angle2, savedPos.PhysicsAngle2);
 
@@ -275,19 +297,19 @@ namespace TarnishedTool.Services
             memoryService.AllocateAndExecute(bytes);
         }
 
-        private bool IsRidingInternal(IntPtr chrRideModule)
+        private bool IsRidingInternal(nint chrRideModule)
         {
             var rideNode = memoryService.Read<nint>(chrRideModule + (int)ChrIns.ChrRideOffsets.RideNode);
             return memoryService.Read<int>(rideNode + (int)ChrIns.RideNodeOffsets.IsRiding) != 0;
         }
 
-        private IntPtr GetTorrentPhysicsPtr()
+        private nint GetTorrentPhysicsPtr()
         {
             var torrentChrIns = GetTorrentChrIns();
             return memoryService.FollowPointers(torrentChrIns, [..ChrIns.ChrPhysicsModule], true, false);
         }
 
-        private IntPtr GetTorrentChrIns()
+        private nint GetTorrentChrIns()
         {
             var playerGameData =
                 memoryService.Read<nint>(memoryService.Read<nint>(GameDataMan.Base) + GameDataMan.PlayerGameData);
@@ -312,6 +334,13 @@ namespace TarnishedTool.Services
             var full = chrInsService.GetMaxHp(playerIns);
             chrInsService.SetHp(playerIns, full);
         }
+        
+        public void SetFullFp()
+        {
+            var full = GetMaxFp();
+            SetFp(full);
+        }
+
 
         public void SetRfbs()
         {
@@ -350,12 +379,12 @@ namespace TarnishedTool.Services
             }
             else
             {
-                hookManager.UninstallHook(poiseCode.ToInt64());
-                hookManager.UninstallHook(noGrabCode.ToInt64());
+                hookManager.UninstallHook(poiseCode);
+                hookManager.UninstallHook(noGrabCode);
             }
         }
 
-        private void HookPoiseDamage(IntPtr code)
+        private void HookPoiseDamage(nint code)
         {
             var hook = Hooks.InfinitePoise;
             var bytes = AsmLoader.GetAsmBytes(AsmScript.InfinitePoise);
@@ -373,18 +402,18 @@ namespace TarnishedTool.Services
 
             AsmHelper.WriteRelativeOffsets(bytes, new[]
             {
-                (code.ToInt64() + 0x8, WorldChrMan.Base.ToInt64(), 7, 0x8 + 3),
-                (code.ToInt64() + 0x3D, WorldChrMan.Base.ToInt64(), 7, 0x3D + 3),
-                (code.ToInt64() + 0x53, Functions.GetChrInsByEntityId, 5, 0x53 + 1),
-                (code.ToInt64() + 0x6A, hook + 0x7, 5, 0x6A + 1)
+                (code + 0x8, WorldChrMan.Base, 7, 0x8 + 3),
+                (code + 0x3D, WorldChrMan.Base, 7, 0x3D + 3),
+                (code + 0x53, Functions.GetChrInsByEntityId, 5, 0x53 + 1),
+                (code + 0x6A, hook + 0x7, 5, 0x6A + 1)
             });
 
             memoryService.WriteBytes(code, bytes);
 
-            hookManager.InstallHook(code.ToInt64(), hook, originalBytes);
+            hookManager.InstallHook(code, hook, originalBytes);
         }
 
-        private void HookGrab(IntPtr noGrabCode)
+        private void HookGrab(nint noGrabCode)
         {
             var hook = Hooks.NoGrab;
             var skipGrabJmpLoc = hook + 0x95;
@@ -394,12 +423,12 @@ namespace TarnishedTool.Services
 
             AsmHelper.WriteRelativeOffsets(codeBytes, new[]
             {
-                (noGrabCode.ToInt64() + 0x1, WorldChrMan.Base.ToInt64(), 7, 0x1 + 3),
-                (noGrabCode.ToInt64() + 0x14, skipGrabJmpLoc, 6, 0x14 + 2),
-                (noGrabCode.ToInt64() + 0x23, hook + 0x9, 5, 0x23 + 1)
+                (noGrabCode + 0x1, WorldChrMan.Base, 7, 0x1 + 3),
+                (noGrabCode + 0x14, skipGrabJmpLoc, 6, 0x14 + 2),
+                (noGrabCode + 0x23, hook + 0x9, 5, 0x23 + 1)
             });
             memoryService.WriteBytes(noGrabCode, codeBytes);
-            hookManager.InstallHook(noGrabCode.ToInt64(), hook, new byte[]
+            hookManager.InstallHook(noGrabCode, hook, new byte[]
                 { 0x41, 0x8B, 0x56, 0x44, 0x48, 0x8D, 0x4C, 0x24, 0x40 });
         }
 
@@ -430,7 +459,7 @@ namespace TarnishedTool.Services
             }
             else
             {
-                hookManager.UninstallHook(playerLockHp.ToInt64());
+                hookManager.UninstallHook(playerLockHp);
             }
         }
 
@@ -438,7 +467,7 @@ namespace TarnishedTool.Services
         {
             var bytes = AsmLoader.GetAsmBytes(AsmScript.PlayerLockHp);
             AsmHelper.WriteRelativeOffsets(bytes, [
-                (code + 0x6, WorldChrMan.Base.ToInt64(), 7, 0x6 + 3),
+                (code + 0x6, WorldChrMan.Base, 7, 0x6 + 3),
                 (code + 0x36, Hooks.PlayerLockHp + 5, 5, 0x36 + 1)
             ]);
 
@@ -482,13 +511,13 @@ namespace TarnishedTool.Services
             var code = CodeCaveOffsets.Base + CodeCaveOffsets.SaveCurrentTime;
             if (isNoTimePassOnDeathEnabled)
             {
-                var hook = Hooks.NoTimePassOnDeath.ToInt64();
+                var hook = Hooks.NoTimePassOnDeath;
                 var bytes = AsmLoader.GetAsmBytes(AsmScript.NoTimePassOnDeath);
                 AsmHelper.WriteRelativeOffsets(bytes, new[]
                 {
-                    (code.ToInt64() + 0x8, WorldAreaTimeImpl.Base.ToInt64(), 7, 0x8 + 3),
-                    (code.ToInt64() + 0xF, GameMan.Base.ToInt64(), 7, 0xF + 3),
-                    (code.ToInt64() + 0x28, hook + 5, 5, 0x28 + 1)
+                    (code + 0x8, WorldAreaTimeImpl.Base, 7, 0x8 + 3),
+                    (code + 0xF, GameMan.Base, 7, 0xF + 3),
+                    (code + 0x28, hook + 5, 5, 0x28 + 1)
                 });
 
 
@@ -499,11 +528,11 @@ namespace TarnishedTool.Services
                 bytes[savedTimeMovIndex2] = (byte)(GameMan.StoredTime + 8);
 
                 memoryService.WriteBytes(code, bytes);
-                hookManager.InstallHook(code.ToInt64(), hook, [0x4C, 0x8B, 0x74, 0x24, 0x70]);
+                hookManager.InstallHook(code, hook, [0x4C, 0x8B, 0x74, 0x24, 0x70]);
             }
             else
             {
-                hookManager.UninstallHook(code.ToInt64());
+                hookManager.UninstallHook(code);
             }
         }
 
@@ -627,16 +656,16 @@ namespace TarnishedTool.Services
         private nint GetGameDataPtr() =>
             memoryService.FollowPointers(GameDataMan.Base, [GameDataMan.PlayerGameData], true);
 
-        private IntPtr GetChrDataPtr() =>
+        private nint GetChrDataPtr() =>
             memoryService.FollowPointers(WorldChrMan.Base, [WorldChrMan.PlayerIns, ..ChrIns.ChrDataModule], true);
 
-        private IntPtr GetChrPhysicsPtr() =>
+        private nint GetChrPhysicsPtr() =>
             memoryService.FollowPointers(WorldChrMan.Base, [WorldChrMan.PlayerIns, ..ChrIns.ChrPhysicsModule], true);
 
-        private IntPtr GetChrRidePtr() =>
+        private nint GetChrRidePtr() =>
             memoryService.FollowPointers(WorldChrMan.Base, [WorldChrMan.PlayerIns, ..ChrIns.ChrRideModule], true);
 
-        private IntPtr GetChrInsFlagsPtr() =>
+        private nint GetChrInsFlagsPtr() =>
             memoryService.FollowPointers(WorldChrMan.Base, [WorldChrMan.PlayerIns, ChrIns.Flags], false);
 
         private Position GetPlayerPosition()
@@ -655,6 +684,73 @@ namespace TarnishedTool.Services
         public void ToggleNoRoll(bool isEnabled)
         {
             actionRequestService.ToggleNoRoll(isEnabled);
+        }
+
+        public void SetSpeedBuffMode(SpeedBuffMode mode)
+        {
+            if (_currentMode == mode)
+                return;
+
+            var speedyBuffCode = CodeCaveOffsets.Base + CodeCaveOffsets.SpeedyBuff;
+
+            var speedActiveFlag = CodeCaveOffsets.Base + CodeCaveOffsets.SpeedActiveFlag;
+            var allowedInCombat = CodeCaveOffsets.Base + CodeCaveOffsets.AllowSpeedBuffInCombat;
+
+            var wasEnabled = _currentMode != SpeedBuffMode.Off;
+            var isEnabled = mode != SpeedBuffMode.Off;
+
+            if (!wasEnabled && isEnabled)
+            {
+                InstallSpeedyBuffingHook(speedyBuffCode, speedActiveFlag);
+            }
+            else if (wasEnabled && !isEnabled)
+            {
+                hookManager.UninstallHook(speedyBuffCode);
+                if (memoryService.Read<byte>(speedActiveFlag) == 1)
+                {
+                    var csFlipper = memoryService.Read<nint>(CSFlipperImp.Base);
+                    memoryService.Write(csFlipper + CSFlipperImp.GameSpeed, 1f);
+                }
+            }
+
+            memoryService.Write(allowedInCombat, mode == SpeedBuffMode.AllowedInCombat);
+            _currentMode = mode;
+        }
+
+        private void InstallSpeedyBuffingHook(nint code, nint speedActiveFlag)
+        {
+            var idTable = CodeCaveOffsets.Base + CodeCaveOffsets.TimeActBuffTable;
+            memoryService.WriteBytes(idTable, BuffPrefixTable);
+            
+            memoryService.Write(speedActiveFlag, false);
+
+            var allowedInCombat = CodeCaveOffsets.Base + CodeCaveOffsets.AllowSpeedBuffInCombat;
+
+            var bytes = AsmLoader.GetAsmBytes(AsmScript.SpeedBuff);
+            
+            AsmHelper.WriteRelativeOffsets(bytes, [
+                (code + 0x5 , WorldChrMan.Base, 7, 0x5 + 3),
+                (code + 0x17, Hooks.SpeedyBuff + 5, 6, 0x17 + 2),
+                (code + 0x1D, allowedInCombat, 7, 0x1D + 2),
+                (code + 0x26, CSSound.Base, 7, 0x26 + 3),
+                (code + 0x3A, Hooks.SpeedyBuff + 5, 5, 0x3A + 1),
+                (code + 0x45, idTable, 7, 0x45 + 3),
+                (code + 0x60, speedActiveFlag, 7, 0x60 + 2),
+                (code + 0x69, CSFlipperImp.Base, 7, 0x69 + 3),
+                (code + 0x7A, speedActiveFlag, 7, 0x7A + 2),
+                (code + 0x83, CSFlipperImp.Base, 7, 0x83 + 3),
+                (code + 0x94, speedActiveFlag, 7, 0x94 + 2),
+                (code + 0x9E, Hooks.SpeedyBuff + 5, 5, 0x9E + 1)
+            ]);
+            
+            AsmHelper.WriteImmediateDwords(bytes, [
+                (WorldChrMan.PlayerIns, 0xC + 3),
+                (CSFlipperImp.GameSpeed, 0x70 + 2),
+                (CSFlipperImp.GameSpeed, 0x8A + 2),
+            ]);
+            
+            memoryService.WriteBytes(code, bytes);
+            hookManager.InstallHook(code, Hooks.SpeedyBuff, [0x48, 0x89, 0x5C, 0x24, 0x10]);
         }
     }
 }

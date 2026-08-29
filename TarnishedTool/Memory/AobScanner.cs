@@ -1,287 +1,459 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
-using System.Threading.Tasks;
+using System.Linq;
+using System.Runtime.CompilerServices;
 using TarnishedTool.Interfaces;
-using TarnishedTool.Services;
 using TarnishedTool.Utilities;
 using static TarnishedTool.Memory.Offsets;
+#if DEBUG
+using System.Diagnostics;
+#endif
 
 namespace TarnishedTool.Memory
 {
-    public class AoBScanner(IMemoryService memoryService)
+    public class AobScanner(IMemoryService memoryService)
     {
-        
+        private const int HistogramSampleStep = 16;
 
-        public void DoFallbackScan()
+        private byte[]? _module;
+        private nint _moduleBase;
+
+        private readonly List<Request> _requests = new();
+
+        private readonly byte[] _bitmap = new byte[65536 / 8];
+        private readonly List<Request>?[] _pairBuckets = new List<Request>[65536];
+
+        private readonly List<Request>?[] _singleBuckets = new List<Request>[256];
+        private bool _hasSingleFallback;
+
+        private readonly Dictionary<string, nint> _savedAddresses = new();
+        private readonly long[] _pairHistogram = new long[65536];
+        private long _histogramSamples;
+        private bool _histogramBuilt;
+
+        private static readonly string BackupPath = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+            "TarnishedTool",
+            "backup_addresses.txt");
+
+        private sealed class Request(int id, string? name, Pattern pattern, Action<nint> setter)
         {
-            string appData = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                "TarnishedTool");
-            Directory.CreateDirectory(appData);
-            string savePath = Path.Combine(appData, "backup_addresses.txt");
+            public int Id { get; } = id;
+            public string? Name { get; } = name;
+            public Pattern Pattern { get; } = pattern;
+            public Action<nint> Setter { get; } = setter;
+            public int[] NonWildcardIndices { get; } = BuildNonWildcardIndices(pattern);
+            public int AnchorOffset;
+            public long AnchorFrequency = -1;
+            public bool IsSingle;
 
-            // Saved addresses only mean anything on the build they were found on.
-            // A game patch moves everything, so replaying the previous version's
-            // addresses would install patches in the middle of unrelated code --
-            // the file is stamped with the game version and dropped when it does
-            // not match. Offsets are stored module-relative so a different module
-            // base between launches is harmless.
-            var gameVersion = PatchManager.DetectedFileVersion ?? "unknown";
-
-            ConcurrentDictionary<string, long> saved = new ConcurrentDictionary<string, long>();
-            if (File.Exists(savePath))
+            private static int[] BuildNonWildcardIndices(Pattern p)
             {
-                var lines = File.ReadAllLines(savePath);
-                if (lines.Length > 0 && lines[0] == $"version={gameVersion}")
+                var len = p.Bytes.Length;
+                var list = new List<int>(len);
+                for (var j = 0; j < len; j++)
+                    if (IsConcrete(p.Mask, j, len))
+                        list.Add(j);
+                return list.ToArray();
+            }
+        }
+
+        private static bool IsConcrete(string mask, int j, int len)
+            => j < len && (j >= mask.Length || mask[j] != '?');
+
+        public void LoadModule()
+        {
+            _moduleBase = memoryService.BaseAddress;
+            _module = memoryService.ReadBytes(_moduleBase, memoryService.ModuleMemorySize);
+        }
+        
+        public void QueueFallbackPatterns()
+        {
+            Queue(nameof(Pattern.WorldChrMan), Pattern.WorldChrMan, addr => WorldChrMan.Base = addr);
+            Queue(nameof(Pattern.FieldArea), Pattern.FieldArea, addr => FieldArea.Base = addr);
+            Queue(nameof(Pattern.LuaEventMan), Pattern.LuaEventMan, addr => LuaEventMan.Base = addr);
+            Queue(nameof(Pattern.VirtualMemFlag), Pattern.VirtualMemFlag, addr => VirtualMemFlag.Base = addr);
+            Queue(nameof(Pattern.DamageManager), Pattern.DamageManager, addr => DamageManager.Base = addr);
+            Queue(nameof(Pattern.MenuMan), Pattern.MenuMan, addr => MenuMan.Base = addr);
+            Queue(nameof(Pattern.TargetView), Pattern.TargetView, addr => TargetView.Base = addr);
+            Queue(nameof(Pattern.GameMan), Pattern.GameMan, addr => GameMan.Base = addr);
+            Queue(nameof(Pattern.WorldHitMan), Pattern.WorldHitMan, addr => WorldHitMan.Base = addr);
+            Queue(nameof(Pattern.WorldChrManDbg), Pattern.WorldChrManDbg, addr => WorldChrManDbg.Base = addr);
+            Queue(nameof(Pattern.GameDataMan), Pattern.GameDataMan, addr => GameDataMan.Base = addr);
+            Queue(nameof(Pattern.CsDlcImp), Pattern.CsDlcImp, addr => CsDlcImp.Base = addr);
+            Queue(nameof(Pattern.MapItemManImpl), Pattern.MapItemManImpl, addr => MapItemManImpl.Base = addr);
+            Queue(nameof(Pattern.FD4PadManager), Pattern.FD4PadManager, addr => FD4PadManager.Base = addr);
+            Queue(nameof(Pattern.CSEmkSystem), Pattern.CSEmkSystem, addr => CSEmkSystem.Base = addr);
+            Queue(nameof(Pattern.WorldAreaTimeImpl), Pattern.WorldAreaTimeImpl, addr => WorldAreaTimeImpl.Base = addr);
+            Queue(nameof(Pattern.GroupMask), Pattern.GroupMask, addr => GroupMask.Base = addr);
+            Queue(nameof(Pattern.SoloParamRepositoryImp), Pattern.SoloParamRepositoryImp,
+                addr => SoloParamRepositoryImp.Base = addr);
+            Queue(nameof(Pattern.MsgRepository), Pattern.MsgRepository, addr => MsgRepository.Base = addr);
+            Queue(nameof(Pattern.CSFlipperImp), Pattern.CSFlipperImp, addr => CSFlipperImp.Base = addr);
+            Queue(nameof(Pattern.CSDbgEvent), Pattern.CSDbgEvent, addr => CSDbgEvent.Base = addr);
+            Queue(nameof(Pattern.ChrDbgFlags), Pattern.ChrDbgFlags, addr => ChrDbgFlags.Base = addr);
+            Queue(nameof(Pattern.UserInputManager), Pattern.UserInputManager, addr => UserInputManager.Base = addr);
+            Queue(nameof(Pattern.CSTrophy), Pattern.CSTrophy, addr => CSTrophy.Base = addr);
+            Queue(nameof(Pattern.DrawPathing), Pattern.DrawPathing, addr => DrawPathing.Base = addr - 0x10);
+            Queue(nameof(Pattern.MapDebugFlags), Pattern.MapDebugFlags, addr => MapDebugFlags.Base = addr - 1);
+            Queue(nameof(Pattern.WorldAiManagerImp), Pattern.WorldAiManagerImp, addr => WorldAiManagerImp.Base = addr);
+            Queue(nameof(Pattern.CSSound), Pattern.CSSound, addr => CSSound.Base = addr);
+
+            Queue(nameof(Pattern.GraceWarp), Pattern.GraceWarp, addr => Functions.GraceWarp = addr);
+            Queue(nameof(Pattern.SetEvent), Pattern.SetEvent, addr => Functions.SetEvent = addr);
+            Queue(nameof(Pattern.SetSpEffect), Pattern.SetSpEffect, addr => Functions.SetSpEffect = addr);
+            Queue(nameof(Pattern.GiveRunes), Pattern.GiveRunes, addr => Functions.GiveRunes = addr);
+            Queue(nameof(Pattern.LookupByFieldInsHandle), Pattern.LookupByFieldInsHandle,
+                addr => Functions.LookupByFieldInsHandle = addr);
+            Queue(nameof(Pattern.WarpToBlock), Pattern.WarpToBlock, addr => Functions.WarpToBlock = addr);
+            Queue(nameof(Pattern.ExternalEventTempCtor), Pattern.ExternalEventTempCtor,
+                addr => Functions.ExternalEventTempCtor = addr);
+            Queue(nameof(Pattern.ExecuteTalkCommand), Pattern.ExecuteTalkCommand,
+                addr => Functions.ExecuteTalkCommand = addr);
+            Queue(nameof(Pattern.GetEvent), Pattern.GetEvent, addr => Functions.GetEvent = addr);
+            Queue(nameof(Pattern.GetPlayerItemQuantityById), Pattern.GetPlayerItemQuantityById,
+                addr => Functions.GetPlayerItemQuantityById = addr);
+            Queue(nameof(Pattern.ItemSpawn), Pattern.ItemSpawn, addr => Functions.ItemSpawn = addr);
+            Queue(nameof(Pattern.MatrixVectorProduct), Pattern.MatrixVectorProduct,
+                addr => Functions.MatrixVectorProduct = addr);
+            Queue(nameof(Pattern.ChrInsByHandle), Pattern.ChrInsByHandle, addr => Functions.ChrInsByHandle = addr);
+            Queue(nameof(Pattern.FindAndRemoveSpEffect), Pattern.FindAndRemoveSpEffect,
+                addr => Functions.FindAndRemoveSpEffect = addr);
+            Queue(nameof(Pattern.EmevdSwitch), Pattern.EmevdSwitch, addr => Functions.EmevdSwitch = addr);
+            Queue(nameof(Pattern.EmkEventInsCtor), Pattern.EmkEventInsCtor, addr => Functions.EmkEventInsCtor = addr);
+            Queue(nameof(Pattern.GetMovement), Pattern.GetMovement, addr => Functions.GetMovement = addr);
+            Queue(nameof(Pattern.GetChrInsByEntityId), Pattern.GetChrInsByEntityId,
+                addr => Functions.GetChrInsByEntityId = addr);
+            Queue(nameof(Pattern.NpcEzStateTalkCtor), Pattern.NpcEzStateTalkCtor,
+                addr => Functions.NpcEzStateTalkCtor = addr);
+            Queue(nameof(Pattern.EzStateEnvQueryImplCtor), Pattern.EzStateEnvQueryImplCtor,
+                addr => Functions.EzStateEnvQueryImplCtor = addr);
+            Queue(nameof(Pattern.LocalToMapCoords), Pattern.LocalToMapCoords,
+                addr => Functions.LocalToMapCoords = addr);
+            Queue(nameof(Pattern.LuaDoString), Pattern.LuaDoString, addr => Functions.LuaDoString = addr);
+            Queue(nameof(Pattern.RefreshFromStorage), Pattern.RefreshFromStorage,
+                addr => Functions.RefreshFromStorage = addr);
+            Queue(nameof(Pattern.AiRequestAttackCooldown), Pattern.AiRequestAttackCooldown,
+                addr => Functions.AiRequestAttackCooldown = addr);
+
+            Queue(nameof(Pattern.CanFastTravel), Pattern.CanFastTravel, addr => Patches.CanFastTravel = addr);
+            Queue(nameof(Pattern.NoRunesFromEnemies), Pattern.NoRunesFromEnemies,
+                addr => Patches.NoRunesFromEnemies = addr);
+            Queue(nameof(Pattern.NoRuneArcLoss), Pattern.NoRuneArcLoss, addr => Patches.NoRuneArcLoss = addr);
+            Queue(nameof(Pattern.NoRuneLossOnDeath), Pattern.NoRuneLossOnDeath,
+                addr => Patches.NoRuneLossOnDeath = addr);
+            Queue(nameof(Pattern.IsWorldPaused), Pattern.IsWorldPaused, addr => Patches.IsWorldPaused = addr);
+            Queue(nameof(Pattern.GetItemChance), Pattern.GetItemChance, addr => Patches.GetItemChance = addr);
+            Queue(nameof(Pattern.OpenMap), Pattern.OpenMap, addr => Patches.OpenMap = addr);
+            Queue(nameof(Pattern.CloseMap), Pattern.CloseMap, addr => Patches.CloseMap = addr);
+            Queue(nameof(Pattern.NoLogo), Pattern.NoLogo, addr => Patches.NoLogo = addr);
+            Queue(nameof(Pattern.PlayerSound), Pattern.PlayerSound, addr => Patches.PlayerSound = addr);
+            Queue(nameof(Pattern.IsTorrentDisabledInUnderworld), Pattern.IsTorrentDisabledInUnderworld,
+                addr => Patches.IsTorrentDisabledInUnderworld = addr);
+            Queue(nameof(Pattern.IsWhistleDisabled), Pattern.IsWhistleDisabled,
+                addr => Patches.IsWhistleDisabled = addr);
+            Queue(nameof(Pattern.EnableFreeCam), Pattern.EnableFreeCam, addr => Patches.EnableFreeCam = addr);
+            Queue(nameof(Pattern.GetShopEvent), Pattern.GetShopEvent, addr => Patches.GetShopEvent = addr);
+            Queue(nameof(Pattern.DebugFont), Pattern.DebugFont, addr => Patches.DebugFont = addr);
+            Queue(nameof(Pattern.FpsCap), Pattern.FpsCap, addr => Patches.FpsCap = addr);
+            Queue(nameof(Pattern.MenuDelay), Pattern.MenuDelay, addr => Patches.MenuDelay = addr);
+            Queue(nameof(Pattern.CanDrawEvents1), Pattern.CanDrawEvents1, addr => Patches.CanDrawEvents1 = addr);
+            Queue(nameof(Pattern.CanDrawEvents2), Pattern.CanDrawEvents2, addr => Patches.CanDrawEvents2 = addr);
+            Queue(nameof(Pattern.DisableCutscene), Pattern.DisableCutscene, addr => Patches.DisableCutscene = addr);
+            Queue(nameof(Pattern.NoQuitMessage), Pattern.NoQuitMessage, addr => Patches.NoQuitMessage = addr);
+
+            Queue(nameof(Pattern.UpdateCoords), Pattern.UpdateCoords, addr => Hooks.UpdateCoords = addr);
+            Queue(nameof(Pattern.InAirTimer), Pattern.InAirTimer, addr => Hooks.InAirTimer = addr);
+            Queue(nameof(Pattern.NoClipKb), Pattern.NoClipKb, addr => Hooks.NoClipKb = addr);
+            Queue(nameof(Pattern.NoClipTriggers), Pattern.NoClipTriggers, addr => Hooks.NoClipTriggers = addr);
+            Queue(nameof(Pattern.HasSpEffect), Pattern.HasSpEffect, addr => Hooks.HasSpEffect = addr);
+            Queue(nameof(Pattern.BlueTargetViewHook), Pattern.BlueTargetViewHook, addr => Hooks.BlueTargetView = addr);
+            Queue(nameof(Pattern.LockedTargetPtr), Pattern.LockedTargetPtr, addr => Hooks.LockedTargetPtr = addr);
+            Queue(nameof(Pattern.InfinitePoise), Pattern.InfinitePoise, addr => Hooks.InfinitePoise = addr);
+            Queue(nameof(Pattern.ShouldUpdateAi), Pattern.ShouldUpdateAi, addr => Hooks.ShouldUpdateAi = addr);
+            Queue(nameof(Pattern.GetForceActIdx), Pattern.GetForceActIdx, addr => Hooks.GetForceActIdx = addr);
+            Queue(nameof(Pattern.TargetNoStagger), Pattern.TargetNoStagger, addr => Hooks.TargetNoStagger = addr);
+            Queue(nameof(Pattern.AttackInfo), Pattern.AttackInfo, addr => Hooks.AttackInfo = addr);
+            Queue(nameof(Pattern.NoTimePassOnDeath), Pattern.NoTimePassOnDeath, addr => Hooks.NoTimePassOnDeath = addr);
+            Queue(nameof(Pattern.WarpCoordWrite), Pattern.WarpCoordWrite, addr => Hooks.WarpCoordWrite = addr);
+            Queue(nameof(Pattern.WarpAngleWrite), Pattern.WarpAngleWrite, addr => Hooks.WarpAngleWrite = addr);
+            Queue(nameof(Pattern.LionCooldownHook), Pattern.LionCooldownHook, addr => Hooks.LionCooldownHook = addr);
+            Queue(nameof(Pattern.SetActionRequested), Pattern.SetActionRequested,
+                addr => Hooks.SetActionRequested = addr);
+            Queue(nameof(Pattern.NoMapAcquiredPopup), Pattern.NoMapAcquiredPopup,
+                addr => Hooks.NoMapAcquiredPopup = addr);
+            Queue(nameof(Pattern.LoadScreenMsgLookup), Pattern.LoadScreenMsgLookup,
+                addr => Hooks.LoadScreenMsgLookup = addr);
+            Queue(nameof(Pattern.NoGrab), Pattern.NoGrab, addr => Hooks.NoGrab = addr);
+            Queue(nameof(Pattern.NoHeal), Pattern.NoHeal, addr => Hooks.NoHeal = addr);
+            Queue(nameof(Pattern.PlayerLockHp), Pattern.PlayerLockHp, addr => Hooks.PlayerLockHp = addr);
+            Queue(nameof(Pattern.DamageApply), Pattern.DamageApply, addr => Hooks.DamageApply = addr);
+            Queue(nameof(Pattern.SpeedyBuff), Pattern.SpeedyBuff, addr => Hooks.SpeedyBuff = addr);
+        }
+        
+        public void Queue(string? name, Pattern pattern, Action<nint> setter) =>
+            _requests.Add(new Request(_requests.Count, name, pattern, setter));
+
+        // Saved addresses only mean anything on the build they were found on. A
+        // game patch moves everything, so replaying the previous version's
+        // addresses would install patches in the middle of unrelated code -- the
+        // file is stamped with the game version and dropped when it does not
+        // match. Offsets are stored module-relative so a different module base
+        // between launches is harmless.
+        private static string CurrentGameVersion => PatchManager.DetectedFileVersion ?? "unknown";
+
+        private void LoadSavedAddresses()
+        {
+            _savedAddresses.Clear();
+            if (!File.Exists(BackupPath)) return;
+
+            var lines = File.ReadAllLines(BackupPath);
+            if (lines.Length == 0 || lines[0] != $"version={CurrentGameVersion}")
+            {
+                DiagnosticsLogger.Log(
+                    $"Saved addresses are from another game version, discarding them (now on {CurrentGameVersion}).");
+                return;
+            }
+
+            foreach (var line in lines)
+            {
+                var parts = line.Split('=');
+                if (parts.Length != 2 || parts[0] == "version") continue;
+                if (long.TryParse(parts[1], NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var rva))
+                    _savedAddresses[parts[0]] = _moduleBase + (nint)rva;
+            }
+        }
+
+        private void WriteSavedAddresses()
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(BackupPath)!);
+            using var writer = new StreamWriter(BackupPath);
+            writer.WriteLine($"version={CurrentGameVersion}");
+            foreach (var kvp in _savedAddresses)
+                writer.WriteLine($"{kvp.Key}={(long)(kvp.Value - _moduleBase):X}");
+        }
+
+        private void BuildHistogram()
+        {
+            Array.Clear(_pairHistogram, 0, _pairHistogram.Length);
+            var buf = _module!;
+            var end = buf.Length - 1;
+            long samples = 0;
+            for (var i = 0; i < end; i += HistogramSampleStep)
+            {
+                var key = buf[i] | (buf[i + 1] << 8);
+                _pairHistogram[key]++;
+                samples++;
+            }
+
+            _histogramSamples = samples;
+            _histogramBuilt = true;
+        }
+        
+        private void AssignAnchors()
+        {
+            var needHistogram = _requests.Any(r => r.Pattern.AnchorOffset < 0);
+#if DEBUG
+            needHistogram = true;
+#endif
+            if (needHistogram) BuildHistogram();
+
+            long[]? singleMarginal = null; 
+
+            foreach (var req in _requests)
+            {
+                var bytes = req.Pattern.Bytes;
+                var hardOffset = req.Pattern.AnchorOffset;
+
+                if (hardOffset >= 0 && hardOffset + 1 < bytes.Length)
                 {
-                    foreach (string line in lines)
+                    AssignPair(req, hardOffset);
+                    continue;
+                }
+                
+                var mask = req.Pattern.Mask;
+                var len = bytes.Length;
+                var bestOffset = -1;
+                var bestFreq = long.MaxValue;
+                for (var j = 0; j + 1 < len; j++)
+                {
+                    if (!IsConcrete(mask, j, len) || !IsConcrete(mask, j + 1, len)) continue;
+                    var freq = _pairHistogram[bytes[j] | (bytes[j + 1] << 8)];
+                    if (freq < bestFreq)
                     {
-                        string[] parts = line.Split('=');
-                        if (parts.Length != 2 || parts[0] == "version") continue;
-                        saved[parts[0]] = Convert.ToInt64(parts[1], 16);
+                        bestFreq = freq;
+                        bestOffset = j;
                     }
+                }
+
+                if (bestOffset >= 0)
+                {
+                    AssignPair(req, bestOffset);
                 }
                 else
                 {
-                    DiagnosticsLogger.Log(
-                        $"Saved addresses are from another game version, discarding them (now on {gameVersion}).");
+                    singleMarginal ??= BuildSingleByteMarginal();
+                    var bestByteOffset = req.NonWildcardIndices.Length > 0 ? req.NonWildcardIndices[0] : 0;
+                    var bestByteFreq = long.MaxValue;
+                    foreach (var j in req.NonWildcardIndices)
+                    {
+                        var freq = singleMarginal[bytes[j]];
+                        if (freq < bestByteFreq)
+                        {
+                            bestByteFreq = freq;
+                            bestByteOffset = j;
+                        }
+                    }
+
+                    req.IsSingle = true;
+                    req.AnchorOffset = bestByteOffset;
+                    req.AnchorFrequency = bestByteFreq;
+                    _hasSingleFallback = true;
+                    (_singleBuckets[bytes[bestByteOffset]] ??= new List<Request>()).Add(req);
+                }
+            }
+        }
+
+        private void AssignPair(Request req, int offset)
+        {
+            var bytes = req.Pattern.Bytes;
+            var key = bytes[offset] | (bytes[offset + 1] << 8);
+            req.AnchorOffset = offset;
+            req.IsSingle = false;
+            req.AnchorFrequency = _histogramBuilt ? _pairHistogram[key] : -1;
+            _bitmap[key >> 3] |= (byte)(1 << (key & 7));
+            (_pairBuckets[key] ??= new List<Request>()).Add(req);
+        }
+        
+        private long[] BuildSingleByteMarginal()
+        {
+            var marginal = new long[256];
+            for (var key = 0; key < _pairHistogram.Length; key++)
+                marginal[key & 0xFF] += _pairHistogram[key];
+            return marginal;
+        }
+
+        public void Run()
+        {
+            if (_module is null) LoadModule();
+            LoadSavedAddresses();
+            AssignAnchors();
+
+#if DEBUG
+            LogAnchors();
+            var scan = Stopwatch.StartNew();
+#endif
+            var buf = _module!;
+            var bufLen = buf.Length;
+            var end = bufLen - 1; 
+            ref var bufRef = ref buf[0];
+
+            var found = new bool[_requests.Count];
+            var remaining = _requests.Count;
+
+            for (var i = 0; i < end && remaining > 0; i++)
+            {
+                var b0 = Unsafe.Add(ref bufRef, i);
+                var key = b0 | (Unsafe.Add(ref bufRef, i + 1) << 8);
+
+                if ((_bitmap[key >> 3] & (1 << (key & 7))) != 0)
+                {
+                    var bucket = _pairBuckets[key];
+                    if (bucket != null)
+                    {
+                        foreach (var req in bucket)
+                        {
+                            if (found[req.Id]) continue;
+                            var start = i - req.AnchorOffset;
+                            if (start < 0) continue;
+                            if (!Matches(ref bufRef, bufLen, start, req)) continue;
+                            ResolveAndInvoke(req, start);
+                            found[req.Id] = true;
+                            remaining--;
+                        }
+                    }
+                }
+
+                if (!_hasSingleFallback) continue;
+                {
+                    var sb = _singleBuckets[b0];
+                    if (sb == null) continue;
+                    foreach (var req in sb)
+                    {
+                        if (found[req.Id]) continue;
+                        var start = i - req.AnchorOffset;
+                        if (start < 0) continue;
+                        if (!Matches(ref bufRef, bufLen, start, req)) continue;
+                        ResolveAndInvoke(req, start);
+                        found[req.Id] = true;
+                        remaining--;
+                    }
                 }
             }
 
-
-            Parallel.Invoke(
-                () => WorldChrMan.Base = FindAddressByPattern(Pattern.WorldChrMan),
-                () => FieldArea.Base = FindAddressByPattern(Pattern.FieldArea),
-                () => LuaEventMan.Base = FindAddressByPattern(Pattern.LuaEventMan),
-                () => VirtualMemFlag.Base = FindAddressByPattern(Pattern.VirtualMemFlag),
-                () => DamageManager.Base = FindAddressByPattern(Pattern.DamageManager),
-                () => MenuMan.Base = FindAddressByPattern(Pattern.MenuMan),
-                () => TargetView.Base = FindAddressByPattern(Pattern.TargetView),
-                () => GameMan.Base = FindAddressByPattern(Pattern.GameMan),
-                () => WorldHitMan.Base = FindAddressByPattern(Pattern.WorldHitMan),
-                () => WorldChrManDbg.Base = FindAddressByPattern(Pattern.WorldChrManDbg),
-                () => GameDataMan.Base = FindAddressByPattern(Pattern.GameDataMan),
-                () => CsDlcImp.Base = FindAddressByPattern(Pattern.CsDlcImp),
-                () => MapItemManImpl.Base = FindAddressByPattern(Pattern.MapItemManImpl),
-                () => FD4PadManager.Base = FindAddressByPattern(Pattern.FD4PadManager),
-                () => CSEmkSystem.Base = FindAddressByPattern(Pattern.CSEmkSystem),
-                () => WorldAreaTimeImpl.Base = FindAddressByPattern(Pattern.WorldAreaTimeImpl),
-                () => GroupMask.Base = FindAddressByPattern(Pattern.GroupMask),
-                () => SoloParamRepositoryImp.Base = FindAddressByPattern(Pattern.SoloParamRepositoryImp),
-                () => MsgRepository.Base = FindAddressByPattern(Pattern.MsgRepository),
-                () => CSFlipperImp.Base = FindAddressByPattern(Pattern.CSFlipperImp),
-                () => CSDbgEvent.Base = FindAddressByPattern(Pattern.CSDbgEvent),
-                () => ChrDbgFlags.Base = FindAddressByPattern(Pattern.ChrDbgFlags),
-                () => UserInputManager.Base = FindAddressByPattern(Pattern.UserInputManager),
-                () => CSTrophy.Base = FindAddressByPattern(Pattern.CSTrophy),
-                () => DrawPathing.Base = FindAddressByPattern(Pattern.DrawPathing) - 0x10,
-                () => MapDebugFlags.Base = FindAddressByPattern(Pattern.MapDebugFlags) - 1,
-                () => Functions.GraceWarp = FindAddressByPattern(Pattern.GraceWarp).ToInt64(),
-                () => Functions.SetEvent = FindAddressByPattern(Pattern.SetEvent).ToInt64(),
-                () => Functions.SetSpEffect = FindAddressByPattern(Pattern.SetSpEffect).ToInt64(),
-                () => Functions.GiveRunes = FindAddressByPattern(Pattern.GiveRunes).ToInt64(),
-                () => Functions.LookupByFieldInsHandle = FindAddressByPattern(Pattern.LookupByFieldInsHandle).ToInt64(),
-                () => Functions.WarpToBlock = FindAddressByPattern(Pattern.WarpToBlock).ToInt64(),
-                () => Functions.ExternalEventTempCtor = FindAddressByPattern(Pattern.ExternalEventTempCtor).ToInt64(),
-                () => Functions.ExecuteTalkCommand = FindAddressByPattern(Pattern.ExecuteTalkCommand).ToInt64(),
-                () => Functions.GetEvent = FindAddressByPattern(Pattern.GetEvent).ToInt64(),
-                () => Functions.GetPlayerItemQuantityById =
-                    FindAddressByPattern(Pattern.GetPlayerItemQuantityById).ToInt64(),
-                () => Functions.ItemSpawn = FindAddressByPattern(Pattern.ItemSpawn).ToInt64(),
-                () => Functions.MatrixVectorProduct = FindAddressByPattern(Pattern.MatrixVectorProduct).ToInt64(),
-                () => Functions.ChrInsByHandle = FindAddressByPattern(Pattern.ChrInsByHandle).ToInt64(),
-                () => Functions.FindAndRemoveSpEffect = FindAddressByPattern(Pattern.FindAndRemoveSpEffect).ToInt64(),
-                () => Functions.EmevdSwitch = FindAddressByPattern(Pattern.EmevdSwitch).ToInt64(),
-                () => Functions.EmkEventInsCtor = FindAddressByPattern(Pattern.EmkEventInsCtor).ToInt64(),
-                () => Functions.GetMovement = FindAddressByPattern(Pattern.GetMovement).ToInt64(),
-                () => Functions.GetChrInsByEntityId = FindAddressByPattern(Pattern.GetChrInsByEntityId).ToInt64(),
-                () => Functions.NpcEzStateTalkCtor = FindAddressByPattern(Pattern.NpcEzStateTalkCtor).ToInt64(),
-                () => Functions.EzStateEnvQueryImplCtor =
-                    FindAddressByPattern(Pattern.EzStateEnvQueryImplCtor).ToInt64()
-            );
-
-
-            Parallel.Invoke(
-                () => TryPatternWithFallback("CanFastTravel", Pattern.CanFastTravel,
-                    addr => Patches.CanFastTravel = addr, saved),
-                () => TryPatternWithFallback("NoRunesFromEnemies", Pattern.NoRunesFromEnemies,
-                    addr => Patches.NoRunesFromEnemies = addr, saved),
-                () => TryPatternWithFallback("NoRuneArcLoss", Pattern.NoRuneArcLoss,
-                    addr => Patches.NoRuneArcLoss = addr, saved),
-                () => TryPatternWithFallback("NoRuneLossOnDeath", Pattern.NoRuneLossOnDeath,
-                    addr => Patches.NoRuneLossOnDeath = addr, saved),
-                () => TryPatternWithFallback("IsWorldPaused", Pattern.IsWorldPaused,
-                    addr => Patches.IsWorldPaused = addr, saved),
-                () => TryPatternWithFallback("GetItemChance", Pattern.GetItemChance,
-                    addr => Patches.GetItemChance = addr, saved),
-                () => TryPatternWithFallback("OpenMap", Pattern.OpenMap, addr => Patches.OpenMap = addr, saved),
-                () => TryPatternWithFallback("CloseMap", Pattern.CloseMap, addr => Patches.CloseMap = addr, saved),
-                () => TryPatternWithFallback("NoLogo", Pattern.NoLogo, addr => Patches.NoLogo = addr, saved),
-                () => TryPatternWithFallback("PlayerSound", Pattern.PlayerSound, addr => Patches.PlayerSound = addr,
-                    saved),
-                () => TryPatternWithFallback("IsTorrentDisabledInUnderworld", Pattern.IsTorrentDisabledInUnderworld, addr => Patches.IsTorrentDisabledInUnderworld = addr,
-                    saved),
-                () => TryPatternWithFallback("IsWhistleDisabled", Pattern.IsWhistleDisabled, addr => Patches.IsWhistleDisabled = addr,
-                    saved),
-                () => TryPatternWithFallback("UpdateCoords", Pattern.UpdateCoords,
-                    addr => Hooks.UpdateCoords = addr.ToInt64(), saved),
-                () => TryPatternWithFallback("InAirTimer", Pattern.InAirTimer,
-                    addr => Hooks.InAirTimer = addr.ToInt64(), saved),
-                () => TryPatternWithFallback("NoClipKb", Pattern.NoClipKb, addr => Hooks.NoClipKb = addr.ToInt64(),
-                    saved),
-                () => TryPatternWithFallback("NoClipTriggers", Pattern.NoClipTriggers,
-                    addr => Hooks.NoClipTriggers = addr.ToInt64(), saved),
-                () => TryPatternWithFallback("HasSpEffect", Pattern.HasSpEffect,
-                    addr => Hooks.HasSpEffect = addr.ToInt64(), saved),
-                () => TryPatternWithFallback("BlueTargetView", Pattern.BlueTargetViewHook,
-                    addr => Hooks.BlueTargetView = addr.ToInt64(), saved),
-                () => TryPatternWithFallback("LockedTargetPtr", Pattern.LockedTargetPtr,
-                    addr => Hooks.LockedTargetPtr = addr.ToInt64(), saved),
-                () => TryPatternWithFallback("InfinitePoise", Pattern.InfinitePoise,
-                    addr => Hooks.InfinitePoise = addr.ToInt64(), saved),
-                () => TryPatternWithFallback("ShouldUpdateAi", Pattern.ShouldUpdateAi,
-                    addr => Hooks.ShouldUpdateAi = addr.ToInt64(), saved),
-                () => TryPatternWithFallback("GetForceActIdx", Pattern.GetForceActIdx,
-                    addr => Hooks.GetForceActIdx = addr.ToInt64(), saved),
-                () => TryPatternWithFallback("TargetNoStagger", Pattern.TargetNoStagger,
-                    addr => Hooks.TargetNoStagger = addr.ToInt64(), saved),
-                () => TryPatternWithFallback("AttackInfo", Pattern.AttackInfo,
-                    addr => Hooks.AttackInfo = addr.ToInt64(), saved),
-                () => TryPatternWithFallback("NoTimePassOnDeath", Pattern.NoTimePassOnDeath,
-                    addr => Hooks.NoTimePassOnDeath = addr, saved),
-                () => TryPatternWithFallback("WarpCoordWrite", Pattern.WarpCoordWrite,
-                    addr => Hooks.WarpCoordWrite = addr.ToInt64(), saved),
-                () => TryPatternWithFallback("WarpAngleWrite", Pattern.WarpAngleWrite,
-                    addr => Hooks.WarpAngleWrite = addr.ToInt64(), saved),
-                () => TryPatternWithFallback("LionCooldownHook", Pattern.LionCooldownHook,
-                    addr => Hooks.LionCooldownHook = addr.ToInt64(), saved),
-                () => TryPatternWithFallback("SetActionRequested", Pattern.SetActionRequested,
-                    addr => Hooks.SetActionRequested = addr.ToInt64(), saved),
-                () => TryPatternWithFallback("NoMapAcquiredPopup", Pattern.NoMapAcquiredPopup,
-                    addr => Hooks.NoMapAcquiredPopup = addr.ToInt64(), saved),
-                () => TryPatternWithFallback("LoadScreenMsgLookup", Pattern.LoadScreenMsgLookup,
-                    addr => Hooks.LoadScreenMsgLookup = addr.ToInt64(), saved),
-                () => TryPatternWithFallback("LoadScreenMsgLookupEarlyPatches", Pattern.LoadScreenMsgLookupEarlyPatches,
-                    addr => Hooks.LoadScreenMsgLookupEarlyPatches = addr.ToInt64(), saved),
-                () => TryPatternWithFallback("LoadScreenMsgLookupMidPatches", Pattern.LoadScreenMsgLookupMidPatches,
-                    addr => Hooks.LoadScreenMsgLookupMidPatches = addr.ToInt64(), saved),
-                () => TryPatternWithFallback("NoGrab", Pattern.NoGrab,
-                    addr => Hooks.NoGrab = addr.ToInt64(), saved)
-            );
-
-            Patches.EnableFreeCam = FindAddressByPattern(Pattern.EnableFreeCam);
-            Patches.GetShopEvent = FindAddressByPattern(Pattern.GetShopEvent);
-            Patches.DebugFont = FindAddressByPattern(Pattern.DebugFont);
-            FindMultipleCallsInFunction(Pattern.CanDrawEvents, new Dictionary<Action<long>, int>
+            for (var i = 0; i < _requests.Count; i++)
             {
-                { addr => Patches.CanDrawEvents1 = (IntPtr)addr, 0x4 },
-                { addr => Patches.CanDrawEvents2 = (IntPtr)addr, 0xD },
-            });
-
-
-            using (var writer = new StreamWriter(savePath))
-            {
-                writer.WriteLine($"version={gameVersion}");
-                foreach (var pair in saved)
-                    writer.WriteLine($"{pair.Key}={pair.Value:X}");
+                if (found[i]) continue;
+                var req = _requests[i];
+                if (req.Name != null && _savedAddresses.TryGetValue(req.Name, out var saved))
+                {
+                    req.Setter(saved);
+#if DEBUG
+                    Console.WriteLine($"[AobScanner] MISS (using saved): {req.Name}");
+#endif
+                }
+                else
+                {
+                    req.Setter(0);
+#if DEBUG
+                    Console.WriteLine($"[AobScanner] MISS (no saved): {req.Name}");
+#endif
+                }
             }
-            
 
+            WriteSavedAddresses();
 
 #if DEBUG
-            var baseAddr = memoryService.BaseAddress;
-            
-            Console.WriteLine($@"WorldChrMan.Base: 0x{WorldChrMan.Base.ToInt64():X} (base+0x{WorldChrMan.Base.ToInt64() - baseAddr:X})");
-            Console.WriteLine($@"FieldArea.Base: 0x{FieldArea.Base.ToInt64():X} (base+0x{FieldArea.Base.ToInt64() - baseAddr:X})");
-            Console.WriteLine($@"LuaEventMan.Base: 0x{LuaEventMan.Base.ToInt64():X} (base+0x{LuaEventMan.Base.ToInt64() - baseAddr:X})");
-            Console.WriteLine($@"VirtualMemFlag.Base: 0x{VirtualMemFlag.Base.ToInt64():X} (base+0x{VirtualMemFlag.Base.ToInt64() - baseAddr:X})");
-            Console.WriteLine($@"DamageManager.Base: 0x{DamageManager.Base.ToInt64():X} (base+0x{DamageManager.Base.ToInt64() - baseAddr:X})");
-            Console.WriteLine($@"MenuMan.Base: 0x{MenuMan.Base.ToInt64():X} (base+0x{MenuMan.Base.ToInt64() - baseAddr:X})");
-            Console.WriteLine($@"TargetView.Base: 0x{TargetView.Base.ToInt64():X} (base+0x{TargetView.Base.ToInt64() - baseAddr:X})");
-            Console.WriteLine($@"GameMan.Base: 0x{GameMan.Base.ToInt64():X} (base+0x{GameMan.Base.ToInt64() - baseAddr:X})");
-            Console.WriteLine($@"WorldHitMan.Base: 0x{WorldHitMan.Base.ToInt64():X} (base+0x{WorldHitMan.Base.ToInt64() - baseAddr:X})");
-            Console.WriteLine($@"WorldChrManDbg.Base: 0x{WorldChrManDbg.Base.ToInt64():X} (base+0x{WorldChrManDbg.Base.ToInt64() - baseAddr:X})");
-            Console.WriteLine($@"GameDataMan.Base: 0x{GameDataMan.Base.ToInt64():X} (base+0x{GameDataMan.Base.ToInt64() - baseAddr:X})");
-            Console.WriteLine($@"CsDlcImp.Base: 0x{CsDlcImp.Base.ToInt64():X} (base+0x{CsDlcImp.Base.ToInt64() - baseAddr:X})");
-            Console.WriteLine($@"MapItemManImpl.Base: 0x{MapItemManImpl.Base.ToInt64():X} (base+0x{MapItemManImpl.Base.ToInt64() - baseAddr:X})");
-            Console.WriteLine($@"FD4PadManager.Base: 0x{FD4PadManager.Base.ToInt64():X} (base+0x{FD4PadManager.Base.ToInt64() - baseAddr:X})");
-            Console.WriteLine($@"CSEmkSystem.Base: 0x{CSEmkSystem.Base.ToInt64():X} (base+0x{CSEmkSystem.Base.ToInt64() - baseAddr:X})");
-            Console.WriteLine($@"WorldAreaTimeImpl.Base: 0x{WorldAreaTimeImpl.Base.ToInt64():X} (base+0x{WorldAreaTimeImpl.Base.ToInt64() - baseAddr:X})");
-            Console.WriteLine($@"GroupMask.Base: 0x{GroupMask.Base.ToInt64():X} (base+0x{GroupMask.Base.ToInt64() - baseAddr:X})");
-            Console.WriteLine($@"CSFlipperImp.Base: 0x{CSFlipperImp.Base.ToInt64():X} (base+0x{CSFlipperImp.Base.ToInt64() - baseAddr:X})");
-            Console.WriteLine($@"CSDbgEvent.Base: 0x{CSDbgEvent.Base.ToInt64():X} (base+0x{CSDbgEvent.Base.ToInt64() - baseAddr:X})");
-            Console.WriteLine($@"UserInputManager.Base: 0x{UserInputManager.Base.ToInt64():X} (base+0x{UserInputManager.Base.ToInt64() - baseAddr:X})");
-            Console.WriteLine($@"CSTrophy.Base: 0x{CSTrophy.Base.ToInt64():X} (base+0x{CSTrophy.Base.ToInt64() - baseAddr:X})");
-            Console.WriteLine($@"MapDebugFlags.Base: 0x{MapDebugFlags.Base.ToInt64():X} (base+0x{MapDebugFlags.Base.ToInt64() - baseAddr:X})");
-            Console.WriteLine($@"SoloParamRepositoryImp.Base: 0x{SoloParamRepositoryImp.Base.ToInt64():X} (base+0x{SoloParamRepositoryImp.Base.ToInt64() - baseAddr:X})");
-            Console.WriteLine($@"MsgRepository.Base: 0x{MsgRepository.Base.ToInt64():X} (base+0x{MsgRepository.Base.ToInt64() - baseAddr:X})");
-            Console.WriteLine($@"DrawPathing.Base: 0x{DrawPathing.Base.ToInt64():X} (base+0x{DrawPathing.Base.ToInt64() - baseAddr:X})");
-            Console.WriteLine($@"ChrDbgFlags.Base: 0x{ChrDbgFlags.Base.ToInt64():X} (base+0x{ChrDbgFlags.Base.ToInt64() - baseAddr:X})");
-
-            Console.WriteLine($@"Patches.NoLogo: 0x{Patches.NoLogo.ToInt64():X} (base+0x{Patches.NoLogo.ToInt64() - baseAddr:X})");
-            Console.WriteLine($@"Patches.NoRunesFromEnemies: 0x{Patches.NoRunesFromEnemies.ToInt64():X} (base+0x{Patches.NoRunesFromEnemies.ToInt64() - baseAddr:X})");
-            Console.WriteLine($@"Patches.NoRuneArcLoss: 0x{Patches.NoRuneArcLoss.ToInt64():X} (base+0x{Patches.NoRuneArcLoss.ToInt64() - baseAddr:X})");
-            Console.WriteLine($@"Patches.NoRuneLossOnDeath: 0x{Patches.NoRuneLossOnDeath.ToInt64():X} (base+0x{Patches.NoRuneLossOnDeath.ToInt64() - baseAddr:X})");
-            Console.WriteLine($@"Patches.CanFastTravel: 0x{Patches.CanFastTravel.ToInt64():X} (base+0x{Patches.CanFastTravel.ToInt64() - baseAddr:X})");
-            Console.WriteLine($@"Patches.OpenMap: 0x{Patches.OpenMap.ToInt64():X} (base+0x{Patches.OpenMap.ToInt64() - baseAddr:X})");
-            Console.WriteLine($@"Patches.CloseMap: 0x{Patches.CloseMap.ToInt64():X} (base+0x{Patches.CloseMap.ToInt64() - baseAddr:X})");
-            Console.WriteLine($@"Patches.EnableFreeCam: 0x{Patches.EnableFreeCam.ToInt64():X} (base+0x{Patches.EnableFreeCam.ToInt64() - baseAddr:X})");
-            Console.WriteLine($@"Patches.CanDrawEvents1: 0x{Patches.CanDrawEvents1.ToInt64():X} (base+0x{Patches.CanDrawEvents1.ToInt64() - baseAddr:X})");
-            Console.WriteLine($@"Patches.CanDrawEvents2: 0x{Patches.CanDrawEvents2.ToInt64():X} (base+0x{Patches.CanDrawEvents2.ToInt64() - baseAddr:X})");
-            Console.WriteLine($@"Patches.DebugFont: 0x{Patches.DebugFont.ToInt64():X} (base+0x{Patches.DebugFont.ToInt64() - baseAddr:X})");
-            Console.WriteLine($@"Patches.PlayerSound: 0x{Patches.PlayerSound.ToInt64():X} (base+0x{Patches.PlayerSound.ToInt64() - baseAddr:X})");
-            Console.WriteLine($@"Patches.IsTorrentDisabledInUnderworld: 0x{Patches.IsTorrentDisabledInUnderworld.ToInt64():X} (base+0x{Patches.IsTorrentDisabledInUnderworld.ToInt64() - baseAddr:X})");
-            Console.WriteLine($@"Patches.IsWhistleDisabled: 0x{Patches.IsWhistleDisabled.ToInt64():X} (base+0x{Patches.IsWhistleDisabled.ToInt64() - baseAddr:X})");
-            Console.WriteLine($@"Patches.IsWorldPaused: 0x{Patches.IsWorldPaused.ToInt64():X} (base+0x{Patches.IsWorldPaused.ToInt64() - baseAddr:X})");
-            Console.WriteLine($@"Patches.GetItemChance: 0x{Patches.GetItemChance.ToInt64():X} (base+0x{Patches.GetItemChance.ToInt64() - baseAddr:X})");
-            Console.WriteLine($@"Patches.GetShopEvent: 0x{Patches.GetShopEvent.ToInt64():X} (base+0x{Patches.GetShopEvent.ToInt64() - baseAddr:X})");
-
-            Console.WriteLine($@"Hooks.UpdateCoords: 0x{Hooks.UpdateCoords:X} (base+0x{Hooks.UpdateCoords - baseAddr:X})");
-            Console.WriteLine($@"Hooks.InAirTimer: 0x{Hooks.InAirTimer:X} (base+0x{Hooks.InAirTimer - baseAddr:X})");
-            Console.WriteLine($@"Hooks.NoClipKb: 0x{Hooks.NoClipKb:X} (base+0x{Hooks.NoClipKb - baseAddr:X})");
-            Console.WriteLine($@"Hooks.NoClipTriggers: 0x{Hooks.NoClipTriggers:X} (base+0x{Hooks.NoClipTriggers - baseAddr:X})");
-            Console.WriteLine($@"Hooks.HasSpEffect: 0x{Hooks.HasSpEffect:X} (base+0x{Hooks.HasSpEffect - baseAddr:X})");
-            Console.WriteLine($@"Hooks.BlueTargetView: 0x{Hooks.BlueTargetView:X} (base+0x{Hooks.BlueTargetView - baseAddr:X})");
-            Console.WriteLine($@"Hooks.LockedTargetPtr: 0x{Hooks.LockedTargetPtr:X} (base+0x{Hooks.LockedTargetPtr - baseAddr:X})");
-            Console.WriteLine($@"Hooks.InfinitePoise: 0x{Hooks.InfinitePoise:X} (base+0x{Hooks.InfinitePoise - baseAddr:X})");
-            Console.WriteLine($@"Hooks.ShouldUpdateAi: 0x{Hooks.ShouldUpdateAi:X} (base+0x{Hooks.ShouldUpdateAi - baseAddr:X})");
-            Console.WriteLine($@"Hooks.GetForceActIdx: 0x{Hooks.GetForceActIdx:X} (base+0x{Hooks.GetForceActIdx - baseAddr:X})");
-            Console.WriteLine($@"Hooks.AttackInfo: 0x{Hooks.AttackInfo:X} (base+0x{Hooks.AttackInfo - baseAddr:X})");
-            Console.WriteLine($@"Hooks.WarpCoordWrite: 0x{Hooks.WarpCoordWrite:X} (base+0x{Hooks.WarpCoordWrite - baseAddr:X})");
-            Console.WriteLine($@"Hooks.WarpAngleWrite: 0x{Hooks.WarpAngleWrite:X} (base+0x{Hooks.WarpAngleWrite - baseAddr:X})");
-            Console.WriteLine($@"Hooks.NoTimePassOnDeath: 0x{Hooks.NoTimePassOnDeath.ToInt64():X} (base+0x{Hooks.NoTimePassOnDeath.ToInt64() - baseAddr:X})");
-            Console.WriteLine($@"Hooks.LionCooldownHook: 0x{Hooks.LionCooldownHook:X} (base+0x{Hooks.LionCooldownHook - baseAddr:X})");
-            Console.WriteLine($@"Hooks.SetActionRequested: 0x{Hooks.SetActionRequested:X} (base+0x{Hooks.SetActionRequested - baseAddr:X})");
-            Console.WriteLine($@"Hooks.NoGrab: 0x{Hooks.NoGrab:X} (base+0x{Hooks.NoGrab - baseAddr:X})");
-            Console.WriteLine($@"Hooks.LoadScreenMsgLookup: 0x{Hooks.LoadScreenMsgLookup:X} (base+0x{Hooks.LoadScreenMsgLookup - baseAddr:X})");
-            Console.WriteLine($@"Hooks.LoadScreenMsgLookupEarlyPatches: 0x{Hooks.LoadScreenMsgLookupEarlyPatches:X} (base+0x{Hooks.LoadScreenMsgLookupEarlyPatches - baseAddr:X})");
-            Console.WriteLine($@"Hooks.LoadScreenMsgLookupMidPatches: 0x{Hooks.LoadScreenMsgLookupMidPatches:X} (base+0x{Hooks.LoadScreenMsgLookupMidPatches - baseAddr:X})");
-            Console.WriteLine($@"Hooks.TargetNoStagger: 0x{Hooks.TargetNoStagger:X} (base+0x{Hooks.TargetNoStagger - baseAddr:X})");
-            Console.WriteLine($@"Hooks.NoMapAcquiredPopup: 0x{Hooks.NoMapAcquiredPopup:X} (base+0x{Hooks.NoMapAcquiredPopup - baseAddr:X})");
-
-            Console.WriteLine($@"Funcs.GraceWarp: 0x{Functions.GraceWarp:X} (base+0x{Functions.GraceWarp - baseAddr:X})");
-            Console.WriteLine($@"Funcs.SetEvent: 0x{Functions.SetEvent:X} (base+0x{Functions.SetEvent - baseAddr:X})");
-            Console.WriteLine($@"Funcs.SetSpEffect: 0x{Functions.SetSpEffect:X} (base+0x{Functions.SetSpEffect - baseAddr:X})");
-            Console.WriteLine($@"Funcs.GiveRunes: 0x{Functions.GiveRunes:X} (base+0x{Functions.GiveRunes - baseAddr:X})");
-            Console.WriteLine($@"Funcs.LookupByFieldInsHandle: 0x{Functions.LookupByFieldInsHandle:X} (base+0x{Functions.LookupByFieldInsHandle - baseAddr:X})");
-            Console.WriteLine($@"Funcs.WarpToBlock: 0x{Functions.WarpToBlock:X} (base+0x{Functions.WarpToBlock - baseAddr:X})");
-            Console.WriteLine($@"Funcs.GetEvent: 0x{Functions.GetEvent:X} (base+0x{Functions.GetEvent - baseAddr:X})");
-            Console.WriteLine($@"Funcs.GetPlayerItemQuantityById: 0x{Functions.GetPlayerItemQuantityById:X} (base+0x{Functions.GetPlayerItemQuantityById - baseAddr:X})");
-            Console.WriteLine($@"Funcs.ItemSpawn: 0x{Functions.ItemSpawn:X} (base+0x{Functions.ItemSpawn - baseAddr:X})");
-            Console.WriteLine($@"Funcs.MatrixVectorProduct: 0x{Functions.MatrixVectorProduct:X} (base+0x{Functions.MatrixVectorProduct - baseAddr:X})");
-            Console.WriteLine($@"Funcs.ChrInsByHandle: 0x{Functions.ChrInsByHandle:X} (base+0x{Functions.ChrInsByHandle - baseAddr:X})");
-            Console.WriteLine($@"Funcs.FindAndRemoveSpEffect: 0x{Functions.FindAndRemoveSpEffect:X} (base+0x{Functions.FindAndRemoveSpEffect - baseAddr:X})");
-            Console.WriteLine($@"Funcs.EmevdSwitch: 0x{Functions.EmevdSwitch:X} (base+0x{Functions.EmevdSwitch - baseAddr:X})");
-            Console.WriteLine($@"Funcs.EmkEventInsCtor: 0x{Functions.EmkEventInsCtor:X} (base+0x{Functions.EmkEventInsCtor - baseAddr:X})");
-            Console.WriteLine($@"Funcs.GetMovement: 0x{Functions.GetMovement:X} (base+0x{Functions.GetMovement - baseAddr:X})");
-            Console.WriteLine($@"Funcs.GetChrInsByEntityId: 0x{Functions.GetChrInsByEntityId:X} (base+0x{Functions.GetChrInsByEntityId - baseAddr:X})");
-            Console.WriteLine($@"Funcs.NpcEzStateTalkCtor: 0x{Functions.NpcEzStateTalkCtor:X} (base+0x{Functions.NpcEzStateTalkCtor - baseAddr:X})");
-            Console.WriteLine($@"Funcs.EzStateEnvQueryImplCtor: 0x{Functions.EzStateEnvQueryImplCtor:X} (base+0x{Functions.EzStateEnvQueryImplCtor - baseAddr:X})");
-            Console.WriteLine($@"Funcs.ExternalEventTempCtor: 0x{Functions.ExternalEventTempCtor:X} (base+0x{Functions.ExternalEventTempCtor - baseAddr:X})");
-            Console.WriteLine($@"Funcs.ExecuteTalkCommand: 0x{Functions.ExecuteTalkCommand:X} (base+0x{Functions.ExecuteTalkCommand - baseAddr:X})");
+            scan.Stop();
+            var foundCount = _requests.Count - remaining;
+            Console.WriteLine(
+                $"[AobScanner] scan done in {scan.ElapsedMilliseconds} ms ({foundCount}/{_requests.Count} found)");
 #endif
         }
+
+        private static bool Matches(ref byte bufRef, int bufLen, int start, Request req)
+        {
+            var bytes = req.Pattern.Bytes;
+            var indices = req.NonWildcardIndices;
+            if (start + bytes.Length > bufLen) return false;
+
+            foreach (var j in indices)
+            {
+                if (Unsafe.Add(ref bufRef, start + j) != bytes[j]) return false;
+            }
+
+            return true;
+        }
+
+        private void ResolveAndInvoke(Request req, int startIndex)
+        {
+            var p = req.Pattern;
+            var instructionAddress = _moduleBase + startIndex + p.InstructionOffset;
+
+            var final = p.AddressingMode == AddressingMode.Absolute
+                ? instructionAddress
+                : instructionAddress + ReadInt32(instructionAddress + p.OffsetLocation) + p.InstructionLength;
+
+            if (req.Name != null) _savedAddresses[req.Name] = final;
+            req.Setter(final);
+        }
+
+
+        // The queued engine above resolves one match per pattern. The two
+        // scans below need more than that -- several candidates and a proof
+        // step -- so they keep their own simple scanner.
 
         // Equipment and memorized-spell functions. Resolved by AOB on every
         // startup so supported builds do not rely on hardcoded function offsets.
@@ -375,20 +547,6 @@ namespace TarnishedTool.Memory
             return false;
         }
 
-        private void TryPatternWithFallback(string name, Pattern pattern, Action<IntPtr> setter,
-            ConcurrentDictionary<string, long> saved)
-        {
-            long moduleBase = memoryService.BaseAddress;
-            var addr = FindAddressByPattern(pattern);
-
-            if (addr == IntPtr.Zero && saved.TryGetValue(name, out var rva))
-                addr = new IntPtr(moduleBase + rva);
-            else if (addr != IntPtr.Zero)
-                saved[name] = addr.ToInt64() - moduleBase;
-
-            setter(addr);
-        }
-
         public IntPtr FindAddressByPattern(Pattern pattern)
         {
             var results = FindAddressesByPattern(pattern, 1);
@@ -465,58 +623,42 @@ namespace TarnishedTool.Memory
             return addresses;
         }
 
-        private void FindMultipleCallsInFunction(Pattern basePattern, Dictionary<Action<long>, int> callMappings)
+        private int ReadInt32(nint address)
         {
-            var baseInstructionAddr = FindAddressByPattern(basePattern);
-
-            foreach (var mapping in callMappings)
-            {
-                var callInstructionAddr = IntPtr.Add(baseInstructionAddr, mapping.Value);
-
-                int callOffset = memoryService.Read<int>(IntPtr.Add(callInstructionAddr, 1));
-                var callTarget = IntPtr.Add(callInstructionAddr, callOffset + 5);
-
-                mapping.Key(callTarget.ToInt64());
-            }
+            var idx = (int)(address - _moduleBase);
+            return Unsafe.ReadUnaligned<int>(ref _module![idx]);
         }
 
-        public IntPtr FindAddressByChain(Pattern pattern, params AddressJump[] chain)
+#if DEBUG
+        private void LogAnchors()
         {
-            var baseAddress = FindAddressByPattern(pattern);
-            if (baseAddress == IntPtr.Zero)
-                return IntPtr.Zero;
+            double scale = HistogramSampleStep;
+            long totalCandidateEst = 0;
 
-            return FollowChain(baseAddress, chain);
-        }
+            Console.WriteLine($"[AobScanner] --- anchor report ({_requests.Count} patterns, " +
+                              $"{_requests.Count(r => r.IsSingle)} single-fallback) ---");
+            Console.WriteLine("[AobScanner]   freq(ppm)  count~   combo      off  name");
 
-        private IntPtr FollowChain(IntPtr baseAddress, params AddressJump[] chain)
-        {
-            IntPtr currentAddress = baseAddress;
-
-            foreach (var jump in chain)
+            foreach (var req in _requests.OrderByDescending(r => r.AnchorFrequency))
             {
-                nint instructionAddress = currentAddress + jump.Offset;
+                var estCount = (long)(req.AnchorFrequency * scale);
+                var ppm = _histogramSamples > 0 ? req.AnchorFrequency / (double)_histogramSamples * 1_000_000 : 0;
+                if (req.AnchorFrequency >= 0) totalCandidateEst += estCount;
 
-                currentAddress = jump.Type switch
+                if (req.IsSingle)
                 {
-                    AddressJump.JumpType.Relative32 => 
-                        instructionAddress 
-                        + memoryService.Read<int>(instructionAddress + jump.ImmediatePosition) 
-                        + jump.InstructionLength,
+                    var b = req.Pattern.Bytes[req.AnchorOffset];
+                    Console.WriteLine(
+                        $"[AobScanner]   {ppm,8:F1}  {estCount,8}  0x{b:X2}(1byte) {req.AnchorOffset,3}   {req.Name}  <-- SINGLE-BYTE FALLBACK");
+                    continue;
+                }
 
-                    AddressJump.JumpType.Absolute64 => 
-                        memoryService.Read<nint>(instructionAddress + jump.ImmediatePosition),
-
-                    _ => throw new ArgumentOutOfRangeException()
-                };
+                var b0 = req.Pattern.Bytes[req.AnchorOffset];
+                var b1 = req.Pattern.Bytes[req.AnchorOffset + 1];
+                Console.WriteLine(
+                    $"[AobScanner]   {ppm,8:F1}  {estCount,8}  0x{b0:X2} 0x{b1:X2}  {req.AnchorOffset,3}   {req.Name}");
             }
-
-            return currentAddress;
         }
-
-        public void Scan()
-        {
-           // Add new features here
-        }
+#endif
     }
 }

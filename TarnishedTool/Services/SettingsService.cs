@@ -1,7 +1,9 @@
 ﻿// 
 
 using System;
+using TarnishedTool.Enums;
 using TarnishedTool.Interfaces;
+using TarnishedTool.Memory;
 using TarnishedTool.Utilities;
 using static TarnishedTool.Memory.Offsets;
 
@@ -9,8 +11,6 @@ namespace TarnishedTool.Services;
 
 public class SettingsService(IMemoryService memoryService) : ISettingsService
 {
-    
-
     public void ToggleStutterFix(bool isEnabled) =>
         memoryService.Write(memoryService.Read<nint>(UserInputManager.Base) + UserInputManager.SteamInputEnum,
             isEnabled);
@@ -56,4 +56,14 @@ public class SettingsService(IMemoryService memoryService) : ISettingsService
             SettingsManager.Default.Save();
         }
     }
+
+    public void ToggleMenuDelay(bool isEnabled)
+    {
+        if (Offsets.Version < GameVersion.Version2_2_0) return;
+        
+        memoryService.Write(Patches.MenuDelay, isEnabled ? 0f : 0.32f);
+    }
+
+    public void ToggleQuitMessage(bool isEnabled) =>
+        memoryService.WriteBytes(Patches.NoQuitMessage, isEnabled ? [0x90, 0x90] : [0x74, 0x65]);
 }

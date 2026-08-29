@@ -23,13 +23,14 @@ public class CreateLoadoutViewModel : BaseViewModel
         List<AshOfWar> ashesOfWar,
         Dictionary<string, LoadoutTemplate> customLoadoutTemplates,
         bool hasDlc,
+        bool hasTarnishedPack,
         Func<string, string, string> showInputDialog)
     {
         _customLoadoutTemplates = customLoadoutTemplates;
         _showInputDialog = showInputDialog;
 
         ItemSelection = new ItemSelectionViewModel(itemsByCategory, ashesOfWar);
-        ItemSelection.SetDlcAvailable(hasDlc);
+        ItemSelection.SetDlcAvailable(hasDlc, hasTarnishedPack);
 
         _customLoadouts = new ObservableCollection<LoadoutTemplate>(customLoadoutTemplates.Values);
 

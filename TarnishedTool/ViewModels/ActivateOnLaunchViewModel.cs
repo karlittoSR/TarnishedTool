@@ -1,4 +1,4 @@
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using TarnishedTool.Enums;
 using TarnishedTool.Interfaces;
 using TarnishedTool.Utilities;
@@ -66,6 +66,8 @@ public class ActivateOnLaunchViewModel : BaseViewModel
         if (IsHpRegenChecked) _playerViewModel.IsHotEnabled = true;
         if (IsFpRegenChecked) _playerViewModel.IsFpRegenEnabled = true;
         if (IsTorrentAnywhereChecked) _playerViewModel.IsTorrentAnywhereEnabled = true;
+        if (IsResetWorldIncluded) _playerViewModel.IsResetWorldIncluded = true;
+        if (IsSpeedBuffEnabled) _playerViewModel.IsSpeedBuffEnabled = true;
 
         // Travel
         if (IsNoMapAcquiredPopupsChecked) _travelViewModel.IsNoMapAcquiredPopupsEnabled = true;
@@ -86,6 +88,7 @@ public class ActivateOnLaunchViewModel : BaseViewModel
         if (IsOpenMapInCombatChecked) _utilityViewModel.IsCombatMapEnabled = true;
         if (IsWarpInDungeonsChecked) _utilityViewModel.IsDungeonWarpEnabled = true;
         if (IsDropRateChecked) _utilityViewModel.IsGuaranteedDropEnabled = true;
+        if (IsDisableCutscenesEnabled) _utilityViewModel.IsDisableCutscenesEnabled = true;
 
         // Item
         if (IsUnlockWeaponOnStartChecked) _itemViewModel.AutoSpawnEnabled = true;
@@ -97,7 +100,7 @@ public class ActivateOnLaunchViewModel : BaseViewModel
         if (!IsEnabled) return;
         if (!_travelViewModel.AreOptionsEnabled) return;
         await Task.Delay(1500);
-        
+
         // Event
         if (IsStartingFlasksChecked && _eventViewModel.GiveStartingFlasksCommand.CanExecute(null))
             _eventViewModel.GiveStartingFlasksCommand.Execute(null);
@@ -145,16 +148,15 @@ public class ActivateOnLaunchViewModel : BaseViewModel
         // FPS
         if (!IsEnabled) return;
         if (LaunchFps > 0) _utilityViewModel.Fps = LaunchFps;
-        
     }
-    
+
     private void OnLoaded()
     {
         if (IsAllDiscardableChecked) _utilityViewModel.IsAllDiscardableEnabled = true;
         if (IsNoUpgradeCostChecked) _utilityViewModel.IsNoUpgradeCostEnabled = true;
     }
-    
-    
+
+
     private void RegisterActions()
     {
         _isNoDeathChecked = Get(nameof(IsNoDeathChecked));
@@ -170,6 +172,8 @@ public class ActivateOnLaunchViewModel : BaseViewModel
         _isHiddenChecked = Get(nameof(IsHiddenChecked));
         _isFasterDeathChecked = Get(nameof(IsFasterDeathChecked));
         _isTorrentAnywhereChecked = Get(nameof(IsTorrentAnywhereChecked));
+        _isResetWorldIncluded = Get(nameof(IsResetWorldIncluded));
+        _isSpeedBuffEnabled = Get(nameof(IsSpeedBuffEnabled));
         _isTorrentNoDeathChecked = Get(nameof(IsTorrentNoDeathChecked));
         _isRfbsOnLoadChecked = Get(nameof(IsRfbsOnLoadChecked));
         _isNoRunesFromEnemiesChecked = Get(nameof(IsNoRunesFromEnemiesChecked));
@@ -185,7 +189,7 @@ public class ActivateOnLaunchViewModel : BaseViewModel
         _isAllNoMoveChecked = Get(nameof(IsAllNoMoveChecked));
         _isAllDisableAiChecked = Get(nameof(IsAllDisableAiChecked));
         _isRestOnReviveChecked = Get(nameof(IsRestOnReviveChecked));
-        
+
         _isAllDiscardableChecked = Get(nameof(IsAllDiscardableChecked));
         _isNoUpgradeCostChecked = Get(nameof(IsNoUpgradeCostChecked));
         _isShowIgtChecked = Get(nameof(IsShowIgtChecked));
@@ -193,6 +197,7 @@ public class ActivateOnLaunchViewModel : BaseViewModel
         _isWarpInDungeonsChecked = Get(nameof(IsWarpInDungeonsChecked));
         _isDropRateChecked = Get(nameof(IsDropRateChecked));
         _isStartingFlasksChecked = Get(nameof(IsStartingFlasksChecked));
+        _isDisableCutscenesEnabled =  Get(nameof(IsDisableCutscenesEnabled));
 
         _isRestOnWarpChecked = Get(nameof(IsRestOnWarpChecked));
         _isNoMapAcquiredPopupsChecked = Get(nameof(IsNoMapAcquiredPopupsChecked));
@@ -203,7 +208,7 @@ public class ActivateOnLaunchViewModel : BaseViewModel
         _isDlcGracesChecked = Get(nameof(IsDlcGracesChecked));
         _isMainArGracesChecked = Get(nameof(IsMainArGracesChecked));
         _isDlcArGracesChecked = Get(nameof(IsDlcArGracesChecked));
-        
+
         _isUnlockWeaponOnStartChecked = Get(nameof(IsUnlockWeaponOnStartChecked));
         _isUnlockLoadoutOnStartChecked = Get(nameof(IsUnlockLoadoutOnStartChecked));
         
@@ -385,6 +390,28 @@ public class ActivateOnLaunchViewModel : BaseViewModel
         }
     }
 
+    private bool _isResetWorldIncluded;
+
+    public bool IsResetWorldIncluded
+    {
+        get => _isResetWorldIncluded;
+        set
+        {
+            if (SetProperty(ref _isResetWorldIncluded, value)) Set(nameof(IsResetWorldIncluded), value);
+        }
+    }
+
+    private bool _isSpeedBuffEnabled;
+
+    public bool IsSpeedBuffEnabled
+    {
+        get => _isSpeedBuffEnabled;
+        set
+        {
+            if (SetProperty(ref _isSpeedBuffEnabled, value)) Set(nameof(IsSpeedBuffEnabled), value);
+        }
+    }
+
     private bool _isRfbsOnLoadChecked;
 
     public bool IsRfbsOnLoadChecked
@@ -536,7 +563,7 @@ public class ActivateOnLaunchViewModel : BaseViewModel
         get => _isRestOnReviveChecked;
         set
         {
-            if (SetProperty (ref _isRestOnReviveChecked, value)) Set (nameof(IsRestOnReviveChecked), value);
+            if (SetProperty(ref _isRestOnReviveChecked, value)) Set(nameof(IsRestOnReviveChecked), value);
         }
     }
 
@@ -562,7 +589,7 @@ public class ActivateOnLaunchViewModel : BaseViewModel
             if (SetProperty(ref _isAllDiscardableChecked, value)) Set(nameof(IsAllDiscardableChecked), value);
         }
     }
-    
+
     private bool _isNoUpgradeCostChecked;
 
     public bool IsNoUpgradeCostChecked
@@ -604,6 +631,17 @@ public class ActivateOnLaunchViewModel : BaseViewModel
         set
         {
             if (SetProperty(ref _isDropRateChecked, value)) Set(nameof(IsDropRateChecked), value);
+        }
+    }
+
+    private bool _isDisableCutscenesEnabled;
+
+    public bool IsDisableCutscenesEnabled
+    {
+        get => _isDisableCutscenesEnabled;
+        set
+        {
+            if (SetProperty(ref _isDisableCutscenesEnabled, value)) Set(nameof(IsDisableCutscenesEnabled), value);
         }
     }
 
@@ -767,7 +805,7 @@ public class ActivateOnLaunchViewModel : BaseViewModel
             }
         }
     }
-    
+
     private bool _isRestOnWarpChecked;
 
     public bool IsRestOnWarpChecked
@@ -775,7 +813,7 @@ public class ActivateOnLaunchViewModel : BaseViewModel
         get => _isRestOnWarpChecked;
         set
         {
-            if (SetProperty (ref _isRestOnWarpChecked, value)) Set (nameof(IsRestOnWarpChecked), value);
+            if (SetProperty(ref _isRestOnWarpChecked, value)) Set(nameof(IsRestOnWarpChecked), value);
         }
     }
 

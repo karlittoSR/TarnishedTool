@@ -4,7 +4,7 @@ namespace TarnishedTool.Memory
 {
     public static class CodeCaveOffsets
     {
-        public static IntPtr Base;
+        public static nint Base;
 
         public const int SaveCurrentTime = 0x0;
 
@@ -98,14 +98,24 @@ namespace TarnishedTool.Memory
         public const int NoPlayerRoll = 0x4100;
         public const int NoPlayerJump = 0x4101;
 
+        public const int DamageMultCode = 0x4200; // 0xD2
+        public const int DamageOutFactor = 0x4300;
+        public const int DamageInFactor = 0x4304;
+        public const int TimeActBuffTable = 0x4400;
+        public const int SpeedActiveFlag = 0x4800;
+        public const int AllowSpeedBuffInCombat = 0x4801;
+        public const int SpeedyBuff = 0x4810;
+
+        // Moved out of 0x4200-0x4400 when the upstream damage-multiplier and
+        // speedy-buff caves claimed that range; the cave grew to 0x6000 to fit.
         // Equip proof-of-concept (spawn-then-equip). Scratch + shellcode region.
-        public const int EquipStruct = 0x4200;   // EquipItemStruct (0x5C bytes, zeroed): equipment_slot @+0x08, inventory_slot @+0x58
-        public const int EquipItemId = 0x4270;   // uint32 item id that find_inventoryid searches for
-        public const int EquipCode = 0x4280;     // shellcode: find_inventoryid -> equip
+        public const int EquipStruct = 0x5000;   // EquipItemStruct (0x5C bytes, zeroed): equipment_slot @+0x08, inventory_slot @+0x58
+        public const int EquipItemId = 0x5070;   // uint32 item id that find_inventoryid searches for
+        public const int EquipCode = 0x5080;     // shellcode: find_inventoryid -> equip
 
         // Memorized-spell restore. Kept separate from equipment because the game
         // functions have different structs and calling conventions.
-        public const int SpellStruct = 0x4300;   // ChangeMagic input (0x80 bytes)
-        public const int SpellCode = 0x4380;     // one synchronous ChangeMagic call
+        public const int SpellStruct = 0x5100;   // ChangeMagic input (0x80 bytes)
+        public const int SpellCode = 0x5180;     // one synchronous ChangeMagic call
     }
 }

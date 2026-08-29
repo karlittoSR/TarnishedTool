@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Globalization;
 using System.Linq;
+using System.Threading;
 using System.Windows.Input;
 using System.Windows.Media;
 using TarnishedTool.Core;
@@ -18,6 +19,7 @@ namespace TarnishedTool.ViewModels
     {
         private int _currentRuneLevel;
         private bool _customHpHasBeenSet = !string.IsNullOrWhiteSpace(SettingsManager.Default.SaveCustomHp);
+        private bool _customFpHasBeenSet = !string.IsNullOrWhiteSpace(SettingsManager.Default.SaveCustomFp);
 
         private float _playerDesiredSpeed = -1f;
         private const float DefaultSpeed = 1f;
@@ -47,6 +49,7 @@ namespace TarnishedTool.ViewModels
         private readonly IEzStateService _ezStateService;
         private readonly IGameTickService _gameTickService;
         private readonly IHotkeyNotificationService _notificationService;
+        private readonly IDamageService _damageService;
 
         public static readonly long[] NewGameEventIds = new long[] { 50, 51, 52, 53, 54, 55, 56, 57 };
 
@@ -74,7 +77,8 @@ namespace TarnishedTool.ViewModels
         public PlayerViewModel(IPlayerService playerService, IStateService stateService, HotkeyManager hotkeyManager,
             IEventService eventService, ISpEffectService spEffectService, IEmevdService emevdService,
             IDlcService dlcService, IEzStateService ezStateService, IGameTickService gameTickService,
-            IParamService paramService, IHotkeyNotificationService notificationService = null)
+            IParamService paramService, IDamageService damageService,
+            IHotkeyNotificationService notificationService = null)
         {
             _playerService = playerService;
             _hotkeyManager = hotkeyManager;
@@ -86,6 +90,7 @@ namespace TarnishedTool.ViewModels
             _gameTickService = gameTickService;
             _paramService = paramService;
             _notificationService = notificationService;
+            _damageService = damageService;
 
             RegisterHotkeys();
 
@@ -100,6 +105,10 @@ namespace TarnishedTool.ViewModels
             SetCustomHpCommand = new DelegateCommand(SetCustomHp);
             DieCommand = new DelegateCommand(Die);
 
+            EmptyFpCommand = new DelegateCommand(EmptyFp);
+            SetMaxFpCommand = new DelegateCommand(SetMaxFp);
+            SetCustomFpCommand = new DelegateCommand(SetCustomFp);
+
             SavePositionCommand = new DelegateCommand(SavePosition);
             RestorePositionCommand = new DelegateCommand(RestorePosition);
 
@@ -113,13 +122,60 @@ namespace TarnishedTool.ViewModels
             ApplyPrefs();
         }
 
+        private bool _isDamageMultiplierEnabled;
+
+        public bool IsDamageMultiplierEnabled
+        {
+            get => _isDamageMultiplierEnabled;
+            set
+            {
+                if (SetProperty(ref _isDamageMultiplierEnabled, value))
+                {
+                    _damageService.ToggleDamageMultiplier(_isDamageMultiplierEnabled, OutgoingDamageMultiplier,
+                        IncomingDamageMultiplier);
+                }
+            }
+        }
+
+        private float _outgoingDamageMultiplier = 1f;
+
+        public float OutgoingDamageMultiplier
+        {
+            get => _outgoingDamageMultiplier;
+            set
+            {
+                if (SetProperty(ref _outgoingDamageMultiplier, value))
+                {
+                    if (!IsDamageMultiplierEnabled) return;
+                    _damageService.SetOutgoingMultiplier(_outgoingDamageMultiplier);
+                }
+            }
+        }
+
+        private float _incomingDamageMultiplier = 1f;
+
+        public float IncomingDamageMultiplier
+        {
+            get => _incomingDamageMultiplier;
+            set
+            {
+                if (SetProperty(ref _incomingDamageMultiplier, value))
+                {
+                    if (!IsDamageMultiplierEnabled) return;
+                    _damageService.SetIncomingMultiplier(_incomingDamageMultiplier);
+                }
+            }
+        }
+
         #region Commands
 
         public ICommand SetRfbsCommand { get; set; }
         public ICommand SetMaxHpCommand { get; set; }
         public ICommand SetCustomHpCommand { get; set; }
         public ICommand DieCommand { get; set; }
-
+        public ICommand EmptyFpCommand { get; set; }
+        public ICommand SetMaxFpCommand { get; set; }
+        public ICommand SetCustomFpCommand { get; set; }
         public ICommand SavePositionCommand { get; set; }
         public ICommand RestorePositionCommand { get; set; }
 
@@ -180,6 +236,50 @@ namespace TarnishedTool.ViewModels
             }
         }
 
+        private int _currentFp;
+
+        public int CurrentFp
+        {
+            get => _currentFp;
+            set => SetProperty(ref _currentFp, value);
+        }
+
+        private int _currentMaxFp;
+
+        public int CurrentMaxFp
+        {
+            get => _currentMaxFp;
+            set => SetProperty(ref _currentMaxFp, value);
+        }
+
+        private string _customFp = SettingsManager.Default.SaveCustomFp;
+
+        public string CustomFp
+        {
+            get => _customFp;
+            set
+            {
+                if (SetProperty(ref _customFp, value))
+                {
+                    _customFpHasBeenSet = true;
+                }
+            }
+        }
+
+        private bool _isGgrFixEnabled;
+
+        public bool IsGgrFixEnabled
+        {
+            get => _isGgrFixEnabled;
+            set
+            {
+                if (SetProperty(ref _isGgrFixEnabled, value))
+                {
+                    if (!value) RestoreGgr();
+                }
+            }
+        }
+
         private bool _isHotEnabled;
 
         public bool IsHotEnabled
@@ -235,6 +335,57 @@ namespace TarnishedTool.ViewModels
         {
             get => _isSetRfbsOnLoadEnabled;
             set => SetProperty(ref _isSetRfbsOnLoadEnabled, value);
+        }
+
+
+        private SpeedBuffMode _speedBuffMode;
+
+        public SpeedBuffMode SpeedBuffMode
+        {
+            get => _speedBuffMode;
+            set
+            {
+                if (!SetProperty(ref _speedBuffMode, value))
+                    return;
+
+                _playerService.SetSpeedBuffMode(value);
+
+                OnPropertyChanged(nameof(IsSpeedBuffEnabled));
+                OnPropertyChanged(nameof(IsSpeedBuffInCombatEnabled));
+            }
+        }
+
+        public bool IsSpeedBuffEnabled
+        {
+            get => SpeedBuffMode != SpeedBuffMode.Off;
+            set
+            {
+                if (value)
+                {
+                    if (SpeedBuffMode == SpeedBuffMode.Off)
+                        SpeedBuffMode = SpeedBuffMode.Normal;
+                }
+                else
+                {
+                    SpeedBuffMode = SpeedBuffMode.Off;
+                }
+            }
+        }
+
+        public bool IsSpeedBuffInCombatEnabled
+        {
+            get => SpeedBuffMode == SpeedBuffMode.AllowedInCombat;
+            set
+            {
+                if (value)
+                {
+                    SpeedBuffMode = SpeedBuffMode.AllowedInCombat;
+                }
+                else if (SpeedBuffMode == SpeedBuffMode.AllowedInCombat)
+                {
+                    SpeedBuffMode = SpeedBuffMode.Normal;
+                }
+            }
         }
 
         private bool _isPos1Saved;
@@ -776,6 +927,7 @@ namespace TarnishedTool.ViewModels
         public void PauseUpdates() => _pauseUpdates = true;
         public void ResumeUpdates() => _pauseUpdates = false;
         public void SetHp(int hp) => _playerService.SetHp(hp);
+        public void SetFp(int fp) => _playerService.SetFp(fp);
 
         public void SetStat(string statName, int value)
         {
@@ -840,6 +992,7 @@ namespace TarnishedTool.ViewModels
                 OnPropertyChanged(nameof(IsSlopeIndicatorEnabled));
                 OpenSlopeOverlay();
             }
+            if (SpeedBuffMode != SpeedBuffMode.Off) _playerService.SetSpeedBuffMode(SpeedBuffMode);
         }
 
         private void OnFadedIn()
@@ -855,7 +1008,6 @@ namespace TarnishedTool.ViewModels
             if (IsNoDamageEnabled) _playerService.ToggleNoDamage(true);
             if (IsNoHitEnabled) _playerService.ToggleNoHit(true);
             if (IsNoRollEnabled) _playerService.ToggleNoRoll(true);
-            
         }
 
         private void OnGameFirstLoaded()
@@ -879,6 +1031,8 @@ namespace TarnishedTool.ViewModels
             if (IsNoRuneLossEnabled) _playerService.ToggleNoRuneLoss(true);
             if (IsNoTimePassOnDeathEnabled) _playerService.ToggleNoTimePassOnDeath(true);
             if (IsFasterDeathEnabled) ApplyFasterDeath(true);
+            if (IsDamageMultiplierEnabled)
+                _damageService.ToggleDamageMultiplier(true, OutgoingDamageMultiplier, IncomingDamageMultiplier);
             _pauseUpdates = false;
         }
 
@@ -888,6 +1042,7 @@ namespace TarnishedTool.ViewModels
             _gameTickService.Unsubscribe(PlayerTick);
             _slopeTracker.Reset();
             UpdateSlopeIndicator();
+            _playerService.SetSpeedBuffMode(SpeedBuffMode.Off);
         }
 
         private void OnNewGameStart()
@@ -958,6 +1113,7 @@ namespace TarnishedTool.ViewModels
             _hotkeyManager.RegisterAction(HotkeyActions.NoRoll, () => { IsNoRollEnabled = !IsNoRollEnabled; });
             _hotkeyManager.RegisterAction(HotkeyActions.SlopeIndicator,
                 () => { IsSlopeIndicatorEnabled = !IsSlopeIndicatorEnabled; _notificationService?.ShowNotification(HotkeyActions.SlopeIndicator, IsSlopeIndicatorEnabled); });
+            _hotkeyManager.RegisterAction(HotkeyActions.SpeedBuff, () => { IsSpeedBuffEnabled = !IsSpeedBuffEnabled; _notificationService?.ShowNotification(HotkeyActions.SpeedBuff, IsSpeedBuffEnabled); });
         }
 
         private void SafeExecute(Action action)
@@ -970,12 +1126,16 @@ namespace TarnishedTool.ViewModels
         {
             if (_pauseUpdates) return;
 
+            if (IsGgrFixEnabled) FixGgr();
+
             if (IsHotEnabled) TryApplyHot();
 
             if (IsFpRegenEnabled) TryApplyFpRegen();
 
             CurrentHp = _playerService.GetCurrentHp();
             CurrentMaxHp = _playerService.GetMaxHp();
+            CurrentFp = _playerService.GetCurrentFp();
+            CurrentMaxFp = _playerService.GetMaxFp();
             PlayerSpeed = _playerService.GetSpeed();
             int newRuneLevel = _playerService.GetRuneLevel();
             Scadu = _playerService.GetScadu();
@@ -1050,6 +1210,38 @@ namespace TarnishedTool.ViewModels
             _playerService.SetHp(hpToSet);
         }
 
+        private void FixGgr()
+        {
+            var playerIns = _playerService.GetPlayerIns();
+            if (playerIns == 0) return;
+            var (tableIndex, slotIndex) = ParamIndices.All["SpEffectParam"];
+            nint row = _paramService.GetParamRow(tableIndex, slotIndex, 601); // Godrick's Great Rune Effect 1
+            if (row == 0) return;
+            if (_spEffectService.HasSpEffect(playerIns, 600))
+            {
+                // Change healing from -295 to 0 and Fp regen from -65 to 0
+                _paramService.Write(row, 0xa0, 0); 
+                _paramService.Write(row, 0xa8, 0);
+            }
+            else
+            {
+                // Restore if rune is inactive
+                _paramService.Write(row, 0xa0, -295);
+                _paramService.Write(row, 0xa8, -65);
+            }
+        }
+
+        private void RestoreGgr()
+        {
+            var (tableIndex, slotIndex) = ParamIndices.All["SpEffectParam"];
+            nint row = _paramService.GetParamRow(tableIndex, slotIndex, 601); // Godrick's Great Rune Effect 1
+            if (row == 0) return;
+            // Restore vanilla interaction if option is inactive
+            _paramService.Write(row, 0xa0, -295);
+            _paramService.Write(row, 0xa8, -65);
+            
+        }
+
         private void TryApplyFpRegen()
         {
             int currentFp = _playerService.GetCurrentFp();
@@ -1078,12 +1270,14 @@ namespace TarnishedTool.ViewModels
 
         private void SetRfbs() => _playerService.SetRfbs();
         private void SetMaxHp() => _playerService.SetFullHp();
+        private void SetMaxFp() => _playerService.SetFullFp();
+        private void EmptyFp() => _playerService.SetFp(0);
         private void Die() => _playerService.SetHp(0);
 
         private void SetCustomHp()
         {
             if (!_customHpHasBeenSet) return;
-            var (customHp, error) = ParseCustomHp();
+            var (customHp, error) = ParseCustomVal(CustomHp, CurrentMaxHp);
             if (customHp == null)
             {
                 MsgBox.Show(error, "Invalid Input");
@@ -1098,9 +1292,27 @@ namespace TarnishedTool.ViewModels
             SettingsManager.Default.Save();
         }
 
-        private (int? value, string error) ParseCustomHp()
+        private void SetCustomFp()
         {
-            var input = CustomHp?.Trim();
+            if (!_customFpHasBeenSet) return;
+            var (customFp, error) = ParseCustomVal(CustomFp, CurrentMaxFp);
+            if (customFp == null)
+            {
+                MsgBox.Show(error, "Invalid Input");
+                return;
+            }
+
+            if (customFp > CurrentMaxFp)
+                customFp = CurrentMaxFp;
+
+            _playerService.SetFp(customFp.Value);
+            SettingsManager.Default.SaveCustomFp = CustomFp;
+            SettingsManager.Default.Save();
+        }
+
+        private (int? value, string error) ParseCustomVal(string input, int maxValue)
+        {
+            input = input?.Trim();
             if (string.IsNullOrEmpty(input))
                 return (null, "Please enter a value");
 
@@ -1108,7 +1320,7 @@ namespace TarnishedTool.ViewModels
             {
                 if (double.TryParse(input.TrimEnd('%'), NumberStyles.Float, CultureInfo.InvariantCulture,
                         out var percent))
-                    return ((int)(percent / 100.0 * CurrentMaxHp), null);
+                    return ((int)(percent / 100.0 * maxValue), null);
                 return (null, "Invalid percentage format");
             }
 
@@ -1268,8 +1480,8 @@ namespace TarnishedTool.ViewModels
         {
             var (tableIndex, slotIndex) = ParamIndices.All["MenuCommonParam"];
 
-            IntPtr row = _paramService.GetParamRow(tableIndex, slotIndex, MenuCommonParamRowId);
-            if (row == IntPtr.Zero) return;
+            nint row = _paramService.GetParamRow(tableIndex, slotIndex, MenuCommonParamRowId);
+            if (row == 0) return;
 
             float val0 = enabled ? 0f : OriginalDeathTime0x0;
             float val4 = enabled ? 0f : OriginalDeathTime0x4;
@@ -1282,8 +1494,8 @@ namespace TarnishedTool.ViewModels
         {
             var (tableIndex, slotIndex) = ParamIndices.All["SpEffectParam"];
 
-            IntPtr row = _paramService.GetParamRow(tableIndex, slotIndex, NoMiquellaCharmSpEffectRowId);
-            if (row == IntPtr.Zero) return;
+            nint row = _paramService.GetParamRow(tableIndex, slotIndex, NoMiquellaCharmSpEffectRowId);
+            if (row == 0) return;
 
             float duration = enabled ? 0f : OriginalSpEffectDuration;
             int vfx = enabled ? -1 : OriginalSpEffectVfx;
@@ -1295,14 +1507,14 @@ namespace TarnishedTool.ViewModels
         {
             // needed if player enables it while in Abyssal woods
             var playerIns = _playerService.GetPlayerIns();
-            if (playerIns == IntPtr.Zero) return;
+            if (playerIns == 0) return;
             _spEffectService.RemoveSpEffect(playerIns, SpEffect.ForcedDismount);
 
             // needed for later area reloads
             var (tableIndex, slotIndex) = ParamIndices.All["SpEffectParam"];
 
-            IntPtr row = _paramService.GetParamRow(tableIndex, slotIndex, NoForcedDismountSpEffectRowId);
-            if (row == IntPtr.Zero) return;
+            nint row = _paramService.GetParamRow(tableIndex, slotIndex, NoForcedDismountSpEffectRowId);
+            if (row == 0) return;
 
             float duration = enabled ? 0f : ForcedDismountDuration;
             int stateinfo = enabled ? 0 : ForcedDismountStateInfo;

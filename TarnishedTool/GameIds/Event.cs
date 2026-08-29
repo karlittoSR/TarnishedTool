@@ -4,8 +4,14 @@ namespace TarnishedTool.GameIds;
 
 public static class Event
 {
-    //Black, Glintstone, Iron, Red-hot, Whetstone knife
-    public static readonly long[] WhetBlades = [65720, 65680, 65610, 65640, 60130];
+    public static readonly long[] WhetBlades = [
+        65720, // Black
+        65680, // Glintstone
+        65610, // Iron
+        65640, // Red-Hot
+        65660, // Sanctified
+        60130 // Whetstone Knife
+    ];
 
     public static readonly long ClearDlc = 70;
     public static readonly long SeeUndergroundGraces = 82001;

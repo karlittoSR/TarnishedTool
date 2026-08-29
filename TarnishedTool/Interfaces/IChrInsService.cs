@@ -50,9 +50,15 @@ public interface IChrInsService
     nint ChrInsByEntityId(uint entityId);
     void ToggleNoDeath(nint chrIns, bool isEnabled);
     uint GetBlockId(nint chrIns);
-    void ToggleNoGravity(IntPtr chrIns, bool isEnabled);
+    void ToggleNoGravity(nint chrIns, bool isEnabled);
     void SetDrawCritView(nint chrIns, bool enabled);
     void SetDrawBackstabView(nint chrIns, bool enabled);
     bool IsDrawCritViewEnabled(nint chrIns);
     bool IsDrawBackstabViewEnabled(nint chrIns);
+    int GetChrType(nint chrIns);
+    void SetChrType(nint chrIns, int value);
+    int GetCharacterType(nint chrIns);
+    void SetCharacterType(nint chrIns, int value);
+    int GetTeamType(nint chrIns);
+    void SetTeamType(nint chrIns, int value);
 }

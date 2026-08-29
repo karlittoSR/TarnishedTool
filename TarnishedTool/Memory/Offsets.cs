@@ -1,6 +1,6 @@
 ﻿using System;
-using TarnishedTool.Enums;
 using TarnishedTool.Utilities;
+using TarnishedTool.Enums;
 using static TarnishedTool.Enums.GameVersion;
 
 namespace TarnishedTool.Memory
@@ -10,9 +10,9 @@ namespace TarnishedTool.Memory
         private static GameVersion? _version;
 
         public static GameVersion Version => _version
-                                             ?? Version2_6_1;
+                                             ?? Version2_7_0;
 
-        public static bool Initialize(string fileVersion, IntPtr moduleBase)
+        public static bool Initialize(string fileVersion, nint moduleBase)
         {
             _version = fileVersion switch
             {
@@ -42,6 +42,7 @@ namespace TarnishedTool.Memory
                 var v when v.StartsWith("2.6.0.") => Version2_6_0,
                 var v when v.StartsWith("2.6.1.") => Version2_6_1,
                 var v when v.StartsWith("2.6.2.") => Version2_6_2,
+                var v when v.StartsWith("2.7.0.") => Version2_7_0,
                 _ => null
             };
 
@@ -61,7 +62,7 @@ namespace TarnishedTool.Memory
 
         public static class WorldChrMan
         {
-            public static IntPtr Base;
+            public static nint Base;
 
             public static int ChrSetPool => Version switch
             {
@@ -151,6 +152,7 @@ namespace TarnishedTool.Memory
             public const int NpcParamId = 0x60;
             public const int ChrId = 0x64;
             public const int TeamType = 0x6C;
+            public const int CharacterType = 0x68;
             public const int SpecialEffect = 0x178;
 
             public static int EntityId => Version switch
@@ -187,6 +189,7 @@ namespace TarnishedTool.Memory
                 Version1_2_0 or Version1_2_1 or Version1_2_2 or Version1_2_3 or Version1_3_0 or Version1_3_1
                     or Version1_3_2
                     or Version1_4_0 or Version1_4_1 or Version1_5_0 or Version1_6_0 or Version1_7_0 => 0x520,
+                 Version2_7_0 => 0x538,
                 _ => 0x530,
             };
 
@@ -206,6 +209,11 @@ namespace TarnishedTool.Memory
                     or Version1_3_2
                     or Version1_4_0 or Version1_4_1 or Version1_5_0 or Version1_6_0 or Version1_7_0 => 0x570,
                 _ => 0x580,
+            };
+
+            public static class ChrManipulatorOffsets
+            {
+                public const int ChrType = 0x98;
             };
 
             public static readonly int[] ChrCtrlFlags = [0xC8, 0x24];
@@ -461,7 +469,7 @@ namespace TarnishedTool.Memory
 
         public static class FieldArea
         {
-            public static IntPtr Base;
+            public static nint Base;
 
             public const int GameRend = 0x20;
             public const int CamMode = 0xC8; // 1 for free cam
@@ -518,22 +526,22 @@ namespace TarnishedTool.Memory
 
         public static class FD4PadManager
         {
-            public static IntPtr Base;
+            public static nint Base;
         }
 
         public static class DrawPathing
         {
-            public static IntPtr Base;
+            public static nint Base;
         }
 
         public static class LuaEventMan
         {
-            public static IntPtr Base;
+            public static nint Base;
         }
 
         public static class CSDbgEvent
         {
-            public static IntPtr Base;
+            public static nint Base;
 
             public const int DrawEvent = 0x4;
             public const int DisableEvent = 0x28;
@@ -541,17 +549,17 @@ namespace TarnishedTool.Memory
 
         public static class VirtualMemFlag
         {
-            public static IntPtr Base;
+            public static nint Base;
         }
 
         public static class CSEmkSystem
         {
-            public static IntPtr Base;
+            public static nint Base;
         }
 
         public static class GroupMask
         {
-            public static IntPtr Base;
+            public static nint Base;
 
             public enum GroupMasks
             {
@@ -578,7 +586,7 @@ namespace TarnishedTool.Memory
 
         public static class DamageManager
         {
-            public static IntPtr Base;
+            public static nint Base;
 
             public const int HitboxView = 0xA0;
             public const int HitboxView2 = 0xA1;
@@ -586,7 +594,7 @@ namespace TarnishedTool.Memory
 
         public static class WorldHitMan
         {
-            public static IntPtr Base;
+            public static nint Base;
 
             public static int LowHit => Version switch
             {
@@ -615,7 +623,7 @@ namespace TarnishedTool.Memory
 
         public static class MenuMan
         {
-            public static IntPtr Base;
+            public static nint Base;
 
             public const int FlagArray = 0x90;
             public const int IsLoaded = 0x94;
@@ -648,7 +656,7 @@ namespace TarnishedTool.Memory
 
         public static class GameDataMan
         {
-            public static IntPtr Base;
+            public static nint Base;
 
             public const int PlayerGameData = 0x8;
 
@@ -802,7 +810,7 @@ namespace TarnishedTool.Memory
 
         public static class TargetView
         {
-            public static IntPtr Base;
+            public static nint Base;
 
             public const int Blue = 0x0;
             public const int Yellow = 0x1;
@@ -810,7 +818,7 @@ namespace TarnishedTool.Memory
 
         public static class GameMan
         {
-            public static IntPtr Base;
+            public static nint Base;
 
             public const int ShouldQuitout = 0x10;
 
@@ -858,34 +866,34 @@ namespace TarnishedTool.Memory
 
         public static class MapItemManImpl
         {
-            public static IntPtr Base;
+            public static nint Base;
         }
 
         public static class WorldAreaTimeImpl
         {
-            public static IntPtr Base;
+            public static nint Base;
         }
 
         public static class SoloParamRepositoryImp
         {
-            public static IntPtr Base;
+            public static nint Base;
         }
 
         public static class MsgRepository
         {
-            public static IntPtr Base;
+            public static nint Base;
         }
 
         public static class UserInputManager
         {
-            public static IntPtr Base;
+            public static nint Base;
 
             public const int SteamInputEnum = 0x88B;
         }
 
         public static class CSTrophy
         {
-            public static IntPtr Base;
+            public static nint Base;
 
             public const int CSTrophyPlatformImp_forSteam = 0x8;
             public const int IsAwardAchievementEnabled = 0x4C;
@@ -893,7 +901,7 @@ namespace TarnishedTool.Memory
 
         public static class CSFlipperImp
         {
-            public static IntPtr Base;
+            public static nint Base;
 
             public static int GameSpeed => Version switch
             {
@@ -912,7 +920,7 @@ namespace TarnishedTool.Memory
 
         public static class MapDebugFlags
         {
-            public static IntPtr Base;
+            public static nint Base;
             public const int ShowAllMaps = 0x0;
             public const int ShowAllGraces = 0x1;
 
@@ -933,13 +941,13 @@ namespace TarnishedTool.Memory
 
         public static class WorldChrManDbg
         {
-            public static IntPtr Base;
+            public static nint Base;
             public const int PoiseBarsFlag = 0x69;
         }
 
         public static class ChrDbgFlags
         {
-            public static IntPtr Base;
+            public static nint Base;
             public const int PlayerNoDeath = 0x0;
             public const int OneShot = 0x2;
             public const int InfiniteGoods = 0x3;
@@ -958,7 +966,7 @@ namespace TarnishedTool.Memory
 
         public static class CsDlcImp
         {
-            public static IntPtr Base;
+            public static nint Base;
 
             public const int ByteFlags = 0x10;
 
@@ -970,64 +978,72 @@ namespace TarnishedTool.Memory
 
         public static class WorldAiManagerImp
         {
-            public static IntPtr Base;
+            public static nint Base;
 
             public static readonly int[] LuaState = [0x6938, 0xB8, 0x28];
         }
 
+        public static class CSSound
+        {
+            public static nint Base;
+        }
+
         public static class Hooks
         {
-            public static long UpdateCoords;
-            public static long InAirTimer;
-            public static long NoClipKb;
-            public static long NoClipTriggers;
-            public static long HasSpEffect;
-            public static long BlueTargetView;
-            public static long LockedTargetPtr;
-            public static long InfinitePoise;
-            public static long ShouldUpdateAi;
-            public static long GetForceActIdx;
-            public static long TargetNoStagger;
-            public static long AttackInfo;
-            public static long WarpCoordWrite;
-            public static long WarpAngleWrite;
-            public static IntPtr NoTimePassOnDeath;
-            public static long LionCooldownHook;
-            public static long SetActionRequested;
-            public static long NoMapAcquiredPopup;
-            public static long NoGrab;
-            public static long LoadScreenMsgLookup;
-            public static long LoadScreenMsgLookupEarlyPatches;
-            public static long LoadScreenMsgLookupMidPatches;
-            public static long NoHeal;
-            public static long PlayerLockHp;
+            public static nint UpdateCoords;
+            public static nint InAirTimer;
+            public static nint NoClipKb;
+            public static nint NoClipTriggers;
+            public static nint HasSpEffect;
+            public static nint BlueTargetView;
+            public static nint LockedTargetPtr;
+            public static nint InfinitePoise;
+            public static nint ShouldUpdateAi;
+            public static nint GetForceActIdx;
+            public static nint TargetNoStagger;
+            public static nint AttackInfo;
+            public static nint WarpCoordWrite;
+            public static nint WarpAngleWrite;
+            public static nint NoTimePassOnDeath;
+            public static nint LionCooldownHook;
+            public static nint SetActionRequested;
+            public static nint NoMapAcquiredPopup;
+            public static nint NoGrab;
+            public static nint LoadScreenMsgLookup;
+            public static nint LoadScreenMsgLookupEarlyPatches;
+            public static nint LoadScreenMsgLookupMidPatches;
+            public static nint NoHeal;
+            public static nint PlayerLockHp;
+            public static nint DamageApply;
+            public static nint SpeedyBuff;
         }
 
         public static class Functions
         {
-            public static long GraceWarp;
-            public static long SetEvent;
-            public static long SetSpEffect;
-            public static long GiveRunes;
-            public static long LookupByFieldInsHandle;
-            public static long WarpToBlock;
-            public static long ExternalEventTempCtor;
-            public static long ExecuteTalkCommand;
-            public static long GetEvent;
-            public static long GetPlayerItemQuantityById;
-            public static long ItemSpawn;
-            public static long MatrixVectorProduct;
-            public static long ChrInsByHandle;
-            public static long FindAndRemoveSpEffect;
-            public static long EmevdSwitch;
-            public static long EmkEventInsCtor;
-            public static long GetMovement;
-            public static long GetChrInsByEntityId;
-            public static long NpcEzStateTalkCtor;
-            public static long EzStateEnvQueryImplCtor;
-            public static long LocalToMapCoords;
-            public static long LuaDoString;
-            public static long RefreshFromStorage;
+            public static nint GraceWarp;
+            public static nint SetEvent;
+            public static nint SetSpEffect;
+            public static nint GiveRunes;
+            public static nint LookupByFieldInsHandle;
+            public static nint WarpToBlock;
+            public static nint ExternalEventTempCtor;
+            public static nint ExecuteTalkCommand;
+            public static nint GetEvent;
+            public static nint GetPlayerItemQuantityById;
+            public static nint ItemSpawn;
+            public static nint MatrixVectorProduct;
+            public static nint ChrInsByHandle;
+            public static nint FindAndRemoveSpEffect;
+            public static nint EmevdSwitch;
+            public static nint EmkEventInsCtor;
+            public static nint GetMovement;
+            public static nint GetChrInsByEntityId;
+            public static nint NpcEzStateTalkCtor;
+            public static nint EzStateEnvQueryImplCtor;
+            public static nint LocalToMapCoords;
+            public static nint LuaDoString;
+            public static nint RefreshFromStorage;
+            public static nint AiRequestAttackCooldown;
 
             // Equip POC — resolved by AOB (see Pattern.EquipItem / Pattern.GetInventoryId).
             public static long EquipItem;
@@ -1038,27 +1054,30 @@ namespace TarnishedTool.Memory
 
         public static class Patches
         {
-            public static IntPtr CanFastTravel;
-            public static IntPtr NoRunesFromEnemies;
-            public static IntPtr NoRuneArcLoss;
-            public static IntPtr NoRuneLossOnDeath;
-            public static IntPtr OpenMap;
-            public static IntPtr CloseMap;
-            public static IntPtr EnableFreeCam;
-            public static IntPtr CanDrawEvents1;
-            public static IntPtr CanDrawEvents2;
-            public static IntPtr GetShopEvent;
-            public static IntPtr NoLogo;
-            public static IntPtr DebugFont;
-            public static IntPtr PlayerSound;
-            public static IntPtr IsTorrentDisabledInUnderworld;
-            public static IntPtr IsWhistleDisabled;
-            public static IntPtr IsWorldPaused;
-            public static IntPtr GetItemChance;
-            public static IntPtr FpsCap;
+            public static nint CanFastTravel;
+            public static nint NoRunesFromEnemies;
+            public static nint NoRuneArcLoss;
+            public static nint NoRuneLossOnDeath;
+            public static nint OpenMap;
+            public static nint CloseMap;
+            public static nint EnableFreeCam;
+            public static nint CanDrawEvents1;
+            public static nint CanDrawEvents2;
+            public static nint GetShopEvent;
+            public static nint NoLogo;
+            public static nint DebugFont;
+            public static nint PlayerSound;
+            public static nint IsTorrentDisabledInUnderworld;
+            public static nint IsWhistleDisabled;
+            public static nint IsWorldPaused;
+            public static nint GetItemChance;
+            public static nint FpsCap;
+            public static nint MenuDelay;
+            public static nint NoQuitMessage;
+            public static nint DisableCutscene;
         }
 
-        private static void InitializeBaseAddresses(IntPtr moduleBase)
+        private static void InitializeBaseAddresses(nint moduleBase)
         {
             WorldChrMan.Base = moduleBase + Version switch
             {
@@ -1076,6 +1095,7 @@ namespace TarnishedTool.Memory
                 Version2_2_0 or Version2_4_0 or Version2_5_0
                     or Version2_6_0 or Version2_6_1 or Version2_6_2 => 0x3D65F88,
                 Version2_2_3 or Version2_3_0 => 0x3D65FA8,
+                Version2_7_0 => 0x3D69FF8,
                 _ => 0
             };
 
@@ -1095,6 +1115,7 @@ namespace TarnishedTool.Memory
                 Version2_2_0 or Version2_4_0 or Version2_5_0
                     or Version2_6_0 or Version2_6_1 or Version2_6_2 => 0x3D691D8,
                 Version2_2_3 or Version2_3_0 => 0x3D691F8,
+                Version2_7_0 => 0x3D6D248,
                 _ => 0
             };
 
@@ -1114,6 +1135,7 @@ namespace TarnishedTool.Memory
                 Version2_2_0 or Version2_4_0 or Version2_5_0
                     or Version2_6_0 or Version2_6_1 or Version2_6_2 => 0x3D67E48,
                 Version2_2_3 or Version2_3_0 => 0x3D67E68,
+                Version2_7_0 => 0x3D6BEB8,
                 _ => 0
             };
 
@@ -1133,6 +1155,7 @@ namespace TarnishedTool.Memory
                 Version2_2_0 or Version2_4_0 or Version2_5_0
                     or Version2_6_0 or Version2_6_1 or Version2_6_2 => 0x3D68448,
                 Version2_2_3 or Version2_3_0 => 0x3D68468,
+                Version2_7_0 => 0x3D6C4B8,
                 _ => 0
             };
 
@@ -1152,6 +1175,7 @@ namespace TarnishedTool.Memory
                 Version2_2_0 or Version2_4_0 or Version2_5_0
                     or Version2_6_0 or Version2_6_1 or Version2_6_2 => 0x3D66378,
                 Version2_2_3 or Version2_3_0 => 0x3D66398,
+                Version2_7_0 => 0x3D6A3E8,
                 _ => 0
             };
 
@@ -1171,6 +1195,7 @@ namespace TarnishedTool.Memory
                 Version2_2_0 or Version2_4_0 or Version2_5_0
                     or Version2_6_0 or Version2_6_1 or Version2_6_2 => 0x3D6B7B0,
                 Version2_2_3 or Version2_3_0 => 0x3D6B7D0,
+                Version2_7_0 => 0x3D6F820,
                 _ => 0
             };
 
@@ -1190,6 +1215,7 @@ namespace TarnishedTool.Memory
                 Version2_2_0 or Version2_4_0 or Version2_5_0
                     or Version2_6_0 or Version2_6_1 or Version2_6_2 => 0x3D6226B,
                 Version2_2_3 or Version2_3_0 => 0x3D6228B,
+                Version2_7_0 => 0x3D662C9,
                 _ => 0
             };
 
@@ -1209,6 +1235,7 @@ namespace TarnishedTool.Memory
                 Version2_2_0 or Version2_4_0 or Version2_5_0
                     or Version2_6_0 or Version2_6_1 or Version2_6_2 => 0x3D69918,
                 Version2_2_3 or Version2_3_0 => 0x3D69938,
+                Version2_7_0 => 0x3D6D988,
                 _ => 0
             };
 
@@ -1228,6 +1255,7 @@ namespace TarnishedTool.Memory
                 Version2_2_0 or Version2_4_0 or Version2_5_0
                     or Version2_6_0 or Version2_6_1 or Version2_6_2 => 0x3D6A0E0,
                 Version2_2_3 or Version2_3_0 => 0x3D6A100,
+                Version2_7_0 => 0x3D6E150,
                 _ => 0
             };
 
@@ -1247,6 +1275,7 @@ namespace TarnishedTool.Memory
                 Version2_2_0 or Version2_4_0 or Version2_5_0
                     or Version2_6_0 or Version2_6_1 or Version2_6_2 => 0x3D66198,
                 Version2_2_3 or Version2_3_0 => 0x3D661B8,
+                Version2_7_0 => 0x3D6A208,
                 _ => 0
             };
 
@@ -1266,6 +1295,7 @@ namespace TarnishedTool.Memory
                 Version2_2_0 or Version2_4_0 or Version2_5_0
                     or Version2_6_0 or Version2_6_1 or Version2_6_2 => 0x3D661A0,
                 Version2_2_3 or Version2_3_0 => 0x3D661C0,
+                Version2_7_0 => 0x3D6A210,
                 _ => 0
             };
 
@@ -1285,6 +1315,7 @@ namespace TarnishedTool.Memory
                 Version2_2_0 or Version2_4_0 or Version2_5_0
                     or Version2_6_0 or Version2_6_1 or Version2_6_2 => 0x3D5DF38,
                 Version2_2_3 or Version2_3_0 => 0x3D5DF58,
+                Version2_7_0 => 0x3D61F98,
                 _ => 0
             };
 
@@ -1304,6 +1335,7 @@ namespace TarnishedTool.Memory
                 Version2_2_0 or Version2_4_0 or Version2_5_0
                     or Version2_6_0 or Version2_6_1 or Version2_6_2 => 0x3D86BD8,
                 Version2_2_3 or Version2_3_0 => 0x3D86BF8,
+                Version2_7_0 => 0x3D8AC58,
                 _ => 0
             };
 
@@ -1323,6 +1355,7 @@ namespace TarnishedTool.Memory
                 Version2_2_0 or Version2_4_0 or Version2_5_0
                     or Version2_6_0 or Version2_6_1 or Version2_6_2 => 0x3D67A50,
                 Version2_2_3 or Version2_3_0 => 0x3D67A70,
+                Version2_7_0 => 0x3D6BAC0,
                 _ => 0
             };
 
@@ -1344,6 +1377,7 @@ namespace TarnishedTool.Memory
                 Version2_2_3 or Version2_3_0 => 0x485DB90,
                 Version2_4_0 or Version2_5_0 or Version2_6_0
                     or Version2_6_1 or Version2_6_2 => 0x485DC20,
+                Version2_7_0 => 0x4861D30,
                 _ => 0
             };
 
@@ -1363,6 +1397,7 @@ namespace TarnishedTool.Memory
                 Version2_2_0 or Version2_4_0 or Version2_5_0
                     or Version2_6_0 or Version2_6_1 or Version2_6_2 => 0x3D67BD0,
                 Version2_2_3 or Version2_3_0 => 0x3D67BF0,
+                Version2_7_0 => 0x3D6BC40,
                 _ => 0
             };
 
@@ -1382,6 +1417,7 @@ namespace TarnishedTool.Memory
                 Version2_2_0 or Version2_4_0 or Version2_5_0
                     or Version2_6_0 or Version2_6_1 or Version2_6_2 => 0x3D692F8,
                 Version2_2_3 or Version2_3_0 => 0x3D69318,
+                Version2_7_0 => 0x3D6D368,
                 _ => 0
             };
 
@@ -1400,6 +1436,7 @@ namespace TarnishedTool.Memory
                 Version2_2_0 or Version2_2_3 or Version2_3_0
                     or Version2_4_0 or Version2_5_0 or Version2_6_0
                     or Version2_6_1 or Version2_6_2 => 0x3B33D00,
+                Version2_7_0 => 0x3B37D10,
                 _ => 0
             };
 
@@ -1420,6 +1457,7 @@ namespace TarnishedTool.Memory
                 Version2_2_0 or Version2_4_0 or Version2_5_0
                     or Version2_6_0 or Version2_6_1 or Version2_6_2 => 0x4589AD8,
                 Version2_2_3 or Version2_3_0 => 0x4589AF8,
+                Version2_7_0 => 0x458DB58,
                 _ => 0
             };
 
@@ -1439,6 +1477,7 @@ namespace TarnishedTool.Memory
                 Version2_2_0 or Version2_4_0 or Version2_5_0
                     or Version2_6_0 or Version2_6_1 or Version2_6_2 => 0x3D67FF8,
                 Version2_2_3 or Version2_3_0 => 0x3D68018,
+                Version2_7_0 => 0x3D6C068,
                 _ => 0
             };
 
@@ -1460,6 +1499,7 @@ namespace TarnishedTool.Memory
                 Version2_2_3 or Version2_3_0 => 0x485DB88,
                 Version2_4_0 or Version2_5_0 or Version2_6_0
                     or Version2_6_1 or Version2_6_2 => 0x485DC18,
+                Version2_7_0 => 0x4861D28,
                 _ => 0
             };
 
@@ -1480,6 +1520,7 @@ namespace TarnishedTool.Memory
                 Version2_2_0 or Version2_4_0 or Version2_5_0
                     or Version2_6_0 or Version2_6_1 or Version2_6_2 => 0x4589478,
                 Version2_2_3 or Version2_3_0 => 0x4589498,
+                Version2_7_0 => 0x458D4F8,
                 _ => 0
             };
 
@@ -1499,6 +1540,7 @@ namespace TarnishedTool.Memory
                 Version2_2_0 or Version2_4_0 or Version2_5_0
                     or Version2_6_0 or Version2_6_1 or Version2_6_2 => 0x3D6CFC0,
                 Version2_2_3 or Version2_3_0 => 0x3D6CFE0,
+                Version2_7_0 => 0x3D71030,
                 _ => 0
             };
 
@@ -1518,6 +1560,7 @@ namespace TarnishedTool.Memory
                 Version2_2_0 or Version2_4_0 or Version2_5_0
                     or Version2_6_0 or Version2_6_1 or Version2_6_2 => 0x3D81EE8,
                 Version2_2_3 or Version2_3_0 => 0x3D81F08,
+                Version2_7_0 => 0x3D85F58,
                 _ => 0
             };
 
@@ -1537,6 +1580,7 @@ namespace TarnishedTool.Memory
                 Version2_2_0 or Version2_4_0 or Version2_5_0
                     or Version2_6_0 or Version2_6_1 or Version2_6_2 => 0x3D7D4F8,
                 Version2_2_3 or Version2_3_0 => 0x3D7D518,
+                Version2_7_0 => 0x3D81568,
                 _ => 0
             };
 
@@ -1556,6 +1600,7 @@ namespace TarnishedTool.Memory
                 Version2_2_0 or Version2_4_0 or Version2_5_0
                     or Version2_6_0 or Version2_6_1 or Version2_6_2 => 0x3D61DB0,
                 Version2_2_3 or Version2_3_0 => 0x3D61DD0,
+                Version2_7_0 => 0x3D65E10,
                 _ => 0
             };
 
@@ -1575,12 +1620,34 @@ namespace TarnishedTool.Memory
                 Version2_2_0 or Version2_4_0 or Version2_5_0
                     or Version2_6_0 or Version2_6_1 or Version2_6_2 => 0x3D624E8,
                 Version2_2_3 or Version2_3_0 => 0x3D62508,
+                Version2_7_0 => 0x3D66548,
+                _ => 0
+            };
+            
+            CSSound.Base = moduleBase + Version switch
+            {
+                Version1_2_0 => 0x3C6D320,
+                Version1_2_1 => 0x3C6D340,
+                Version1_2_2 => 0x3C6D360,
+                Version1_2_3 => 0x3C70370,
+                Version1_3_0 or Version1_3_1 or Version1_3_2 => 0x3C81EC8,
+                Version1_4_0 or Version1_4_1 => 0x3C25068,
+                Version1_5_0 => 0x3C3CE58,
+                Version1_6_0 => 0x3C4E0B8,
+                Version1_7_0 => 0x3C68A88,
+                Version1_8_0 or Version1_8_1 => 0x3CF74F8,
+                Version1_9_0 or Version1_9_1 or Version2_0_0 or Version2_0_1 => 0x3CFA938,
+                Version2_2_0 or Version2_4_0 or Version2_5_0
+                    or Version2_6_0 or Version2_6_1 or Version2_6_2 => 0x3D83CD8,
+                Version2_2_3 or Version2_3_0 => 0x3D83CF8,
+                Version2_7_0 => 0x3D87D48,
                 _ => 0
             };
 
 
+
             // Functions
-            Functions.GraceWarp = moduleBase.ToInt64() + Version switch
+            Functions.GraceWarp = moduleBase + Version switch
             {
                 Version1_2_0 => 0x5855B0,
                 Version1_2_1 or Version1_2_2 => 0x585620,
@@ -1601,10 +1668,11 @@ namespace TarnishedTool.Memory
                 Version2_4_0 or Version2_5_0 => 0x599D00,
                 Version2_6_0 or Version2_6_1 => 0x599CD0,
                 Version2_6_2 => 0x599C10,
-                _ => 0L
+                Version2_7_0 => 0x59AA60,
+                _ => 0
             };
 
-            Functions.SetEvent = moduleBase.ToInt64() + Version switch
+            Functions.SetEvent = moduleBase + Version switch
             {
                 Version1_2_0 => 0x5D9E40,
                 Version1_2_1 or Version1_2_2 => 0x5D9EB0,
@@ -1625,10 +1693,11 @@ namespace TarnishedTool.Memory
                 Version2_4_0 or Version2_5_0 => 0x5F9B50,
                 Version2_6_0 or Version2_6_1 => 0x5F9CD0,
                 Version2_6_2 => 0x5F9BF0,
-                _ => 0L
+                Version2_7_0 => 0x5FAA40,
+                _ => 0
             };
 
-            Functions.SetSpEffect = moduleBase.ToInt64() + Version switch
+            Functions.SetSpEffect = moduleBase + Version switch
             {
                 Version1_2_0 => 0x3E17E0,
                 Version1_2_1 or Version1_2_2 => 0x3E1850,
@@ -1644,10 +1713,11 @@ namespace TarnishedTool.Memory
                 Version2_4_0 or Version2_5_0 => 0x3E9120,
                 Version2_6_0 or Version2_6_1 => 0x3E90F0,
                 Version2_6_2 => 0x3E8FE0,
-                _ => 0L
+                Version2_7_0 => 0x3E91C0,
+                _ => 0
             };
 
-            Functions.GiveRunes = moduleBase.ToInt64() + Version switch
+            Functions.GiveRunes = moduleBase + Version switch
             {
                 Version1_2_0 => 0x258270,
                 Version1_2_1 or Version1_2_2 => 0x2582E0,
@@ -1664,10 +1734,11 @@ namespace TarnishedTool.Memory
                     or Version2_6_0
                     or Version2_6_1 => 0x25E1B0,
                 Version2_6_2 => 0x25E100,
-                _ => 0L
+                Version2_7_0 => 0x25E0E0,
+                _ => 0
             };
 
-            Functions.LookupByFieldInsHandle = moduleBase.ToInt64() + Version switch
+            Functions.LookupByFieldInsHandle = moduleBase + Version switch
             {
                 Version1_2_0 => 0x4F7580,
                 Version1_2_1 or Version1_2_2 => 0x4F75F0,
@@ -1687,10 +1758,11 @@ namespace TarnishedTool.Memory
                 Version2_4_0 or Version2_5_0 => 0x507D80,
                 Version2_6_0 or Version2_6_1 => 0x507D50,
                 Version2_6_2 => 0x507C80,
-                _ => 0L
+                Version2_7_0 => 0x508A50,
+                _ => 0
             };
 
-            Functions.WarpToBlock = moduleBase.ToInt64() + Version switch
+            Functions.WarpToBlock = moduleBase + Version switch
             {
                 Version1_2_0 => 0x5D7DA0,
                 Version1_2_1 or Version1_2_2 => 0x5D7E10,
@@ -1711,11 +1783,12 @@ namespace TarnishedTool.Memory
                 Version2_4_0 or Version2_5_0 => 0x5F7A30,
                 Version2_6_0 or Version2_6_1 => 0x5F7BB0,
                 Version2_6_2 => 0x5F7AD0,
-                _ => 0L
+                Version2_7_0 => 0x5F8920,
+                _ => 0
             };
 
 
-            Functions.GetEvent = moduleBase.ToInt64() + Version switch
+            Functions.GetEvent = moduleBase + Version switch
             {
                 Version1_2_0 => 0x5D9650,
                 Version1_2_1 or Version1_2_2 => 0x5D96C0,
@@ -1736,10 +1809,11 @@ namespace TarnishedTool.Memory
                 Version2_4_0 or Version2_5_0 => 0x5F9360,
                 Version2_6_0 or Version2_6_1 => 0x5F94E0,
                 Version2_6_2 => 0x5F9400,
-                _ => 0L
+                Version2_7_0 => 0x5FA250,
+                _ => 0
             };
 
-            Functions.GetPlayerItemQuantityById = moduleBase.ToInt64() + Version switch
+            Functions.GetPlayerItemQuantityById = moduleBase + Version switch
             {
                 Version1_2_0 => 0x75ACC0,
                 Version1_2_1 or Version1_2_2 => 0x75AD30,
@@ -1760,10 +1834,11 @@ namespace TarnishedTool.Memory
                 Version2_4_0 or Version2_5_0 => 0x784F40,
                 Version2_6_0 or Version2_6_1 => 0x7850C0,
                 Version2_6_2 => 0x784FD0,
-                _ => 0L
+                Version2_7_0 => 0x785E50,
+                _ => 0
             };
 
-            Functions.ItemSpawn = moduleBase.ToInt64() + Version switch
+            Functions.ItemSpawn = moduleBase + Version switch
             {
                 Version1_2_0 => 0x54E570,
                 Version1_2_1 or Version1_2_2 => 0x54E5E0,
@@ -1783,10 +1858,11 @@ namespace TarnishedTool.Memory
                 Version2_4_0 or Version2_5_0 => 0x5606A0,
                 Version2_6_0 or Version2_6_1 => 0x560670,
                 Version2_6_2 => 0x5605B0,
-                _ => 0L
+                Version2_7_0 => 0x561400,
+                _ => 0
             };
 
-            Functions.MatrixVectorProduct = moduleBase.ToInt64() + Version switch
+            Functions.MatrixVectorProduct = moduleBase + Version switch
             {
                 Version1_2_0 => 0xAB01E0,
                 Version1_2_1 => 0xAB0260,
@@ -1810,10 +1886,11 @@ namespace TarnishedTool.Memory
                 Version2_6_0 => 0xB122B0,
                 Version2_6_1 => 0xB12310,
                 Version2_6_2 => 0xB12220,
-                _ => 0L
+                Version2_7_0 => 0xB138C0,
+                _ => 0
             };
 
-            Functions.ChrInsByHandle = moduleBase.ToInt64() + Version switch
+            Functions.ChrInsByHandle = moduleBase + Version switch
             {
                 Version1_2_0 => 0x4F74A0,
                 Version1_2_1 or Version1_2_2 => 0x4F7510,
@@ -1833,10 +1910,11 @@ namespace TarnishedTool.Memory
                 Version2_4_0 or Version2_5_0 => 0x507CA0,
                 Version2_6_0 or Version2_6_1 => 0x507C70,
                 Version2_6_2 => 0x507BA0,
-                _ => 0L
+                Version2_7_0 => 0x508970,
+                _ => 0
             };
 
-            Functions.FindAndRemoveSpEffect = moduleBase.ToInt64() + Version switch
+            Functions.FindAndRemoveSpEffect = moduleBase + Version switch
             {
                 Version1_2_0 => 0x4E6970,
                 Version1_2_1 or Version1_2_2 => 0x4E69E0,
@@ -1856,10 +1934,11 @@ namespace TarnishedTool.Memory
                 Version2_4_0 or Version2_5_0 => 0x4F69B0,
                 Version2_6_0 or Version2_6_1 => 0x4F6980,
                 Version2_6_2 => 0x4F68B0,
-                _ => 0L
+                Version2_7_0 => 0x4F7680,
+                _ => 0
             };
 
-            Functions.EmevdSwitch = moduleBase.ToInt64() + Version switch
+            Functions.EmevdSwitch = moduleBase + Version switch
             {
                 Version1_2_0 => 0x555D00,
                 Version1_2_1 or Version1_2_2 => 0x555D70,
@@ -1879,10 +1958,11 @@ namespace TarnishedTool.Memory
                 Version2_4_0 or Version2_5_0 => 0x567E30,
                 Version2_6_0 or Version2_6_1 => 0x567E00,
                 Version2_6_2 => 0x567D40,
-                _ => 0L
+                Version2_7_0 => 0x568B90,
+                _ => 0
             };
 
-            Functions.EmkEventInsCtor = moduleBase.ToInt64() + Version switch
+            Functions.EmkEventInsCtor = moduleBase + Version switch
             {
                 Version1_2_0 => 0x56ECA0,
                 Version1_2_1 or Version1_2_2 => 0x56ED10,
@@ -1902,10 +1982,11 @@ namespace TarnishedTool.Memory
                 Version2_4_0 or Version2_5_0 => 0x582730,
                 Version2_6_0 or Version2_6_1 => 0x582700,
                 Version2_6_2 => 0x582640,
-                _ => 0L
+                Version2_7_0 => 0x583490,
+                _ => 0
             };
 
-            Functions.GetMovement = moduleBase.ToInt64() + Version switch
+            Functions.GetMovement = moduleBase + Version switch
             {
                 Version1_2_0 => 0x25B6CD0,
                 Version1_2_1 => 0x25B6D20,
@@ -1932,10 +2013,11 @@ namespace TarnishedTool.Memory
                 Version2_6_0 => 0x2664210,
                 Version2_6_1 => 0x2664270,
                 Version2_6_2 => 0x2664280,
-                _ => 0L
+                Version2_7_0 => 0x2666A90,
+                _ => 0
             };
 
-            Functions.GetChrInsByEntityId = moduleBase.ToInt64() + Version switch
+            Functions.GetChrInsByEntityId = moduleBase + Version switch
             {
                 Version1_2_0 => 0x4F7630,
                 Version1_2_1 or Version1_2_2 => 0x4F76A0,
@@ -1955,10 +2037,11 @@ namespace TarnishedTool.Memory
                 Version2_4_0 or Version2_5_0 => 0x507E30,
                 Version2_6_0 or Version2_6_1 => 0x507E00,
                 Version2_6_2 => 0x507D30,
-                _ => 0L
+                Version2_7_0 => 0x508B00,
+                _ => 0
             };
 
-            Functions.NpcEzStateTalkCtor = moduleBase.ToInt64() + Version switch
+            Functions.NpcEzStateTalkCtor = moduleBase + Version switch
             {
                 Version1_2_0 => 0xE17E70,
                 Version1_2_1 => 0xE17EC0,
@@ -1985,10 +2068,11 @@ namespace TarnishedTool.Memory
                 Version2_6_0 => 0xE9EC70,
                 Version2_6_1 => 0xE9ECD0,
                 Version2_6_2 => 0xE9ECC0,
-                _ => 0L
+                Version2_7_0 => 0xEA0AC0,
+                _ => 0
             };
 
-            Functions.EzStateEnvQueryImplCtor = moduleBase.ToInt64() + Version switch
+            Functions.EzStateEnvQueryImplCtor = moduleBase + Version switch
             {
                 Version1_2_0 => 0x1FD0D40,
                 Version1_2_1 => 0x1FD0D90,
@@ -2015,10 +2099,11 @@ namespace TarnishedTool.Memory
                 Version2_6_0 => 0x207E820,
                 Version2_6_1 => 0x207E880,
                 Version2_6_2 => 0x207E890,
-                _ => 0L
+                Version2_7_0 => 0x2080690,
+                _ => 0
             };
 
-            Functions.ExternalEventTempCtor = moduleBase.ToInt64() + Version switch
+            Functions.ExternalEventTempCtor = moduleBase + Version switch
             {
                 Version1_2_0 => 0x1F934E0,
                 Version1_2_1 => 0x1F93530,
@@ -2045,10 +2130,11 @@ namespace TarnishedTool.Memory
                 Version2_6_0 => 0x2040FC0,
                 Version2_6_1 => 0x2041020,
                 Version2_6_2 => 0x2041030,
-                _ => 0L
+                Version2_7_0 => 0x2042E30,
+                _ => 0
             };
 
-            Functions.ExecuteTalkCommand = moduleBase.ToInt64() + Version switch
+            Functions.ExecuteTalkCommand = moduleBase + Version switch
             {
                 Version1_2_0 => 0xE1E320,
                 Version1_2_1 => 0xE1E370,
@@ -2075,10 +2161,11 @@ namespace TarnishedTool.Memory
                 Version2_6_0 => 0xEA5250,
                 Version2_6_1 => 0xEA52B0,
                 Version2_6_2 => 0xEA5290,
-                _ => 0L
+                Version2_7_0 => 0xEA7090,
+                _ => 0
             };
 
-            Functions.LocalToMapCoords = moduleBase.ToInt64() + Version switch
+            Functions.LocalToMapCoords = moduleBase + Version switch
             {
                 Version1_2_0 => 0x5FDCA0,
                 Version1_2_1 or Version1_2_2 => 0x5FDD10,
@@ -2099,10 +2186,11 @@ namespace TarnishedTool.Memory
                 Version2_4_0 or Version2_5_0 => 0x61E1D0,
                 Version2_6_0 or Version2_6_1 => 0x61E350,
                 Version2_6_2 => 0x61E270,
+                Version2_7_0 => 0x61F0C0,
                 _ => 0
             };
 
-            Functions.LuaDoString = moduleBase.ToInt64() + Version switch
+            Functions.LuaDoString = moduleBase + Version switch
             {
                 Version1_2_0 => 0x1F78EB0,
                 Version1_2_1 => 0x1F78F00,
@@ -2129,10 +2217,11 @@ namespace TarnishedTool.Memory
                 Version2_6_0 => 0x2026990,
                 Version2_6_1 => 0x20269F0,
                 Version2_6_2 => 0x2026A00,
+                Version2_7_0 => 0x2028800,
                 _ => 0
             };
 
-            Functions.RefreshFromStorage = moduleBase.ToInt64() + Version switch
+            Functions.RefreshFromStorage = moduleBase + Version switch
             {
                 Version1_2_0 => 0x248D90,
                 Version1_2_1 or Version1_2_2 => 0x248E00,
@@ -2148,13 +2237,21 @@ namespace TarnishedTool.Memory
                     or Version2_4_0 or Version2_5_0 or Version2_6_0
                     or Version2_6_1 => 0x24E0A0,
                 Version2_6_2 => 0x24DFF0,
+                Version2_7_0 => 0x24DFF0,
+                _ => 0
+            };
+            
+            Functions.AiRequestAttackCooldown = moduleBase + Version switch
+            {
+                Version2_6_2 => 0x2C6280,
+                Version2_7_0 => 0x2C6290,
                 _ => 0
             };
 
 
 
             // Hooks
-            Hooks.UpdateCoords = moduleBase.ToInt64() + Version switch
+            Hooks.UpdateCoords = moduleBase + Version switch
             {
                 Version1_2_0 => 0x45E3C9,
                 Version1_2_1 or Version1_2_2 => 0x45E439,
@@ -2173,10 +2270,11 @@ namespace TarnishedTool.Memory
                 Version2_4_0 or Version2_5_0 => 0x4679C9,
                 Version2_6_0 or Version2_6_1 => 0x467999,
                 Version2_6_2 => 0x467899,
-                _ => 0L
+                Version2_7_0 => 0x467DF9,
+                _ => 0
             };
 
-            Hooks.InAirTimer = moduleBase.ToInt64() + Version switch
+            Hooks.InAirTimer = moduleBase + Version switch
             {
                 Version1_2_0 => 0x444CA8,
                 Version1_2_1 or Version1_2_2 => 0x444D18,
@@ -2195,10 +2293,11 @@ namespace TarnishedTool.Memory
                 Version2_4_0 or Version2_5_0 => 0x44E2A8,
                 Version2_6_0 or Version2_6_1 => 0x44E278,
                 Version2_6_2 => 0x44E168,
-                _ => 0L
+                Version2_7_0 => 0x44E6C8,
+                _ => 0
             };
 
-            Hooks.NoClipKb = moduleBase.ToInt64() + Version switch
+            Hooks.NoClipKb = moduleBase + Version switch
             {
                 Version1_2_0 => 0x1EBF67F,
                 Version1_2_1 => 0x1EBF6CF,
@@ -2226,10 +2325,11 @@ namespace TarnishedTool.Memory
                 Version2_6_0 => 0x1F6D09F,
                 Version2_6_1 => 0x1F6D0FF,
                 Version2_6_2 => 0x1F6D10F,
-                _ => 0L
+                Version2_7_0 => 0x1F6EF0F,
+                _ => 0
             };
 
-            Hooks.NoClipTriggers = moduleBase.ToInt64() + Version switch
+            Hooks.NoClipTriggers = moduleBase + Version switch
             {
                 Version1_2_0 => 0x1EBE79E,
                 Version1_2_1 => 0x1EBE7EE,
@@ -2255,10 +2355,11 @@ namespace TarnishedTool.Memory
                 Version2_6_0 => 0x1F6C11F,
                 Version2_6_1 => 0x1F6C17F,
                 Version2_6_2 => 0x1F6C18F,
-                _ => 0L
+                Version2_7_0 => 0x1F6DF8F,
+                _ => 0
             };
 
-            Hooks.HasSpEffect = moduleBase.ToInt64() + Version switch
+            Hooks.HasSpEffect = moduleBase + Version switch
             {
                 Version1_2_0 => 0x4E99C0,
                 Version1_2_1 or Version1_2_2 => 0x4E9A30,
@@ -2278,10 +2379,11 @@ namespace TarnishedTool.Memory
                 Version2_4_0 or Version2_5_0 => 0x4F9A40,
                 Version2_6_0 or Version2_6_1 => 0x4F9A10,
                 Version2_6_2 => 0x4F9940,
-                _ => 0L
+                Version2_7_0 => 0x4FA710,
+                _ => 0
             };
 
-            Hooks.BlueTargetView = moduleBase.ToInt64() + Version switch
+            Hooks.BlueTargetView = moduleBase + Version switch
             {
                 Version1_2_0 => 0x3382C3,
                 Version1_2_1 or Version1_2_2 => 0x338333,
@@ -2296,10 +2398,11 @@ namespace TarnishedTool.Memory
                 Version2_2_0 or Version2_2_3 or Version2_3_0 or Version2_4_0 or Version2_5_0 => 0x33E293,
                 Version2_6_0 or Version2_6_1 => 0x33E263,
                 Version2_6_2 => 0x33E143,
-                _ => 0L
+                Version2_7_0 => 0x33E153,
+                _ => 0
             };
 
-            Hooks.LockedTargetPtr = moduleBase.ToInt64() + Version switch
+            Hooks.LockedTargetPtr = moduleBase + Version switch
             {
                 Version1_2_0 => 0x6F0A16,
                 Version1_2_1 or Version1_2_2 => 0x6F0A86,
@@ -2320,10 +2423,11 @@ namespace TarnishedTool.Memory
                 Version2_4_0 or Version2_5_0 => 0x7171F2,
                 Version2_6_0 or Version2_6_1 => 0x717372,
                 Version2_6_2 => 0x717272,
-                _ => 0L
+                Version2_7_0 => 0x7180C2,
+                _ => 0
             };
 
-            Hooks.InfinitePoise = moduleBase.ToInt64() + Version switch
+            Hooks.InfinitePoise = moduleBase + Version switch
             {
                 Version1_2_0 => 0x43CA6A,
                 Version1_2_1 or Version1_2_2 => 0x43CADA,
@@ -2342,10 +2446,11 @@ namespace TarnishedTool.Memory
                 Version2_4_0 or Version2_5_0 => 0x445CE0,
                 Version2_6_0 or Version2_6_1 => 0x445CB0,
                 Version2_6_2 => 0x445BA0,
-                _ => 0L
+                Version2_7_0 => 0x446100,
+                _ => 0
             };
 
-            Hooks.ShouldUpdateAi = moduleBase.ToInt64() + Version switch
+            Hooks.ShouldUpdateAi = moduleBase + Version switch
             {
                 Version1_2_0 => 0x3C09F0,
                 Version1_2_1 or Version1_2_2 => 0x3C0A60,
@@ -2361,10 +2466,11 @@ namespace TarnishedTool.Memory
                 Version2_4_0 or Version2_5_0 => 0x3C7940,
                 Version2_6_0 or Version2_6_1 => 0x3C7910,
                 Version2_6_2 => 0x3C7800,
-                _ => 0L
+                Version2_7_0 => 0x3C7810,
+                _ => 0
             };
 
-            Hooks.GetForceActIdx = moduleBase.ToInt64() + Version switch
+            Hooks.GetForceActIdx = moduleBase + Version switch
             {
                 Version1_2_0 => 0x527214E,
                 Version1_2_1 => 0x53F7581,
@@ -2392,11 +2498,12 @@ namespace TarnishedTool.Memory
                 Version2_6_0 => 0x53C8D9,
                 Version2_6_1 => 0x5BED8C4,
                 Version2_6_2 => 0x5C7DF02,
-                _ => 0L
+                Version2_7_0 => 0x5A85A11,
+                _ => 0
             };
 
 
-            Hooks.AttackInfo = moduleBase.ToInt64() + Version switch
+            Hooks.AttackInfo = moduleBase + Version switch
             {
                 Version1_2_0 => 0x474B3A,
                 Version1_2_1 or Version1_2_2 => 0x474BAA,
@@ -2415,10 +2522,11 @@ namespace TarnishedTool.Memory
                 Version2_4_0 or Version2_5_0 => 0x47E25B,
                 Version2_6_0 or Version2_6_1 => 0x47E22B,
                 Version2_6_2 => 0x47E12B,
-                _ => 0L
+                Version2_7_0 => 0x47E68B,
+                _ => 0
             };
 
-            Hooks.WarpCoordWrite = moduleBase.ToInt64() + Version switch
+            Hooks.WarpCoordWrite = moduleBase + Version switch
             {
                 Version1_2_0 => 0x657AFA,
                 Version1_2_1 or Version1_2_2 => 0x657B6A,
@@ -2439,10 +2547,11 @@ namespace TarnishedTool.Memory
                 Version2_4_0 or Version2_5_0 => 0x67A93A,
                 Version2_6_0 or Version2_6_1 => 0x67AABA,
                 Version2_6_2 => 0x67A9CA,
-                _ => 0L
+                Version2_7_0 => 0x67B81A,
+                _ => 0
             };
 
-            Hooks.WarpAngleWrite = moduleBase.ToInt64() + Version switch
+            Hooks.WarpAngleWrite = moduleBase + Version switch
             {
                 Version1_2_0 => 0x657ADA,
                 Version1_2_1 or Version1_2_2 => 0x657B4A,
@@ -2463,7 +2572,8 @@ namespace TarnishedTool.Memory
                 Version2_4_0 or Version2_5_0 => 0x67A91A,
                 Version2_6_0 or Version2_6_1 => 0x67AA9A,
                 Version2_6_2 => 0x67A9AA,
-                _ => 0L
+                Version2_7_0 => 0x67B7FA,
+                _ => 0
             };
 
             Hooks.NoTimePassOnDeath = moduleBase + Version switch
@@ -2488,20 +2598,22 @@ namespace TarnishedTool.Memory
                 Version2_4_0 or Version2_5_0 => 0x5FC27F,
                 Version2_6_0 or Version2_6_1 => 0x5FC3FF,
                 Version2_6_2 => 0x5FC31F,
+                Version2_7_0 => 0x5FD16F,
                 _ => 0
             };
 
-            Hooks.LionCooldownHook = moduleBase.ToInt64() + Version switch
+            Hooks.LionCooldownHook = moduleBase + Version switch
             {
                 Version2_2_0 or Version2_2_3 => 0x4FEF7A,
                 Version2_3_0 => 0x4FF0FA,
                 Version2_4_0 or Version2_5_0 => 0x4FF13A,
                 Version2_6_0 or Version2_6_1 => 0x4FF10A,
                 Version2_6_2 => 0x4FF03A,
-                _ => 0L
+                Version2_7_0 => 0x4FFE0A,
+                _ => 0
             };
 
-            Hooks.SetActionRequested = moduleBase.ToInt64() + Version switch
+            Hooks.SetActionRequested = moduleBase + Version switch
             {
                 Version1_2_0 => 0x3FF362,
                 Version1_2_1 or Version1_2_2 => 0x3FF3D2,
@@ -2520,10 +2632,11 @@ namespace TarnishedTool.Memory
                 Version2_4_0 or Version2_5_0 => 0x407BE2,
                 Version2_6_0 or Version2_6_1 => 0x407BB2,
                 Version2_6_2 => 0x407AB2,
-                _ => 0L
+                Version2_7_0 => 0x407FE2,
+                _ => 0
             };
 
-            Hooks.NoGrab = moduleBase.ToInt64() + Version switch
+            Hooks.NoGrab = moduleBase + Version switch
             {
                 Version1_2_0 => 0x4402FB,
                 Version1_2_1 or Version1_2_2 => 0x44036B,
@@ -2542,10 +2655,11 @@ namespace TarnishedTool.Memory
                 Version2_4_0 or Version2_5_0 => 0x4499BB,
                 Version2_6_0 or Version2_6_1 => 0x44998B,
                 Version2_6_2 => 0x44987B,
-                _ => 0L
+                Version2_7_0 => 0x449DDB,
+                _ => 0
             };
 
-            Hooks.LoadScreenMsgLookup = moduleBase.ToInt64() + Version switch
+            Hooks.LoadScreenMsgLookup = moduleBase + Version switch
             {
                 Version1_8_0 => 0xCDACFC,
                 Version1_8_1 => 0xCDACDC,
@@ -2558,10 +2672,11 @@ namespace TarnishedTool.Memory
                 Version2_6_0 => 0xD108DC,
                 Version2_6_1 => 0xD1093C,
                 Version2_6_2 => 0xD1087C,
-                _ => 0L
+                Version2_7_0 => 0xD11F4C,
+                _ => 0
             };
 
-            Hooks.LoadScreenMsgLookupEarlyPatches = moduleBase.ToInt64() + Version switch
+            Hooks.LoadScreenMsgLookupEarlyPatches = moduleBase + Version switch
             {
                 Version1_2_0 => 0x737994,
                 Version1_2_1 or Version1_2_2 => 0x737A04,
@@ -2572,16 +2687,16 @@ namespace TarnishedTool.Memory
                 Version1_4_1 => 0x73CE14,
                 Version1_5_0 => 0x73E324,
                 Version1_6_0 => 0x740174,
-                _ => 0L
+                _ => 0
             };
 
-            Hooks.LoadScreenMsgLookupMidPatches = moduleBase.ToInt64() + Version switch
+            Hooks.LoadScreenMsgLookupMidPatches = moduleBase + Version switch
             {
                 Version1_7_0 => 0xC95393,
-                _ => 0L
+                _ => 0
             };
 
-            Hooks.TargetNoStagger = moduleBase.ToInt64() + Version switch
+            Hooks.TargetNoStagger = moduleBase + Version switch
             {
                 Version1_2_0 => 0x474CC5,
                 Version1_2_1 or Version1_2_2 => 0x474D35,
@@ -2600,10 +2715,11 @@ namespace TarnishedTool.Memory
                 Version2_4_0 or Version2_5_0 => 0x47E3F7,
                 Version2_6_0 or Version2_6_1 => 0x47E3C7,
                 Version2_6_2 => 0x47E2C7,
-                _ => 0L
+                Version2_7_0 => 0x47E827,
+                _ => 0
             };
 
-            Hooks.NoMapAcquiredPopup = moduleBase.ToInt64() + Version switch
+            Hooks.NoMapAcquiredPopup = moduleBase + Version switch
             {
                 Version1_2_0 => 0x9929D1,
                 Version1_2_1 => 0x992A51,
@@ -2626,10 +2742,11 @@ namespace TarnishedTool.Memory
                 Version2_4_0 or Version2_5_0 => 0x9C6251,
                 Version2_6_0 or Version2_6_1 => 0x9C63D1,
                 Version2_6_2 => 0x9C6281,
-                _ => 0L
+                Version2_7_0 => 0x9C74D1,
+                _ => 0
             };
 
-            Hooks.NoHeal = moduleBase.ToInt64() + Version switch
+            Hooks.NoHeal = moduleBase + Version switch
             {
                 Version1_2_0 => 0x42E062,
                 Version1_2_1 or Version1_2_2 => 0x42E0D2,
@@ -2648,10 +2765,11 @@ namespace TarnishedTool.Memory
                 Version2_4_0 or Version2_5_0 => 0x437082,
                 Version2_6_0 or Version2_6_1 => 0x437052,
                 Version2_6_2 => 0x436F42,
+                Version2_7_0 => 0x4374A2,
                 _ => 0
             };
 
-            Hooks.PlayerLockHp = moduleBase.ToInt64() + Version switch
+            Hooks.PlayerLockHp = moduleBase + Version switch
             {
                 Version1_2_0 => 0x42E010,
                 Version1_2_1 or Version1_2_2 => 0x42E080,
@@ -2670,9 +2788,57 @@ namespace TarnishedTool.Memory
                 Version2_4_0 or Version2_5_0 => 0x437030,
                 Version2_6_0 or Version2_6_1 => 0x437000,
                 Version2_6_2 => 0x436EF0,
+                Version2_7_0 => 0x437450,
                 _ => 0
             };
 
+            Hooks.DamageApply = moduleBase + Version switch
+            {
+                Version1_2_0 => 0x43F2FE,
+                Version1_2_1 or Version1_2_2 => 0x43F36E,
+                Version1_2_3 => 0x43F48E,
+                Version1_3_0 or Version1_3_1 or Version1_3_2 => 0x44009E,
+                Version1_4_0 => 0x4428BF,
+                Version1_4_1 => 0x4427CF,
+                Version1_5_0 => 0x442C0F,
+                Version1_6_0 => 0x443A4D,
+                Version1_7_0 => 0x443B9D,
+                Version1_8_0 or Version1_8_1 => 0x445525,
+                Version1_9_0 or Version1_9_1 => 0x445665,
+                Version2_0_0 or Version2_0_1 => 0x445754,
+                Version2_2_0 or Version2_2_3 => 0x4484E4,
+                Version2_3_0 => 0x4485F4,
+                Version2_4_0 or Version2_5_0 => 0x448634,
+                Version2_6_0 or Version2_6_1 => 0x448604,
+                Version2_6_2 => 0x4484F4,
+                Version2_7_0 => 0x448A54,
+                _ => 0
+            };
+
+
+            
+            Hooks.SpeedyBuff = moduleBase + Version switch
+            {
+                Version1_2_0 => 0x4248E0,
+                Version1_2_1 or Version1_2_2 => 0x424950,
+                Version1_2_3 => 0x424A70,
+                Version1_3_0 or Version1_3_1 or Version1_3_2 => 0x425650,
+                Version1_4_0 => 0x427CD0,
+                Version1_4_1 => 0x427CE0,
+                Version1_5_0 => 0x428110,
+                Version1_6_0 => 0x428F50,
+                Version1_7_0 => 0x428FD0,
+                Version1_8_0 or Version1_8_1 => 0x42A930,
+                Version1_9_0 or Version1_9_1 or Version2_0_0 or Version2_0_1 => 0x42AA70,
+                Version2_2_0 or Version2_2_3 => 0x42D790,
+                Version2_3_0 => 0x42D7B0,
+                Version2_4_0 or Version2_5_0 => 0x42D7F0,
+                Version2_6_0 or Version2_6_1 => 0x42D7C0,
+                Version2_6_2 => 0x42D6B0,
+                Version2_7_0 => 0x42DC00,
+                _ => 0
+            };
+            
 
             // Patches
 
@@ -2700,6 +2866,7 @@ namespace TarnishedTool.Memory
                 Version2_6_0 => 0xB0C3ED,
                 Version2_6_1 => 0xB0C44D,
                 Version2_6_2 => 0xB0C35D,
+                Version2_7_0 => 0xB0D9FD,
                 _ => 0
             };
 
@@ -2725,6 +2892,7 @@ namespace TarnishedTool.Memory
                 Version2_4_0 or Version2_5_0 => 0x65196F,
                 Version2_6_0 or Version2_6_1 => 0x651AEF,
                 Version2_6_2 => 0x651A0F,
+                Version2_7_0 => 0x65285F,
                 _ => 0
             };
 
@@ -2743,6 +2911,7 @@ namespace TarnishedTool.Memory
                 Version2_2_0 or Version2_2_3 or Version2_3_0 or Version2_4_0 or Version2_5_0
                     or Version2_6_0 or Version2_6_1 => 0x25E297,
                 Version2_6_2 => 0x25E1E7,
+                Version2_7_0 => 0x25E1C7,
                 _ => 0
             };
 
@@ -2767,6 +2936,7 @@ namespace TarnishedTool.Memory
                 Version2_4_0 or Version2_5_0 => 0x5FC095,
                 Version2_6_0 or Version2_6_1 => 0x5FC215,
                 Version2_6_2 => 0x5FC135,
+                Version2_7_0 => 0x5FCF85,
                 _ => 0
             };
 
@@ -2791,6 +2961,7 @@ namespace TarnishedTool.Memory
                 Version2_4_0 or Version2_5_0 => 0x7C4CE0,
                 Version2_6_0 or Version2_6_1 => 0x7C4E60,
                 Version2_6_2 => 0x7C4D70,
+                Version2_7_0 => 0x7C5BF0,
                 _ => 0
             };
 
@@ -2816,6 +2987,7 @@ namespace TarnishedTool.Memory
                 Version2_4_0 or Version2_5_0 => 0x7EEBCA,
                 Version2_6_0 or Version2_6_1 => 0x7EED4A,
                 Version2_6_2 => 0x7EEC5A,
+                Version2_7_0 => 0x7EFADA,
                 _ => 0
             };
 
@@ -2841,6 +3013,7 @@ namespace TarnishedTool.Memory
                 Version2_4_0 or Version2_5_0 => 0x9C37AE,
                 Version2_6_0 or Version2_6_1 => 0x9C392E,
                 Version2_6_2 => 0x9C37DE,
+                Version2_7_0 => 0x9C4A2E,
                 _ => 0
             };
 
@@ -2871,6 +3044,7 @@ namespace TarnishedTool.Memory
                 Version2_6_0 => 0xE43300,
                 Version2_6_1 => 0xE43360,
                 Version2_6_2 => 0xE432B0,
+                Version2_7_0 => 0xE450B0,
                 _ => 0
             };
 
@@ -2901,6 +3075,7 @@ namespace TarnishedTool.Memory
                 Version2_6_0 => 0xE535D0,
                 Version2_6_1 => 0xE53630,
                 Version2_6_2 => 0xE53580,
+                Version2_7_0 => 0xE55380,
                 _ => 0
             };
 
@@ -2931,6 +3106,7 @@ namespace TarnishedTool.Memory
                 Version2_6_0 => 0xE535B0,
                 Version2_6_1 => 0xE53610,
                 Version2_6_2 => 0xE53560,
+                Version2_7_0 => 0xE55360,
                 _ => 0
             };
 
@@ -2961,6 +3137,7 @@ namespace TarnishedTool.Memory
                 Version2_6_0 => 0x268D330,
                 Version2_6_1 => 0x268D390,
                 Version2_6_2 => 0x268D3A0,
+                Version2_7_0 => 0x268FBB0,
                 _ => 0
             };
 
@@ -2980,6 +3157,7 @@ namespace TarnishedTool.Memory
                 Version2_2_0 or Version2_2_3 or Version2_3_0 or Version2_4_0 or Version2_5_0 => 0x33E5C6,
                 Version2_6_0 or Version2_6_1 => 0x33E596,
                 Version2_6_2 => 0x33E476,
+                Version2_7_0 => 0x33E486,
                 _ => 0
             };
 
@@ -3008,6 +3186,7 @@ namespace TarnishedTool.Memory
                 Version2_6_0 => 0xCEFB2A,
                 Version2_6_1 => 0xCEFB8A,
                 Version2_6_2 => 0xCEFAAA,
+                Version2_7_0 => 0xCF117A,
                 _ => 0
             };
 
@@ -3032,6 +3211,7 @@ namespace TarnishedTool.Memory
                 Version2_4_0 or Version2_5_0 => 0x7060EF,
                 Version2_6_0 or Version2_6_1 => 0x70626F,
                 Version2_6_2 => 0x70616F,
+                Version2_7_0 => 0x706FBF,
                 _ => 0
             };
 
@@ -3059,6 +3239,7 @@ namespace TarnishedTool.Memory
                 Version2_6_0 => 0xAF84B5,
                 Version2_6_1 => 0xAF8515,
                 Version2_6_2 => 0xAF8425,
+                Version2_7_0 => 0xAF9735,
                 _ => 0
             };
 
@@ -3088,6 +3269,7 @@ namespace TarnishedTool.Memory
                 Version2_6_0 => 0xD3BEEE,
                 Version2_6_1 => 0xD3BF4E,
                 Version2_6_2 => 0xD3BE8E,
+                Version2_7_0 => 0xD3D5DE,
                 _ => 0
             };
 
@@ -3117,6 +3299,7 @@ namespace TarnishedTool.Memory
                 Version2_6_0 => 0xD49C90,
                 Version2_6_1 => 0xD49CF0,
                 Version2_6_2 => 0xD49C30,
+                Version2_7_0 => 0xD4B970,
                 _ => 0
             };
 
@@ -3147,104 +3330,198 @@ namespace TarnishedTool.Memory
                 Version2_6_0 => 0xE82AFD,
                 Version2_6_1 => 0xE82B5D,
                 Version2_6_2 => 0xE82B4D,
+                Version2_7_0 => 0xE8494D,
+                _ => 0
+            };
+            
+            Patches.MenuDelay = moduleBase + Version switch
+            {
+                Version2_2_0 or Version2_4_0 or Version2_5_0 or Version2_6_0 or Version2_6_1 or Version2_6_2 => 0x4588BDC,
+                Version2_2_3 or Version2_3_0 => 0x4588BFC,
+                Version2_7_0 => 0x458CC5C,
+                _ => 0
+            };
+            
+            Patches.NoQuitMessage = moduleBase + Version switch
+            {
+                Version1_2_0 => 0x810436,
+                Version1_2_1 => 0x8104B6,
+                Version1_2_2 => 0x810526,
+                Version1_2_3 => 0x8105F6,
+                Version1_3_0 or Version1_3_1 => 0x813116,
+                Version1_3_2 => 0x8130F6,
+                Version1_4_0 => 0x7F7F76,
+                Version1_4_1 => 0x7F7E86,
+                Version1_5_0 => 0x7FB846,
+                Version1_6_0 => 0x7FCD26,
+                Version1_7_0 => 0x7FE706,
+                Version1_8_0 or Version1_8_1 => 0x810F66,
+                Version1_9_0 => 0x811626,
+                Version1_9_1 => 0x811686,
+                Version2_0_0 or Version2_0_1 => 0x811A16,
+                Version2_2_0 => 0x824966,
+                Version2_2_3 => 0x824556,
+                Version2_3_0 => 0x824B56,
+                Version2_4_0 or Version2_5_0 => 0x824BB6,
+                Version2_6_0 => 0x824D36,
+                Version2_6_1 => 0x824DB6,
+                Version2_6_2 => 0x824D16,
+                Version2_7_0 => 0x826516,
                 _ => 0
             };
 
 
-#if DEBUG
-            Console.WriteLine($@"WorldChrMan.Base: 0x{WorldChrMan.Base.ToInt64():X}");
-            Console.WriteLine($@"FieldArea.Base: 0x{FieldArea.Base.ToInt64():X}");
-            Console.WriteLine($@"LuaEventMan.Base: 0x{LuaEventMan.Base.ToInt64():X}");
-            Console.WriteLine($@"VirtualMemFlag.Base: 0x{VirtualMemFlag.Base.ToInt64():X}");
-            Console.WriteLine($@"DamageManager.Base: 0x{DamageManager.Base.ToInt64():X}");
-            Console.WriteLine($@"MenuMan.Base: 0x{MenuMan.Base.ToInt64():X}");
-            Console.WriteLine($@"TargetView.Base: 0x{TargetView.Base.ToInt64():X}");
-            Console.WriteLine($@"GameMan.Base: 0x{GameMan.Base.ToInt64():X}");
-            Console.WriteLine($@"WorldHitMan.Base: 0x{WorldHitMan.Base.ToInt64():X}");
-            Console.WriteLine($@"WorldChrManDbg.Base: 0x{WorldChrManDbg.Base.ToInt64():X}");
-            Console.WriteLine($@"GameDataMan.Base: 0x{GameDataMan.Base.ToInt64():X}");
-            Console.WriteLine($@"CsDlcImp.Base: 0x{CsDlcImp.Base.ToInt64():X}");
-            Console.WriteLine($@"MapItemManImpl.Base: 0x{MapItemManImpl.Base.ToInt64():X}");
-            Console.WriteLine($@"FD4PadManager.Base: 0x{FD4PadManager.Base.ToInt64():X}");
-            Console.WriteLine($@"CSEmkSystem.Base: 0x{CSEmkSystem.Base.ToInt64():X}");
-            Console.WriteLine($@"WorldAreaTimeImpl.Base: 0x{WorldAreaTimeImpl.Base.ToInt64():X}");
-            Console.WriteLine($@"GroupMask.Base: 0x{GroupMask.Base.ToInt64():X}");
-            Console.WriteLine($@"CSFlipperImp.Base: 0x{CSFlipperImp.Base.ToInt64():X}");
-            Console.WriteLine($@"CSDbgEvent.Base: 0x{CSDbgEvent.Base.ToInt64():X}");
-            Console.WriteLine($@"UserInputManager.Base: 0x{UserInputManager.Base.ToInt64():X}");
-            Console.WriteLine($@"CSTrophy.Base: 0x{CSTrophy.Base.ToInt64():X}");
-            Console.WriteLine($@"MapDebugFlags.Base: 0x{MapDebugFlags.Base.ToInt64():X}");
-            Console.WriteLine($@"SoloParamRepositoryImp.Base: 0x{SoloParamRepositoryImp.Base.ToInt64():X}");
-            Console.WriteLine($@"MsgRepository.Base: 0x{MsgRepository.Base.ToInt64():X}");
-            Console.WriteLine($@"DrawPathing.Base: 0x{DrawPathing.Base.ToInt64():X}");
-            Console.WriteLine($@"ChrDbgFlags.Base: 0x{ChrDbgFlags.Base.ToInt64():X}");
+            Patches.DisableCutscene = moduleBase + Version switch
+            {
+                Version1_2_0 => 0xA4813C,
+                Version1_2_1 => 0xA481BC,
+                Version1_2_2 => 0xA4822C,
+                Version1_2_3 => 0xA482AC,
+                Version1_3_0 => 0xA4D41C,
+                Version1_3_1 => 0xA4D42C,
+                Version1_3_2 => 0xA4D40C,
+                Version1_4_0 => 0xA2CC2C,
+                Version1_4_1 => 0xA2CB3C,
+                Version1_5_0 => 0xA3116C,
+                Version1_6_0 => 0xA34FCC,
+                Version1_7_0 => 0xA3677C,
+                Version1_8_0 or Version1_8_1 => 0xA7743C,
+                Version1_9_0 => 0xA79FCC,
+                Version1_9_1 => 0xA7A02C,
+                Version2_0_0 or Version2_0_1 => 0xA7A2BC,
+                Version2_2_0 or Version2_2_3 => 0xAA6E76,
+                Version2_3_0 => 0xAA7056,
+                Version2_4_0 or Version2_5_0 => 0xAA70B6,
+                Version2_6_0 => 0xAA7236,
+                Version2_6_1 => 0xAA7296,
+                Version2_6_2 => 0xAA7196,
+                Version2_7_0 => 0xAA8496,
+                _ => 0
+            };
 
-            Console.WriteLine($@"Patches.NoLogo: 0x{Patches.NoLogo.ToInt64():X}");
-            Console.WriteLine($@"Patches.NoRunesFromEnemies: 0x{Patches.NoRunesFromEnemies.ToInt64():X}");
-            Console.WriteLine($@"Patches.NoRuneArcLoss: 0x{Patches.NoRuneArcLoss.ToInt64():X}");
-            Console.WriteLine($@"Patches.NoRuneLossOnDeath: 0x{Patches.NoRuneLossOnDeath.ToInt64():X}");
-            Console.WriteLine($@"Patches.CanFastTravel: 0x{Patches.CanFastTravel.ToInt64():X}");
-            Console.WriteLine($@"Patches.OpenMap: 0x{Patches.OpenMap.ToInt64():X}");
-            Console.WriteLine($@"Patches.CloseMap: 0x{Patches.CloseMap.ToInt64():X}");
-            Console.WriteLine($@"Patches.EnableFreeCam: 0x{Patches.EnableFreeCam.ToInt64():X}");
-            Console.WriteLine($@"Patches.CanDrawEvents1: 0x{Patches.CanDrawEvents1.ToInt64():X}");
-            Console.WriteLine($@"Patches.CanDrawEvents2: 0x{Patches.CanDrawEvents2.ToInt64():X}");
-            Console.WriteLine($@"Patches.DebugFont: 0x{Patches.DebugFont.ToInt64():X}");
-            Console.WriteLine($@"Patches.PlayerSound: 0x{Patches.PlayerSound.ToInt64():X}");
-            Console.WriteLine(
-                $@"Patches.IsTorrentDisabledInUnderworld: 0x{Patches.IsTorrentDisabledInUnderworld.ToInt64():X}");
-            Console.WriteLine($@"Patches.IsWhistleDisabled: 0x{Patches.IsWhistleDisabled.ToInt64():X}");
-            Console.WriteLine($@"Patches.IsWorldPaused: 0x{Patches.IsWorldPaused.ToInt64():X}");
-            Console.WriteLine($@"Patches.GetItemChance: 0x{Patches.GetItemChance.ToInt64():X}");
-            Console.WriteLine($@"Patches.GetShopEvent: 0x{Patches.GetShopEvent.ToInt64():X}");
-            Console.WriteLine($@"Patches.FpsCap: 0x{Patches.FpsCap.ToInt64():X}");
 
-            Console.WriteLine($@"Hooks.UpdateCoords: 0x{Hooks.UpdateCoords:X}");
-            Console.WriteLine($@"Hooks.InAirTimer: 0x{Hooks.InAirTimer:X}");
-            Console.WriteLine($@"Hooks.NoClipKb: 0x{Hooks.NoClipKb:X}");
-            Console.WriteLine($@"Hooks.NoClipTriggers: 0x{Hooks.NoClipTriggers:X}");
-            Console.WriteLine($@"Hooks.HasSpEffect: 0x{Hooks.HasSpEffect:X}");
-            Console.WriteLine($@"Hooks.BlueTargetView: 0x{Hooks.BlueTargetView:X}");
-            Console.WriteLine($@"Hooks.LockedTargetPtr: 0x{Hooks.LockedTargetPtr:X}");
-            Console.WriteLine($@"Hooks.InfinitePoise: 0x{Hooks.InfinitePoise:X}");
-            Console.WriteLine($@"Hooks.ShouldUpdateAi: 0x{Hooks.ShouldUpdateAi:X}");
-            Console.WriteLine($@"Hooks.GetForceActIdx: 0x{Hooks.GetForceActIdx:X}");
-            Console.WriteLine($@"Hooks.AttackInfo: 0x{Hooks.AttackInfo:X}");
-            Console.WriteLine($@"Hooks.WarpCoordWrite: 0x{Hooks.WarpCoordWrite:X}");
-            Console.WriteLine($@"Hooks.WarpAngleWrite: 0x{Hooks.WarpAngleWrite:X}");
-            Console.WriteLine($@"Hooks.NoTimePassOnDeath: 0x{Hooks.NoTimePassOnDeath.ToInt64():X}");
-            Console.WriteLine($@"Hooks.LionCooldownHook: 0x{Hooks.LionCooldownHook:X}");
-            Console.WriteLine($@"Hooks.SetActionRequested: 0x{Hooks.SetActionRequested:X}");
-            Console.WriteLine($@"Hooks.NoGrab: 0x{Hooks.NoGrab:X}");
-            Console.WriteLine($@"Hooks.LoadScreenMsgLookup: 0x{Hooks.LoadScreenMsgLookup:X}");
-            Console.WriteLine($@"Hooks.LoadScreenMsgLookupEarlyPatches: 0x{Hooks.LoadScreenMsgLookupEarlyPatches:X}");
-            Console.WriteLine($@"Hooks.TargetNoStagger: 0x{Hooks.TargetNoStagger:X}");
-            Console.WriteLine($@"Hooks.NoMapAcquiredPopup: 0x{Hooks.NoMapAcquiredPopup:X}");
-            Console.WriteLine($@"Hooks.NoHeal: 0x{Hooks.NoHeal:X}");
-            Console.WriteLine($@"Hooks.LockEstusHp: 0x{Hooks.PlayerLockHp:X}");
+        }
 
-            Console.WriteLine($@"Funcs.GraceWarp: 0x{Functions.GraceWarp:X}");
-            Console.WriteLine($@"Funcs.SetEvent: 0x{Functions.SetEvent:X}");
-            Console.WriteLine($@"Funcs.SetSpEffect: 0x{Functions.SetSpEffect:X}");
-            Console.WriteLine($@"Funcs.GiveRunes: 0x{Functions.GiveRunes:X}");
-            Console.WriteLine($@"Funcs.LookupByFieldInsHandle: 0x{Functions.LookupByFieldInsHandle:X}");
-            Console.WriteLine($@"Funcs.WarpToBlock: 0x{Functions.WarpToBlock:X}");
-            Console.WriteLine($@"Funcs.GetEvent: 0x{Functions.GetEvent:X}");
-            Console.WriteLine($@"Funcs.GetPlayerItemQuantityById: 0x{Functions.GetPlayerItemQuantityById:X}");
-            Console.WriteLine($@"Funcs.ItemSpawn: 0x{Functions.ItemSpawn:X}");
-            Console.WriteLine($@"Funcs.MatrixVectorProduct: 0x{Functions.MatrixVectorProduct:X}");
-            Console.WriteLine($@"Funcs.ChrInsByHandle: 0x{Functions.ChrInsByHandle:X}");
-            Console.WriteLine($@"Funcs.FindAndRemoveSpEffect: 0x{Functions.FindAndRemoveSpEffect:X}");
-            Console.WriteLine($@"Funcs.EmevdSwitch: 0x{Functions.EmevdSwitch:X}");
-            Console.WriteLine($@"Funcs.EmkEventInsCtor: 0x{Functions.EmkEventInsCtor:X}");
-            Console.WriteLine($@"Funcs.GetMovement: 0x{Functions.GetMovement:X}");
-            Console.WriteLine($@"Funcs.GetChrInsByEntityId: 0x{Functions.GetChrInsByEntityId:X}");
-            Console.WriteLine($@"Funcs.NpcEzStateTalkCtor: 0x{Functions.NpcEzStateTalkCtor:X}");
-            Console.WriteLine($@"Funcs.EzStateEnvQueryImplCtor: 0x{Functions.EzStateEnvQueryImplCtor:X}");
-            Console.WriteLine($@"Funcs.ExternalEventTempCtor: 0x{Functions.ExternalEventTempCtor:X}");
-            Console.WriteLine($@"Funcs.ExecuteTalkCommand: 0x{Functions.ExecuteTalkCommand:X}");
-            Console.WriteLine($@"Funcs.ExecuteTalkCommand: 0x{Functions.LocalToMapCoords:X}");
-#endif
+        private static long _printBaseAddr;
+
+        public static void Print(nint moduleBase)
+        {
+            _printBaseAddr = moduleBase;
+            
+            Console.WriteLine("--- Base Pointers ---");
+            PrintOffset("WorldChrMan.Base",            WorldChrMan.Base);
+            PrintOffset("FieldArea.Base",              FieldArea.Base);
+            PrintOffset("LuaEventMan.Base",            LuaEventMan.Base);
+            PrintOffset("VirtualMemFlag.Base",         VirtualMemFlag.Base);
+            PrintOffset("DamageManager.Base",          DamageManager.Base);
+            PrintOffset("MenuMan.Base",                MenuMan.Base);
+            PrintOffset("TargetView.Base",             TargetView.Base);
+            PrintOffset("GameMan.Base",                GameMan.Base);
+            PrintOffset("WorldHitMan.Base",            WorldHitMan.Base);
+            PrintOffset("WorldChrManDbg.Base",         WorldChrManDbg.Base);
+            PrintOffset("GameDataMan.Base",            GameDataMan.Base);
+            PrintOffset("CsDlcImp.Base",               CsDlcImp.Base);
+            PrintOffset("MapItemManImpl.Base",         MapItemManImpl.Base);
+            PrintOffset("FD4PadManager.Base",          FD4PadManager.Base);
+            PrintOffset("CSEmkSystem.Base",            CSEmkSystem.Base);
+            PrintOffset("WorldAreaTimeImpl.Base",      WorldAreaTimeImpl.Base);
+            PrintOffset("GroupMask.Base",              GroupMask.Base);
+            PrintOffset("CSFlipperImp.Base",           CSFlipperImp.Base);
+            PrintOffset("CSDbgEvent.Base",             CSDbgEvent.Base);
+            PrintOffset("UserInputManager.Base",       UserInputManager.Base);
+            PrintOffset("CSTrophy.Base",               CSTrophy.Base);
+            PrintOffset("MapDebugFlags.Base",          MapDebugFlags.Base);
+            PrintOffset("SoloParamRepositoryImp.Base", SoloParamRepositoryImp.Base);
+            PrintOffset("MsgRepository.Base",          MsgRepository.Base);
+            PrintOffset("DrawPathing.Base",            DrawPathing.Base);
+            PrintOffset("ChrDbgFlags.Base",            ChrDbgFlags.Base);
+            PrintOffset("WorldAiManagerImp.Base",      WorldAiManagerImp.Base);
+            PrintOffset("CSSound.Base",      CSSound.Base);
+
+            Console.WriteLine("\n--- Patches ---");
+            PrintOffset("NoLogo",                       Patches.NoLogo);
+            PrintOffset("NoRunesFromEnemies",           Patches.NoRunesFromEnemies);
+            PrintOffset("NoRuneArcLoss",                Patches.NoRuneArcLoss);
+            PrintOffset("NoRuneLossOnDeath",            Patches.NoRuneLossOnDeath);
+            PrintOffset("CanFastTravel",                Patches.CanFastTravel);
+            PrintOffset("OpenMap",                      Patches.OpenMap);
+            PrintOffset("CloseMap",                     Patches.CloseMap);
+            PrintOffset("EnableFreeCam",                Patches.EnableFreeCam);
+            PrintOffset("CanDrawEvents1",               Patches.CanDrawEvents1);
+            PrintOffset("CanDrawEvents2",               Patches.CanDrawEvents2);
+            PrintOffset("DebugFont",                    Patches.DebugFont);
+            PrintOffset("PlayerSound",                  Patches.PlayerSound);
+            PrintOffset("IsTorrentDisabledInUnderworld",Patches.IsTorrentDisabledInUnderworld);
+            PrintOffset("IsWhistleDisabled",            Patches.IsWhistleDisabled);
+            PrintOffset("IsWorldPaused",                Patches.IsWorldPaused);
+            PrintOffset("GetItemChance",                Patches.GetItemChance);
+            PrintOffset("GetShopEvent",                 Patches.GetShopEvent);
+            PrintOffset("FpsCap",                       Patches.FpsCap);
+            PrintOffset("MenuDelay",                    Patches.MenuDelay);
+            PrintOffset("NoQuitMessage",                Patches.NoQuitMessage);
+            PrintOffset("DisableCutscene",              Patches.DisableCutscene);
+
+            Console.WriteLine("\n--- Hooks ---");
+            PrintOffset("UpdateCoords",                     Hooks.UpdateCoords);
+            PrintOffset("InAirTimer",                       Hooks.InAirTimer);
+            PrintOffset("NoClipKb",                         Hooks.NoClipKb);
+            PrintOffset("NoClipTriggers",                   Hooks.NoClipTriggers);
+            PrintOffset("HasSpEffect",                      Hooks.HasSpEffect);
+            PrintOffset("BlueTargetView",                   Hooks.BlueTargetView);
+            PrintOffset("LockedTargetPtr",                  Hooks.LockedTargetPtr);
+            PrintOffset("InfinitePoise",                    Hooks.InfinitePoise);
+            PrintOffset("ShouldUpdateAi",                   Hooks.ShouldUpdateAi);
+            PrintOffset("GetForceActIdx",                   Hooks.GetForceActIdx);
+            PrintOffset("AttackInfo",                       Hooks.AttackInfo);
+            PrintOffset("WarpCoordWrite",                   Hooks.WarpCoordWrite);
+            PrintOffset("WarpAngleWrite",                   Hooks.WarpAngleWrite);
+            PrintOffset("NoTimePassOnDeath",                Hooks.NoTimePassOnDeath);
+            PrintOffset("LionCooldownHook",                 Hooks.LionCooldownHook);
+            PrintOffset("SetActionRequested",               Hooks.SetActionRequested);
+            PrintOffset("NoGrab",                           Hooks.NoGrab);
+            PrintOffset("LoadScreenMsgLookup",              Hooks.LoadScreenMsgLookup);
+            PrintOffset("LoadScreenMsgLookupEarlyPatches",  Hooks.LoadScreenMsgLookupEarlyPatches);
+            PrintOffset("LoadScreenMsgLookupMidPatches",    Hooks.LoadScreenMsgLookupMidPatches);
+            PrintOffset("TargetNoStagger",                  Hooks.TargetNoStagger);
+            PrintOffset("NoMapAcquiredPopup",               Hooks.NoMapAcquiredPopup);
+            PrintOffset("NoHeal",                           Hooks.NoHeal);
+            PrintOffset("PlayerLockHp",                     Hooks.PlayerLockHp);
+            PrintOffset("SpeedyBuff",                     Hooks.SpeedyBuff);
+            PrintOffset("DamageApply",                     Hooks.DamageApply);
+
+            Console.WriteLine("\n--- Functions ---");
+            PrintOffset("GraceWarp",                 Functions.GraceWarp);
+            PrintOffset("SetEvent",                  Functions.SetEvent);
+            PrintOffset("SetSpEffect",               Functions.SetSpEffect);
+            PrintOffset("GiveRunes",                 Functions.GiveRunes);
+            PrintOffset("LookupByFieldInsHandle",    Functions.LookupByFieldInsHandle);
+            PrintOffset("WarpToBlock",               Functions.WarpToBlock);
+            PrintOffset("GetEvent",                  Functions.GetEvent);
+            PrintOffset("GetPlayerItemQuantityById", Functions.GetPlayerItemQuantityById);
+            PrintOffset("ItemSpawn",                 Functions.ItemSpawn);
+            PrintOffset("MatrixVectorProduct",       Functions.MatrixVectorProduct);
+            PrintOffset("ChrInsByHandle",            Functions.ChrInsByHandle);
+            PrintOffset("FindAndRemoveSpEffect",     Functions.FindAndRemoveSpEffect);
+            PrintOffset("EmevdSwitch",               Functions.EmevdSwitch);
+            PrintOffset("EmkEventInsCtor",           Functions.EmkEventInsCtor);
+            PrintOffset("GetMovement",               Functions.GetMovement);
+            PrintOffset("GetChrInsByEntityId",       Functions.GetChrInsByEntityId);
+            PrintOffset("NpcEzStateTalkCtor",        Functions.NpcEzStateTalkCtor);
+            PrintOffset("EzStateEnvQueryImplCtor",   Functions.EzStateEnvQueryImplCtor);
+            PrintOffset("ExternalEventTempCtor",     Functions.ExternalEventTempCtor);
+            PrintOffset("ExecuteTalkCommand",        Functions.ExecuteTalkCommand);
+            PrintOffset("LocalToMapCoords",          Functions.LocalToMapCoords);
+            PrintOffset("LuaDoString",               Functions.LuaDoString);
+            PrintOffset("RefreshFromStorage",        Functions.RefreshFromStorage);
+            PrintOffset("AiRequestAttackCooldown",   Functions.AiRequestAttackCooldown);
+        }
+        
+        private static void PrintOffset(string name, nint value)
+        {
+            var rel = value - _printBaseAddr;
+            Console.WriteLine(rel <= 0
+                ? $"  {name,-40} *** NOT SET ***"
+                : $"  {name,-40} 0x{(long)value:X}  (0x{(long)rel:X})");
         }
     }
 }

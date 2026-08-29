@@ -26,8 +26,8 @@ namespace TarnishedTool.Services
             var bytes = AsmLoader.GetAsmBytes(AsmScript.GraceWarp);
             AsmHelper.WriteAbsoluteAddresses(bytes, new[]
             {
-                (WorldChrMan.Base.ToInt64(), 0x0 + 2),
-                (grace.GraceEntityId, 0x12 + 2),
+                (WorldChrMan.Base, 0x0 + 2),
+                ((nint)grace.GraceEntityId, 0x12 + 2),
                 (Functions.GraceWarp, 0x20 + 2)
             });
 
@@ -83,16 +83,16 @@ namespace TarnishedTool.Services
                 var skipDialogCreationJumpTarget = hookLoc + 0xD;
                 AsmHelper.WriteRelativeOffsets(bytes, new[]
                 {
-                    (code.ToInt64() + 0x7, VirtualMemFlag.Base.ToInt64(), 7, 0x7 + 3),
-                    (code.ToInt64() + 0x20, Functions.SetEvent, 5, 0x20 + 1),
-                    (code.ToInt64() + 0x30, skipDialogCreationJumpTarget, 5, 0x30 + 1)
+                    (code + 0x7, VirtualMemFlag.Base, 7, 0x7 + 3),
+                    (code + 0x20, Functions.SetEvent, 5, 0x20 + 1),
+                    (code + 0x30, skipDialogCreationJumpTarget, 5, 0x30 + 1)
                 });
                 memoryService.WriteBytes(code, bytes);
-                hookManager.InstallHook(code.ToInt64(), hookLoc, [0x8B, 0x54, 0x24, 0x40, 0x48, 0x8B, 0xCE]);
+                hookManager.InstallHook(code, hookLoc, [0x8B, 0x54, 0x24, 0x40, 0x48, 0x8B, 0xCE]);
             }
             else
             {
-                hookManager.UninstallHook(code.ToInt64());
+                hookManager.UninstallHook(code);
             }
         }
 
@@ -114,15 +114,15 @@ namespace TarnishedTool.Services
             var bytes = AsmLoader.GetAsmBytes(AsmScript.WarpCoordWrite);
             AsmHelper.WriteRelativeOffsets(bytes, new[]
             {
-                (warpCode.ToInt64(), targetCoords.ToInt64(), 7, 0x0 + 3),
-                (warpCode.ToInt64() + 0xE, coordHook + 7, 5, 0xE + 1)
+                (warpCode, targetCoords, 7, 0x0 + 3),
+                (warpCode + 0xE, coordHook + 7, 5, 0xE + 1)
             });
             memoryService.WriteBytes(warpCode, bytes);
 
             AsmHelper.WriteRelativeOffsets(bytes, new[]
             {
-                (angleCode.ToInt64(), targetAngle.ToInt64(), 7, 0x0 + 3),
-                (angleCode.ToInt64() + 0xE, angleHook + 7, 5, 0xE + 1)
+                (angleCode, targetAngle, 7, 0x0 + 3),
+                (angleCode + 0xE, angleHook + 7, 5, 0xE + 1)
             });
             memoryService.WriteBytes(angleCode, bytes);
             memoryService.Write(angleCode + 0x7 + 3, angleOffsetInStruct);
@@ -131,10 +131,10 @@ namespace TarnishedTool.Services
             bool angleHookInstalled = false;
             try
             {
-                hookManager.InstallHook(warpCode.ToInt64(), coordHook,
+                hookManager.InstallHook(warpCode, coordHook,
                     [0x0F, 0x11, 0x80, 0xA0, 0x0A, 0x00, 0x00]);
                 coordHookInstalled = true;
-                hookManager.InstallHook(angleCode.ToInt64(), angleHook,
+                hookManager.InstallHook(angleCode, angleHook,
                     [0x0F, 0x11, 0x80, 0xB0, 0x0A, 0x00, 0x00]);
                 angleHookInstalled = true;
 
@@ -147,9 +147,9 @@ namespace TarnishedTool.Services
             finally
             {
                 if (coordHookInstalled)
-                    try { hookManager.UninstallHook(warpCode.ToInt64()); } catch { }
+                    try { hookManager.UninstallHook(warpCode); } catch { }
                 if (angleHookInstalled)
-                    try { hookManager.UninstallHook(angleCode.ToInt64()); } catch { }
+                    try { hookManager.UninstallHook(angleCode); } catch { }
             }
         }
 

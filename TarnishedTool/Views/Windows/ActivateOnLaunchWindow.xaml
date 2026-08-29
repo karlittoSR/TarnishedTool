@@ -141,6 +141,8 @@
                                   IsChecked="{Binding IsNoTimeChangeOnDeathChecked}" IsEnabled="{Binding IsEnabled}"/>
                         <CheckBox Content="HP Regen" Margin="0,0,0,4" IsChecked="{Binding IsHpRegenChecked}" IsEnabled="{Binding IsEnabled}" />
                         <CheckBox Content="FP Regen" Margin="0,0,0,4" IsChecked="{Binding IsFpRegenChecked}" IsEnabled="{Binding IsEnabled}"/>
+                        <CheckBox Content="Reset Enemies with Rest" Margin="0,0,0,4" IsChecked="{Binding IsResetWorldIncluded}" IsEnabled="{Binding IsEnabled}"/>
+                        <CheckBox Content="Speedy Buffing" Margin="0,0,0,4" IsChecked="{Binding IsSpeedBuffEnabled}" IsEnabled="{Binding IsEnabled}"/>
                         
                         <!-- Travel -->
                         <StackPanel Orientation="Horizontal">
@@ -267,6 +269,9 @@
                                   IsEnabled="{Binding IsEnabled}"/>
                         <CheckBox Content="Toggle 100% Drop Rate" Margin="0,0,0,4"
                                   IsChecked="{Binding IsDropRateChecked}"
+                                  IsEnabled="{Binding IsEnabled}"/>
+                        <CheckBox Content="Disable Cutscenes" Margin="0,0,0,4"
+                                  IsChecked="{Binding IsDisableCutscenesEnabled}"
                                   IsEnabled="{Binding IsEnabled}"/>
                         
                         <!-- Event -->

@@ -141,6 +141,7 @@
         <Compile Include="Enums\AsmScript.cs" />
         <Compile Include="Enums\GameVersion.cs" />
         <Compile Include="Enums\HotkeyActions.cs" />
+        <Compile Include="Enums\IdentityTypes.cs" />
         <Compile Include="Enums\Param.cs" />
         <Compile Include="Enums\ParamEnums\AtkParam\AtkParamAtkAttrType.cs" />
         <Compile Include="Enums\ParamEnums\AtkParam\AtkParamBehaviorId.cs" />
@@ -250,10 +251,12 @@
         <Compile Include="Enums\ParamEnums\SwordArtsParam\SwordArtsRefStatusType.cs" />
         <Compile Include="Enums\ParamEnums\SwordArtsParam\SwordArtsShieldIconType.cs" />
         <Compile Include="Enums\ParamFieldDisplayMode.cs" />
+        <Compile Include="Enums\SpeedBuffMode.cs" />
         <Compile Include="Enums\State.cs" />
         <Compile Include="GameIds\Emevd.cs" />
         <Compile Include="GameIds\Event.cs" />
         <Compile Include="GameIds\EzState.cs" />
+        <Compile Include="GameIds\GestureNameLookup.cs" />
         <Compile Include="GameIds\ParamIndicies.cs" />
         <Compile Include="GameIds\SpEffect.cs" />
         <Compile Include="Interfaces\IAiService.cs" />
@@ -261,6 +264,7 @@
         <Compile Include="Interfaces\IAiWindowService.cs" />
         <Compile Include="Interfaces\IAttackInfoService.cs" />
         <Compile Include="Interfaces\IChrInsService.cs" />
+        <Compile Include="Interfaces\IDamageService.cs" />
         <Compile Include="Interfaces\IDlcService.cs" />
         <Compile Include="Interfaces\IEmevdService.cs" />
         <Compile Include="Interfaces\IEnemyService.cs" />
@@ -310,6 +314,7 @@
         <Compile Include="Models\GracePresetEntry.cs" />
         <Compile Include="Models\GracePresetTemplate.cs" />
         <Compile Include="Models\HotkeyNotification.cs" />
+        <Compile Include="Models\GraceSelectionItem.cs" />
         <Compile Include="Models\Item.cs" />
         <Compile Include="Models\ItemTemplate.cs" />
         <Compile Include="Models\LoadedParam.cs" />
@@ -333,6 +338,7 @@
         <Compile Include="Services\AiWindowService.cs" />
         <Compile Include="Services\AttackInfoService.cs" />
         <Compile Include="Services\ChrInsService.cs" />
+        <Compile Include="Services\DamageService.cs" />
         <Compile Include="Services\DlcService.cs" />
         <Compile Include="Services\EmevdService.cs" />
         <Compile Include="Services\EnemyService.cs" />
@@ -407,6 +413,7 @@
         <Compile Include="ViewModels\EnemyViewModel.cs" />
         <Compile Include="ViewModels\EventLogViewModel.cs" />
         <Compile Include="ViewModels\FieldValueViewModel.cs" />
+        <Compile Include="ViewModels\GestureSelectionViewModel.cs" />
         <Compile Include="ViewModels\GoalParamViewModel.cs" />
         <Compile Include="ViewModels\GoalViewModel.cs" />
         <Compile Include="ViewModels\AiWindowViewModel.cs" />
@@ -517,6 +524,9 @@
         </Compile>
         <Compile Include="Views\Windows\AiWindow.xaml.cs">
           <DependentUpon>AiWindow.xaml</DependentUpon>
+        </Compile>
+        <Compile Include="Views\Windows\GestureSelectionWindow.xaml.cs">
+          <DependentUpon>GestureSelectionWindow.xaml</DependentUpon>
         </Compile>
         <Compile Include="Views\Windows\GraceImportPresentSelectionWindow.xaml.cs">
           <DependentUpon>GraceImportPresentSelectionWindow.xaml</DependentUpon>
@@ -735,6 +745,10 @@
             <SubType>Designer</SubType>
         </Page>
         <Page Include="Views\Windows\SpEffectsWindow.xaml">
+            <Generator>MSBuild:Compile</Generator>
+            <SubType>Designer</SubType>
+        </Page>
+        <Page Include="Views\Windows\GestureSelectionWindow.xaml">
             <Generator>MSBuild:Compile</Generator>
             <SubType>Designer</SubType>
         </Page>

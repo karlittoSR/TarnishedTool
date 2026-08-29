@@ -15,7 +15,7 @@ public partial class CreateLoadoutWindow : Window
         Dictionary<string, List<Item>> itemsByCategory,
         List<AshOfWar> ashesOfWar,
         Dictionary<string, LoadoutTemplate> customLoadoutTemplates,
-        bool hasDlc)
+        bool hasDlc, bool hasTarnishedPack)
     {
         InitializeComponent();
         
@@ -24,6 +24,7 @@ public partial class CreateLoadoutWindow : Window
             ashesOfWar,
             customLoadoutTemplates,
             hasDlc,
+            hasTarnishedPack,
             ShowInputDialog);
         
         DataContext = viewModel;

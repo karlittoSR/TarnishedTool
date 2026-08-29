@@ -1123,6 +1123,8 @@ namespace TarnishedTool.ViewModels
             _hotkeyManager.RegisterAction(HotkeyActions.AiInfo, () => { ExecuteTargetAction(OpenAiWindow); _notificationService?.ShowNotification(HotkeyActions.AiInfo, IsShowAiInfoEnabled); });
             _hotkeyManager.RegisterAction(HotkeyActions.ToggleMadness, () => { ShowMadness = !ShowMadness; _notificationService?.ShowNotification(HotkeyActions.ToggleMadness); });
             _hotkeyManager.RegisterAction(HotkeyActions.ToggleDeathblight, () => { ShowDeathBlight = !ShowDeathBlight; _notificationService?.ShowNotification(HotkeyActions.ToggleDeathblight); });
+            _hotkeyManager.RegisterAction(HotkeyActions.DrawStance, () => { IsDrawCritViewEnabled = !IsDrawCritViewEnabled; _notificationService?.ShowNotification(HotkeyActions.DrawStance); });
+            _hotkeyManager.RegisterAction(HotkeyActions.DrawBackstab, () => { IsDrawBackstabViewEnabled = !IsDrawBackstabViewEnabled; _notificationService?.ShowNotification(HotkeyActions.DrawBackstab); });
         }
 
         private void ExecuteTargetAction(Action action)
