@@ -5,6 +5,8 @@
 
 <p>A fork of <a href="https://github.com/borgCode/TarnishedTool">Tarnished Tool</a> by borgCode, tailored for speedrun session workflow. Adds clean session management, richer in-game hotkey feedback, and quality-of-life improvements for runners.</p>
 
+<p>Synced with upstream <b>V1.2.0</b> — every base-tool feature and fix is included, on top of the Speedrun Edition additions below.</p>
+
 [![Latest Release](https://img.shields.io/github/v/release/karlittoSR/TarnishedTool.svg)](https://github.com/karlittoSR/TarnishedTool/releases/latest)
 
 **This tool is strictly for offline use only, it directly manipulates game memory which violates the Terms of Service and will most likely lead to a ban if you use this online.**
@@ -18,8 +20,9 @@
 This fork focuses on reliability and workflow improvements for speedrunners: safer session cleanup, predictable hotkey behavior, and small utilities that make practice and runs easier.
 
 ### Clean Session Management
-* **Closing the tool** (red X / Alt+F4) resets all active toggles, uninstalls all hooks, frees the code cave and releases the game process, leaving the game in a vanilla state ready for a run.
+* **Closing the tool** (red X / Alt+F4) resets the Player, Travel, Enemy, Target and Utility toggles, uninstalls all hooks, frees the code cave and releases the game process, leaving the game in a vanilla state ready for a run.
 * Nothing ever blocks the tool from closing. When the game sits on the main menu the world pointers are null, so toggle values are not written back — hooks, the code cave and the loading-screen title are still restored, and the process handle is released.
+* The **Settings tab** options are the exception: No Menu Delay, No Quit Out Message, Stutter Fix, Disable Achievements and Mute Music are saved preferences, re-applied at every game load and left in place when the tool closes. Restart the game to clear them.
 
 ### Game Version Handling
 * **Elden Ring 1.17 (`2.7.0.0`) is supported** by a full address table, from upstream V1.2.0.
@@ -90,10 +93,12 @@ This tool offers plenty of features such as:
 * Disabling Rykard's Mega attack.
 * Disable Ai / Enemies no Death and more
 * Boss Revives (with the option to revive back to first encounter)
+* No Godrick's Great Rune healing / FP restoration on load.
 * Many options for the locked on target.
 * Warping out of uncleared dungeons / during combat.
-* Adjusting Game Speed, and speeding the game up while buffing (Speedy Buffing).
+* Adjusting Game Speed, and speeding the game up while buffing (Speedy Buffing, with an option to allow it in combat).
 * Adjusting FPS Cap.
+* Editing HP and FP directly.
 * Damage multiplier, with separate outgoing and incoming factors.
 * Disable Cutscenes, no menu delay, and no quitout message.
 * No Clip (works with keyboard and mouse)
@@ -111,6 +116,8 @@ This tool offers plenty of features such as:
 * Events Logger.
 * Applying / Removing and seeing the Player's Active SpEffects.
 * Param Patcher.
+* Player Identity (PlayerGameData character type, character type and team type) for when nothing in the world can be interacted with.
+* Tarnished Pack items and param entries, with the horse skins flagged to avoid an online ban.
 * Character List (NpcManager) with features such as warping to the selected entity, AI Viewer and AI Script injections.
 * Debug features such as animation IDs (both player and enemies) and Enemy Acts.
 * Logo Skip.
